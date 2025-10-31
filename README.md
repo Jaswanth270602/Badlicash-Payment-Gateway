@@ -1,0 +1,368 @@
+# BadliCash Payment Gateway
+
+**BadliCash** is a production-ready payment gateway MVP built with Laravel 10, Blade templates, and AngularJS (via CDN). It provides a complete payment processing solution similar to Cashfree, with features for merchants, admins, and end users.
+
+## 🚀 Features
+
+- **Payment Processing**: Accept payments via card, netbanking, UPI, and wallets
+- **Payment Links**: Generate shareable payment links with expiry and usage limits
+- **Order Management**: Track orders and their payment status
+- **Transaction Processing**: Handle payments with fee calculation and settlements
+- **Refunds**: Full and partial refund support
+- **Settlements & Payouts**: Batch settlement processing for merchants
+- **Webhooks**: Reliable webhook delivery with automatic retry logic
+- **API Key Management**: Secure API keys with scopes and rate limiting
+- **Test & Live Modes**: Separate sandbox and production environments
+- **Role-Based Access**: Admin, merchant, and user roles with policy-based permissions
+- **Audit Logs**: Complete audit trail for all payment actions
+- **Reports & Analytics**: Generate reports with CSV export
+- **Admin Dashboard**: Manage merchants, view system stats, and control the platform
+
+## 🏗️ Architecture
+
+- **Backend**: Laravel 10 with PHP 8.1+
+- **Database**: MySQL 8 with migrations and foreign keys
+- **Queue System**: Redis for async webhook delivery and background jobs
+- **Authentication**: Laravel Sanctum for API and web auth
+- **Frontend**: Blade templates (main engine) + AngularJS 1.8 (via CDN for interactivity)
+- **UI Framework**: Bootstrap 5 (via CDN)
+- **Containerization**: Docker with docker-compose for local development
+
+## 📋 Requirements
+
+- PHP 8.1 or higher
+- Composer
+- MySQL 8.0
+- Redis
+- Docker & Docker Compose (for containerized setup)
+
+## 🛠️ Installation
+
+### Using Docker (Recommended)
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd gateway
+   ```
+
+2. **Copy environment file**:
+   ```bash
+   cp env.example .env
+   ```
+
+3. **Update `.env` with your configuration**:
+   ```env
+   DB_DATABASE=badlicash
+   DB_USERNAME=badlicash
+   DB_PASSWORD=secret
+   BADLICASH_MODE=test
+   ```
+
+4. **Build and start containers**:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+5. **Install dependencies**:
+   ```bash
+   docker-compose exec app composer install
+   ```
+
+6. **Generate application key**:
+   ```bash
+   docker-compose exec app php artisan key:generate
+   ```
+
+7. **Run migrations and seed the database**:
+   ```bash
+   docker-compose exec app php artisan migrate --seed
+   ```
+
+8. **Access the application**:
+   - Web: http://localhost:8000
+   - MySQL: localhost:3306
+   - Redis: localhost:6379
+
+### Manual Installation
+
+1. **Install dependencies**:
+   ```bash
+   composer install
+   ```
+
+2. **Configure environment**:
+   ```bash
+   cp env.example .env
+   php artisan key:generate
+   ```
+
+3. **Configure database in `.env`**
+
+4. **Run migrations and seeders**:
+   ```bash
+   php artisan migrate --seed
+   ```
+
+5. **Start services**:
+   ```bash
+   # Terminal 1: Application
+   php artisan serve
+
+   # Terminal 2: Queue worker
+   php artisan queue:work
+
+   # Terminal 3: Scheduler (if needed)
+   php artisan schedule:work
+   ```
+
+## 👤 Test Credentials
+
+After seeding, use these credentials to login:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@badlicash.test | Password123! |
+| Merchant 1 | merchant1@badlicash.test | Password123! |
+| Merchant 2 | merchant2@badlicash.test | Password123! |
+
+## 🔑 API Usage
+
+### Authentication
+
+Use API keys for authentication. You can find generated API keys in the `api_keys` table after seeding.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/payment \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 100.00,
+    "currency": "USD",
+    "payment_method": "card",
+    "customer_details": {
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }'
+```
+
+### Idempotency
+
+Include an `idempotency_key` to prevent duplicate charges:
+
+```json
+{
+  "amount": 100.00,
+  "idempotency_key": "unique-request-id-12345"
+}
+```
+
+## 🧪 Testing
+
+Run PHPUnit tests:
+
+```bash
+# Using Docker
+docker-compose exec app php artisan test
+
+# Manual
+php artisan test
+```
+
+Test specific suites:
+
+```bash
+php artisan test --testsuite=Feature
+php artisan test --testsuite=Unit
+```
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[API.md](docs/API.md)**: Complete API reference with examples
+- **[SECURITY.md](docs/SECURITY.md)**: Security best practices and PCI compliance guide
+- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)**: Production deployment checklist
+- **[SEEDING.md](docs/SEEDING.md)**: Database seeding documentation
+
+## 🔒 Security Features
+
+- ✅ **No PAN/CVV Storage**: Only tokenized data is stored
+- ✅ **TLS Required**: All endpoints require HTTPS in production
+- ✅ **CSRF Protection**: Built-in Laravel CSRF protection
+- ✅ **HMAC Signatures**: Webhook signature verification
+- ✅ **Rate Limiting**: Per-API-key rate limits
+- ✅ **Encrypted Secrets**: Sensitive data encrypted at rest
+- ✅ **Audit Logging**: Complete audit trail
+- ✅ **Security Headers**: X-Frame-Options, CSP, etc.
+
+**⚠️ Important**: This is a demo application. See [SECURITY.md](docs/SECURITY.md) for production requirements.
+
+## 🎯 Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/payment` | Create payment |
+| GET | `/api/v1/orders/{id}` | Get order details |
+| GET | `/api/v1/transactions` | List transactions |
+| POST | `/api/v1/refunds` | Create refund |
+| POST | `/api/v1/payment_links` | Create payment link |
+| GET | `/api/v1/payment_links` | List payment links |
+
+## 🔄 Webhook Events
+
+BadliCash sends webhooks for the following events:
+
+- `payment.created`
+- `payment.success`
+- `payment.failed`
+- `refund.created`
+
+Webhook payloads include an `X-BadliCash-Signature` header for verification.
+
+## 📊 Database Schema
+
+The system uses a normalized database schema with:
+
+- **13 Core Tables**: users, roles, merchants, api_keys, banks, orders, transactions, refunds, settlements, payment_links, webhook_events, audit_logs, payouts
+- **Foreign Keys**: Proper relationships with cascade deletes
+- **Indexes**: Optimized for common queries (merchant_id, status, created_at)
+
+## 🚦 Test vs Live Mode
+
+Each merchant can operate in two modes:
+
+- **Test Mode**: Uses `SandboxBankProvider` for simulated payments
+- **Live Mode**: Uses `DummyBankApi` (replace with real bank integration)
+
+Switch modes via the `test_mode` flag in the `merchants` table.
+
+## 🛠️ Development
+
+### Queue Workers
+
+Process webhooks and background jobs:
+
+```bash
+php artisan queue:work
+```
+
+### Scheduled Tasks
+
+Run the scheduler for periodic tasks:
+
+```bash
+php artisan schedule:work
+```
+
+Or add to cron:
+
+```cron
+* * * * * cd /path-to-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### Refresh Database
+
+To reset and reseed the database:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+## 📦 Project Structure
+
+```
+gateway/
+├── app/
+│   ├── Events/              # Payment events
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/         # API controllers
+│   │   │   ├── Merchant/    # Merchant web controllers
+│   │   │   └── Admin/       # Admin web controllers
+│   │   ├── Middleware/      # Auth & API key middleware
+│   │   └── Policies/        # Authorization policies
+│   ├── Jobs/                # Queue jobs (webhooks)
+│   ├── Listeners/           # Event listeners
+│   ├── Models/              # Eloquent models
+│   └── Services/            # Business logic services
+├── config/
+│   └── badlicash.php        # Custom configuration
+├── database/
+│   ├── migrations/          # Database migrations
+│   └── seeders/             # Data seeders
+├── docs/                    # Documentation
+├── public/
+│   └── js/                  # Angular controllers
+├── resources/
+│   └── views/               # Blade templates
+├── routes/
+│   ├── api.php              # API routes
+│   └── web.php              # Web routes
+├── tests/                   # PHPUnit tests
+├── docker/                  # Docker configs
+├── docker-compose.yml       # Docker services
+└── Dockerfile               # App container
+```
+
+## 🌐 Frontend (Blade + Angular Pattern)
+
+The frontend uses **Blade as the main view engine** with **AngularJS (via CDN)** for interactivity:
+
+- Blade renders the page structure and includes partials
+- Angular (1.8) handles two-way binding, AJAX, and pagination
+- Each view folder has a corresponding Angular controller in `public/js/`
+
+Example:
+- `resources/views/merchant/paymentlinks/index.blade.php` (Blade)
+- `public/js/paymentlinks/mainController.js` (Angular)
+
+## 🐛 Troubleshooting
+
+### Port Already in Use
+
+If port 8000 is in use:
+
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+Or change ports in `docker-compose.yml`.
+
+### Permission Issues
+
+Fix storage permissions:
+
+```bash
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+```
+
+### Database Connection Failed
+
+Ensure MySQL is running and credentials in `.env` match your setup.
+
+## 🤝 Contributing
+
+This is a demo project. For production use, ensure:
+
+1. Real bank API integration
+2. PCI DSS compliance assessment
+3. Full security audit
+4. Load testing
+5. Proper monitoring and alerting
+
+## 📄 License
+
+MIT License
+
+## 📧 Support
+
+For issues and questions, please open an issue in the repository.
+
+---
+
+**Built with ❤️ using Laravel, Blade, and AngularJS**
+
