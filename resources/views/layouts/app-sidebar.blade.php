@@ -45,7 +45,26 @@
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             overflow-y: auto;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .sidebar-menu-item span,
+        .sidebar.collapsed .mode-badge {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-menu-item {
+            justify-content: center;
+            padding: 12px 20px;
+        }
+
+        .sidebar.collapsed .sidebar-menu-item i {
+            margin-right: 0;
         }
 
         .sidebar::-webkit-scrollbar {
@@ -61,6 +80,39 @@
             padding: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .sidebar-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: auto;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar.collapsed .sidebar-toggle {
+            margin-left: 0;
+        }
+
+        .sidebar-header-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .sidebar-brand {
@@ -140,6 +192,10 @@
             transition: margin-left 0.3s ease;
         }
 
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 70px;
+        }
+
         /* Top Bar */
         .topbar {
             height: 70px;
@@ -153,6 +209,35 @@
             position: sticky;
             top: 0;
             z-index: 100;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .hamburger-menu {
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: none;
+        }
+
+        .hamburger-menu:hover {
+            background: #f3f4f6;
+            color: var(--primary-violet);
+        }
+
+        @media (max-width: 768px) {
+            .hamburger-menu {
+                display: block;
+            }
         }
 
         .topbar-title {
@@ -414,30 +499,41 @@
     <script>
     // Initialize Angular module immediately after Angular loads
     (function() {
-        if (typeof angular !== 'undefined') {
-            // Create module if it doesn't exist
-            try {
-                angular.module('badlicashApp');
-            } catch(e) {
-                angular.module('badlicashApp', []);
+        // Wait for Angular to load
+        function initModule() {
+            if (typeof angular !== 'undefined') {
+                // Create module if it doesn't exist
+                try {
+                    angular.module('badlicashApp');
+                } catch(e) {
+                    angular.module('badlicashApp', []);
+                }
+            } else {
+                setTimeout(initModule, 10);
             }
         }
+        initModule();
     })();
     </script>
 </head>
 <body>
 @auth
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-brand">
-            <i class="bi bi-wallet2"></i>
-            <span>BadliCash</span>
-        </div>
-        @if(auth()->user()->merchant)
-            <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
-                {{ auth()->user()->merchant->test_mode ? 'TEST MODE' : 'LIVE MODE' }}
+        <div class="sidebar-header-content">
+            <div class="sidebar-brand">
+                <i class="bi bi-wallet2"></i>
+                <span>BadliCash</span>
             </div>
-        @endif
+            @if(auth()->user()->merchant)
+                <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
+                    {{ auth()->user()->merchant->test_mode ? 'TEST MODE' : 'LIVE MODE' }}
+                </div>
+            @endif
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <i class="bi bi-list" id="sidebarToggleIcon"></i>
+        </button>
     </div>
     
     <nav class="sidebar-menu">
@@ -493,13 +589,21 @@
 
         @if(auth()->user()->isAdmin())
         <div class="sidebar-divider"></div>
-        <a href="{{ route('admin.dashboard') }}" class="sidebar-menu-item {{ request()->routeIs('admin.*') ? 'active' : '' }}">
+        <a href="{{ route('admin.dashboard') }}" class="sidebar-menu-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
             <i class="bi bi-shield-check"></i>
-            <span>Admin Panel</span>
+            <span>Admin Dashboard</span>
         </a>
         <a href="{{ route('admin.merchants.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.merchants.*') ? 'active' : '' }}">
-            <i class="bi bi-people"></i>
+            <i class="bi bi-building"></i>
             <span>Merchants</span>
+        </a>
+        <a href="{{ route('admin.transactions.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.transactions.*') ? 'active' : '' }}">
+            <i class="bi bi-credit-card-2-front"></i>
+            <span>All Transactions</span>
+        </a>
+        <a href="{{ route('admin.reports.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            <span>Reports</span>
         </a>
         @endif
     </nav>
@@ -519,10 +623,12 @@
 
 <div class="main-content">
     <div class="topbar">
-        <button class="mobile-menu-toggle d-md-none" onclick="toggleSidebar()">
-            <i class="bi bi-list"></i>
-        </button>
-        <div class="topbar-title">@yield('page-title', 'Dashboard')</div>
+        <div class="topbar-left">
+            <button class="hamburger-menu" onclick="toggleSidebar()" title="Toggle Sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="topbar-title">@yield('page-title', 'Dashboard')</div>
+        </div>
         <div class="topbar-actions">
             @if(auth()->user()->merchant)
             <div class="mode-toggle">
@@ -600,18 +706,70 @@ function switchMode(mode) {
 }
 
 function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('show');
+    const sidebar = document.getElementById('sidebar');
+    const toggleIcon = document.getElementById('sidebarToggleIcon');
+    
+    if (!sidebar) return;
+    
+    if (window.innerWidth <= 768) {
+        // Mobile: show/hide sidebar
+        sidebar.classList.toggle('show');
+    } else {
+        // Desktop: collapse/expand sidebar
+        sidebar.classList.toggle('collapsed');
+        if (toggleIcon) {
+            if (sidebar.classList.contains('collapsed')) {
+                toggleIcon.className = 'bi bi-list';
+            } else {
+                toggleIcon.className = 'bi bi-list';
+            }
+        }
+        // Save preference to localStorage
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    }
 }
+
+// Restore sidebar state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && window.innerWidth > 768) {
+        const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (collapsed) {
+            sidebar.classList.add('collapsed');
+        }
+    }
+});
 
 // Close sidebar when clicking outside on mobile
 document.addEventListener('click', function(event) {
-    const sidebar = document.querySelector('.sidebar');
-    const menuToggle = document.querySelector('.mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.querySelector('.hamburger-menu');
+    const sidebarToggle = document.getElementById('sidebarToggle');
     
-    if (window.innerWidth <= 768 && sidebar && menuToggle) {
-        if (!sidebar.contains(event.target) && !menuToggle.contains(event.target)) {
+    if (window.innerWidth <= 768 && sidebar) {
+        if (!sidebar.contains(event.target) && 
+            !hamburger?.contains(event.target) && 
+            !sidebarToggle?.contains(event.target)) {
             sidebar.classList.remove('show');
+        }
+    }
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('show');
+            // Restore collapsed state
+            const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (collapsed) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        } else {
+            sidebar.classList.remove('collapsed');
         }
     }
 });

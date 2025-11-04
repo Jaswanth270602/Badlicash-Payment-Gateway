@@ -67,24 +67,61 @@ class PaymentLink extends Model
 
     /**
      * Check if link is active and valid.
+     * Note: This method does NOT update the database - it only checks the current state.
      */
     public function isActive(): bool
+    {
+        // Check status first
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        // Check expiry - only if expires_at is set
+        if ($this->expires_at) {
+            // Use Carbon's isPast() for accurate comparison
+            if ($this->expires_at->isPast()) {
+                return false;
+            }
+        }
+
+        // Check usage limit - only if max_usage is set
+        if ($this->max_usage && $this->max_usage > 0) {
+            if ($this->usage_count >= $this->max_usage) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Mark link as expired if it has passed expiry or usage limit.
+     * This should be called separately when you want to update the database.
+     */
+    public function checkAndMarkExpired(): bool
     {
         if ($this->status !== 'active') {
             return false;
         }
 
-        if ($this->expires_at && $this->expires_at < now()) {
-            $this->update(['status' => 'expired']);
-            return false;
+        $shouldExpire = false;
+
+        // Check expiry
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            $shouldExpire = true;
         }
 
-        if ($this->max_usage && $this->usage_count >= $this->max_usage) {
-            $this->update(['status' => 'expired']);
-            return false;
+        // Check usage limit
+        if ($this->max_usage && $this->max_usage > 0 && $this->usage_count >= $this->max_usage) {
+            $shouldExpire = true;
         }
 
-        return true;
+        if ($shouldExpire) {
+            $this->update(['status' => 'expired']);
+            return true;
+        }
+
+        return false;
     }
 
     /**

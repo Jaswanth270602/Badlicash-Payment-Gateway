@@ -123,6 +123,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])
             ->name('admin.dashboard');
+        Route::get('/dashboard/data', [AdminDashboardController::class, 'getData'])
+            ->name('admin.dashboard.data');
         
         Route::get('/merchants', [MerchantsController::class, 'index'])
             ->name('admin.merchants.index');

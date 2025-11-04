@@ -3,8 +3,9 @@
 @section('title', 'Payment Links - BadliCash')
 
 @section('page-title','Payment Links')
+
 @section('content')
-<div ng-app="badlicashApp" ng-controller="PaymentLinksController as plc">
+<div id="paymentLinksApp" ng-controller="PaymentLinksController as plc">
     <x-breadcrumbs :items="[
         ['label'=>'Dashboard','url'=>route('dashboard')],
         ['label'=>'Payment Links']
@@ -16,7 +17,7 @@
             <p class="text-muted">Create and manage payment links for your customers</p>
         </div>
         <div class="col-md-4 text-end">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createLinkModal">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createLinkModal" ng-click="plc.initModal()">
                 <i class="bi bi-plus-circle"></i> Create Payment Link
             </button>
         </div>
@@ -53,3 +54,30 @@
 
 @include('merchant.paymentlinks.angular.main_controller')
 
+@push('scripts')
+<script>
+// Manual bootstrap after controller is registered
+(function() {
+    function bootstrapApp() {
+        if (typeof angular === 'undefined') {
+            setTimeout(bootstrapApp, 10);
+            return;
+        }
+        try {
+            var app = angular.module('badlicashApp');
+            var element = document.getElementById('paymentLinksApp');
+            if (element && !angular.element(element).injector()) {
+                angular.bootstrap(element, ['badlicashApp']);
+            }
+        } catch(e) {
+            setTimeout(bootstrapApp, 10);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrapApp);
+    } else {
+        bootstrapApp();
+    }
+})();
+</script>
+@endpush

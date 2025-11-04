@@ -17,6 +17,7 @@ return [
     'maintenance' => [
         'driver' => 'file',
     ],
+    'turnonlogs' => env('TURNONLOGS', false),
     'providers' => [
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,

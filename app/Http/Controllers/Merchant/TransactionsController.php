@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Merchant;
 
 use App\Http\Controllers\Controller;
+use App\Traits\LogsConditionally;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 class TransactionsController extends Controller
 {
+    use LogsConditionally;
     /**
      * Display transactions page.
      */
@@ -80,6 +82,7 @@ class TransactionsController extends Controller
      */
     public function indexAdmin(): View
     {
+        $this->logInfo('Admin transactions page accessed', ['user_id' => auth()->id()]);
         return view('admin.transactions.index');
     }
 
@@ -88,32 +91,56 @@ class TransactionsController extends Controller
      */
     public function getDataAdmin(Request $request): JsonResponse
     {
-        $perPage = min($request->get('per_page', 10), 50);
-        $merchantId = $request->get('merchant_id');
-        $status = $request->get('status');
+        try {
+            $this->logInfo('Admin transactions data requested', [
+                'user_id' => auth()->id(),
+                'filters' => $request->only(['merchant_id', 'status', 'per_page'])
+            ]);
 
-        $query = \App\Models\Transaction::with('order', 'merchant')->latest();
+            $perPage = min($request->get('per_page', 10), 50);
+            $merchantId = $request->get('merchant_id');
+            $status = $request->get('status');
 
-        if ($merchantId) {
-            $query->where('merchant_id', $merchantId);
+            $query = \App\Models\Transaction::with('order', 'merchant')->latest();
+
+            if ($merchantId) {
+                $query->where('merchant_id', $merchantId);
+            }
+
+            if ($status && $status !== 'all') {
+                $query->where('status', $status);
+            }
+
+            $transactions = $query->paginate($perPage);
+
+            $this->logDebug('Admin transactions retrieved', [
+                'count' => $transactions->count(),
+                'total' => $transactions->total()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $transactions->items(),
+                'pagination' => [
+                    'current_page' => $transactions->currentPage(),
+                    'per_page' => $transactions->perPage(),
+                    'total' => $transactions->total(),
+                    'last_page' => $transactions->lastPage(),
+                    'from' => $transactions->firstItem(),
+                    'to' => $transactions->lastItem(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            $this->logError('Error fetching admin transactions', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch transactions',
+            ], 500);
         }
-
-        if ($status && $status !== 'all') {
-            $query->where('status', $status);
-        }
-
-        $transactions = $query->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data' => $transactions->items(),
-            'pagination' => [
-                'current_page' => $transactions->currentPage(),
-                'per_page' => $transactions->perPage(),
-                'total' => $transactions->total(),
-                'last_page' => $transactions->lastPage(),
-            ],
-        ]);
     }
 }
 

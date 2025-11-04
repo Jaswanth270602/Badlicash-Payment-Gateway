@@ -1,4 +1,4 @@
-<div ng-hide="plc.loading">
+<div ng-if="!plc.loading">
     <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
