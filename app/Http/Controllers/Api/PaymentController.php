@@ -51,6 +51,11 @@ class PaymentController extends Controller
 
         try {
             $merchant = $request->get('api_merchant');
+            // Force effective mode from API key for this request only
+            $effectiveMode = $request->get('api_key_mode');
+            if ($effectiveMode) {
+                $merchant->setAttribute('test_mode', $effectiveMode === 'test');
+            }
 
             // Create order
             $order = $this->paymentService->createOrder($merchant, $validator->validated());
@@ -101,6 +106,11 @@ class PaymentController extends Controller
         }
 
         try {
+            // Ensure verification uses correct provider for this request
+            $effectiveMode = $request->get('api_key_mode');
+            if ($effectiveMode) {
+                $transaction->merchant->setAttribute('test_mode', $effectiveMode === 'test');
+            }
             $result = $this->paymentService->verifyPayment($transaction);
 
             return response()->json([

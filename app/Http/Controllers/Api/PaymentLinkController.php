@@ -45,6 +45,11 @@ class PaymentLinkController extends Controller
 
         try {
             $merchant = $request->get('api_merchant');
+            // Force effective mode from API key for this request only
+            $effectiveMode = $request->get('api_key_mode');
+            if ($effectiveMode) {
+                $merchant->setAttribute('test_mode', $effectiveMode === 'test');
+            }
 
             $expiresAt = isset($request->expires_in) 
                 ? now()->addSeconds($request->expires_in) 
@@ -60,7 +65,7 @@ class PaymentLinkController extends Controller
                 'customer_details' => $request->customer_details,
                 'status' => 'active',
                 'max_usage' => $request->max_usage,
-                'test_mode' => $merchant->test_mode,
+                'test_mode' => (bool)$merchant->test_mode,
                 'metadata' => $request->metadata,
                 'success_url' => $request->success_url,
                 'cancel_url' => $request->cancel_url,

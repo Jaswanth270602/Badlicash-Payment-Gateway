@@ -10,6 +10,7 @@ use App\Http\Controllers\Merchant\SettlementsController;
 use App\Http\Controllers\Merchant\SettingsController;
 use App\Http\Controllers\Merchant\ApiKeysController;
 use App\Http\Controllers\Merchant\IntegrationController;
+use App\Http\Controllers\Merchant\SubscriptionsController as MerchantSubscriptionsController;
 use App\Http\Controllers\Merchant\WebhooksController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\MerchantsController;
@@ -119,6 +120,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/webhooks/update-url', [WebhooksController::class, 'updateWebhookUrl'])->name('merchant.webhooks.update-url');
         Route::post('/webhooks/test', [WebhooksController::class, 'testWebhook'])->name('merchant.webhooks.test');
         Route::post('/webhooks/{id}/retry', [WebhooksController::class, 'retryWebhook'])->name('merchant.webhooks.retry');
+
+        // Plans & Subscriptions (Merchant)
+        Route::get('/subscriptions', [MerchantSubscriptionsController::class, 'index'])
+            ->name('merchant.subscriptions.index');
+        Route::get('/subscriptions/data', [MerchantSubscriptionsController::class, 'getSubscriptions'])
+            ->name('merchant.subscriptions.data');
+        Route::post('/subscriptions', [MerchantSubscriptionsController::class, 'createSubscription'])
+            ->name('merchant.subscriptions.store');
+        Route::post('/subscriptions/{id}', [MerchantSubscriptionsController::class, 'updateSubscription'])
+            ->name('merchant.subscriptions.update');
+        Route::get('/plans/data', [MerchantSubscriptionsController::class, 'getPlans'])
+            ->name('merchant.plans.data');
 
         // Onboarding
         Route::get('/onboarding', [\App\Http\Controllers\Merchant\OnboardingController::class, 'index'])->name('merchant.onboarding.index');

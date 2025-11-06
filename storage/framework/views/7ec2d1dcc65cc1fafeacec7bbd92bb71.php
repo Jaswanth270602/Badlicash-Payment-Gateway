@@ -581,6 +581,10 @@
             <i class="bi bi-bar-chart-line"></i>
             <span>Reports</span>
         </a>
+        <a href="<?php echo e(route('merchant.disputes.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('merchant.disputes.*') ? 'active' : ''); ?>">
+            <i class="bi bi-exclamation-octagon"></i>
+            <span>Disputes</span>
+        </a>
         <div class="sidebar-divider"></div>
         <a href="<?php echo e(route('merchant.settings.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('merchant.settings.*') ? 'active' : ''); ?>">
             <i class="bi bi-gear"></i>
@@ -605,6 +609,18 @@
         <a href="<?php echo e(route('admin.reports.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.reports.*') ? 'active' : ''); ?>">
             <i class="bi bi-file-earmark-bar-graph"></i>
             <span>Reports</span>
+        </a>
+        <a href="<?php echo e(route('admin.subscriptions.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.subscriptions.*') ? 'active' : ''); ?>">
+            <i class="bi bi-receipt"></i>
+            <span>Subscriptions</span>
+        </a>
+        <a href="<?php echo e(route('admin.disputes.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.disputes.*') ? 'active' : ''); ?>">
+            <i class="bi bi-exclamation-octagon"></i>
+            <span>Disputes</span>
+        </a>
+        <a href="<?php echo e(route('admin.risk.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.risk.*') ? 'active' : ''); ?>">
+            <i class="bi bi-shield-exclamation"></i>
+            <span>Risk Management</span>
         </a>
         <?php endif; ?>
     </nav>

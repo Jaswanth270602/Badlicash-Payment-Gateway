@@ -238,6 +238,31 @@ Each merchant can operate in two modes:
 
 Switch modes via the `test_mode` flag in the `merchants` table.
 
+### API Keys per Mode
+
+- API keys include their mode in the prefix: `pk_test_...` / `pk_live_...` and `sk_test_...` / `sk_live_...`.
+- Test mode uses sandbox processing; live mode uses production provider (configure credentials in merchant settings or `.env`).
+- Middleware attaches `api_key_mode` to the request for downstream logic.
+
+### Subscriptions & Plans (Merchant Access)
+
+- Merchants can now view active plans and create/manage their own subscriptions at `Merchant > Subscriptions`.
+- Subscriptions created from the merchant portal automatically inherit the merchant's current mode (`test_mode`).
+- Admins continue to manage global plan definitions and view all subscriptions.
+
+### Payment Links UX Fixes
+
+- The create payment link modal controller has been rewritten to avoid Angular digest/timeout issues and to prevent duplicate submissions.
+- Checkout payment method selection reliably enables the Pay button and carries the selected method to the server.
+
+### Developer Notes
+
+- If live bank APIs are not configured, test mode continues to function fully via `SandboxBankProvider`.
+- Ensure migrations are up to date:
+  ```bash
+  php artisan migrate
+  ```
+
 ## 🛠️ Development
 
 ### Queue Workers
