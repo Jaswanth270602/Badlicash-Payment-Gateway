@@ -85,6 +85,43 @@ class ReportsController extends Controller
             ->header('Content-Disposition', 'attachment; filename="admin_transactions_' . now()->format('Y-m-d') . '.csv"');
     }
 
+    public function getDataAdmin(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+        $merchantId = $request->get('merchant_id');
+
+        $query = \App\Models\Transaction::query();
+
+        if ($merchantId) {
+            $query->where('merchant_id', $merchantId);
+        }
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        $transactions = $query->get();
+
+        $totalAmount = $transactions->where('status', 'success')->sum('amount');
+        $successful = $transactions->where('status', 'success')->count();
+        $failed = $transactions->where('status', 'failed')->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_transactions' => $transactions->count(),
+                'total_amount' => $totalAmount,
+                'successful' => $successful,
+                'failed' => $failed,
+            ],
+        ]);
+    }
+
     protected function generateCsv($transactions): string
     {
         $output = fopen('php://temp', 'r+');

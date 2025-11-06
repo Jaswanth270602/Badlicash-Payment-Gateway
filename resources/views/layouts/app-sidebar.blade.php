@@ -580,6 +580,10 @@
             <i class="bi bi-bar-chart-line"></i>
             <span>Reports</span>
         </a>
+        <a href="{{ route('merchant.disputes.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.disputes.*') ? 'active' : '' }}">
+            <i class="bi bi-exclamation-octagon"></i>
+            <span>Disputes</span>
+        </a>
         <div class="sidebar-divider"></div>
         <a href="{{ route('merchant.settings.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.settings.*') ? 'active' : '' }}">
             <i class="bi bi-gear"></i>
@@ -604,6 +608,18 @@
         <a href="{{ route('admin.reports.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph"></i>
             <span>Reports</span>
+        </a>
+        <a href="{{ route('admin.subscriptions.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
+            <i class="bi bi-receipt"></i>
+            <span>Subscriptions</span>
+        </a>
+        <a href="{{ route('admin.disputes.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.disputes.*') ? 'active' : '' }}">
+            <i class="bi bi-exclamation-octagon"></i>
+            <span>Disputes</span>
+        </a>
+        <a href="{{ route('admin.risk.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.risk.*') ? 'active' : '' }}">
+            <i class="bi bi-shield-exclamation"></i>
+            <span>Risk Management</span>
         </a>
         @endif
     </nav>

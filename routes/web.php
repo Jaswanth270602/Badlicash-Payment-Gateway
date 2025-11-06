@@ -14,7 +14,10 @@ use App\Http\Controllers\Merchant\WebhooksController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\MerchantsController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\DisputesController;
 use App\Http\Controllers\PaymentCheckoutController;
+use App\Http\Controllers\Admin\SubscriptionsController;
+use App\Http\Controllers\Admin\RiskManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -91,6 +94,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/export', [ReportsController::class, 'export'])
             ->name('merchant.reports.export');
 
+        // Disputes
+        Route::get('/disputes', [DisputesController::class, 'index'])
+            ->name('merchant.disputes.index');
+        Route::get('/disputes/data', [DisputesController::class, 'getData'])
+            ->name('merchant.disputes.data');
+        Route::post('/disputes', [DisputesController::class, 'store'])
+            ->name('merchant.disputes.store');
+
         // API Keys
         Route::get('/api-keys', [ApiKeysController::class, 'index'])->name('merchant.api_keys.index');
         Route::get('/api-keys/data', [ApiKeysController::class, 'getData'])->name('merchant.api_keys.data');
@@ -139,8 +150,60 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/reports', [ReportsController::class, 'indexAdmin'])
             ->name('admin.reports.index');
+        Route::get('/reports/data', [ReportsController::class, 'getDataAdmin'])
+            ->name('admin.reports.data');
         Route::get('/reports/export', [ReportsController::class, 'exportAdmin'])
             ->name('admin.reports.export');
+
+        // Disputes
+        Route::get('/disputes', [DisputesController::class, 'indexAdmin'])
+            ->name('admin.disputes.index');
+        Route::get('/disputes/data', [DisputesController::class, 'getDataAdmin'])
+            ->name('admin.disputes.data');
+        Route::post('/disputes/{id}/status', [DisputesController::class, 'updateStatus'])
+            ->name('admin.disputes.update-status');
+
+        // Subscriptions (Admin)
+        Route::get('/subscriptions', [SubscriptionsController::class, 'index'])
+            ->name('admin.subscriptions.index');
+        Route::get('/subscriptions/data', [SubscriptionsController::class, 'getSubscriptions'])
+            ->name('admin.subscriptions.data');
+        Route::post('/subscriptions', [SubscriptionsController::class, 'createSubscription'])
+            ->name('admin.subscriptions.store');
+        Route::post('/subscriptions/{id}', [SubscriptionsController::class, 'updateSubscription'])
+            ->name('admin.subscriptions.update');
+
+        // Plans (Admin)
+        Route::get('/plans/data', [SubscriptionsController::class, 'getPlans'])
+            ->name('admin.plans.data');
+        Route::post('/plans', [SubscriptionsController::class, 'storePlan'])
+            ->name('admin.plans.store');
+        Route::post('/plans/{id}', [SubscriptionsController::class, 'updatePlan'])
+            ->name('admin.plans.update');
+
+        // Risk Management
+        Route::get('/risk', [RiskManagementController::class, 'index'])
+            ->name('admin.risk.index');
+        Route::get('/risk/stats', [RiskManagementController::class, 'getStats'])
+            ->name('admin.risk.stats');
+        Route::get('/risk/rules/data', [RiskManagementController::class, 'getRules'])
+            ->name('admin.risk.rules.data');
+        Route::post('/risk/rules', [RiskManagementController::class, 'storeRule'])
+            ->name('admin.risk.rules.store');
+        Route::post('/risk/rules/{id}', [RiskManagementController::class, 'updateRule'])
+            ->name('admin.risk.rules.update');
+        Route::delete('/risk/rules/{id}', [RiskManagementController::class, 'deleteRule'])
+            ->name('admin.risk.rules.delete');
+        Route::get('/risk/events/data', [RiskManagementController::class, 'getEvents'])
+            ->name('admin.risk.events.data');
+        Route::post('/risk/events/{id}/resolve', [RiskManagementController::class, 'resolveEvent'])
+            ->name('admin.risk.events.resolve');
+        Route::get('/risk/alerts/data', [RiskManagementController::class, 'getAlerts'])
+            ->name('admin.risk.alerts.data');
+        Route::post('/risk/alerts', [RiskManagementController::class, 'createAlert'])
+            ->name('admin.risk.alerts.store');
+        Route::post('/risk/alerts/{id}', [RiskManagementController::class, 'updateAlert'])
+            ->name('admin.risk.alerts.update');
     });
 });
 

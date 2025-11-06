@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ApiKeysSeeder::class,
             OrdersAndTransactionsSeeder::class,
             PaymentLinksSeeder::class,
+            DisputesSeeder::class,
         ]);
     }
 }

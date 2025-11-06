@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'badlicash/payment-gateway',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'b8e980e8f5b749c26c138309ac5e109ef7984135',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'badlicash/payment-gateway' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'b8e980e8f5b749c26c138309ac5e109ef7984135',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
