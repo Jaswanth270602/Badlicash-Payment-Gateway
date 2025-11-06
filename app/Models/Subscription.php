@@ -16,6 +16,7 @@ class Subscription extends Model
         'current_period_start',
         'current_period_end',
         'cancel_at_period_end',
+        'test_mode',
         'metadata',
     ];
 
@@ -23,6 +24,7 @@ class Subscription extends Model
         'current_period_start' => 'datetime',
         'current_period_end' => 'datetime',
         'cancel_at_period_end' => 'boolean',
+        'test_mode' => 'boolean',
         'metadata' => 'array',
     ];
 

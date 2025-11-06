@@ -106,6 +106,13 @@
             cursor: pointer;
             transition: all 0.3s ease;
             background: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .payment-method-card:focus {
+            outline: 2px solid var(--primary-violet);
+            outline-offset: 2px;
         }
 
         .payment-method-card:hover {
@@ -290,7 +297,7 @@
                                 @endphp
 
                                 @if(in_array('card', $paymentMethods))
-                                <div class="payment-method-card" data-method="card" onclick="selectPaymentMethod('card', this)">
+                                <div class="payment-method-card" data-method="card" role="button" tabindex="0" aria-label="Select Card payment method">
                                     <i class="bi bi-credit-card"></i>
                                     <p class="method-name">Card</p>
                                     <small class="text-muted">Credit/Debit Card</small>
@@ -298,7 +305,7 @@
                                 @endif
 
                                 @if(in_array('upi', $paymentMethods))
-                                <div class="payment-method-card" data-method="upi" onclick="selectPaymentMethod('upi', this)">
+                                <div class="payment-method-card" data-method="upi" role="button" tabindex="0" aria-label="Select UPI payment method">
                                     <i class="bi bi-phone"></i>
                                     <p class="method-name">UPI</p>
                                     <small class="text-muted">Pay via UPI</small>
@@ -306,7 +313,7 @@
                                 @endif
 
                                 @if(in_array('netbanking', $paymentMethods))
-                                <div class="payment-method-card" data-method="netbanking" onclick="selectPaymentMethod('netbanking', this)">
+                                <div class="payment-method-card" data-method="netbanking" role="button" tabindex="0" aria-label="Select Net Banking payment method">
                                     <i class="bi bi-bank"></i>
                                     <p class="method-name">Net Banking</p>
                                     <small class="text-muted">Online Banking</small>
@@ -314,7 +321,7 @@
                                 @endif
 
                                 @if(in_array('wallet', $paymentMethods))
-                                <div class="payment-method-card" data-method="wallet" onclick="selectPaymentMethod('wallet', this)">
+                                <div class="payment-method-card" data-method="wallet" role="button" tabindex="0" aria-label="Select Wallet payment method">
                                     <i class="bi bi-wallet2"></i>
                                     <p class="method-name">Wallets</p>
                                     <small class="text-muted">Paytm, PhonePe, etc.</small>
@@ -377,11 +384,15 @@
             var methodInput = null;
             var payButton = null;
             var methodError = null;
+            var payButtonText = null;
+            var payButtonLoader = null;
 
             function init() {
                 methodInput = document.getElementById('paymentMethodInput');
                 payButton = document.getElementById('payButton');
                 methodError = document.getElementById('methodError');
+                payButtonText = document.getElementById('payButtonText');
+                payButtonLoader = document.getElementById('payButtonLoader');
                 
                 // Setup form submission
                 var form = document.getElementById('paymentForm');
@@ -394,13 +405,40 @@
                 if (amountInput) {
                     amountInput.style.display = 'none';
                 }
+
+                // Add click handlers to all payment method cards
+                var cards = document.querySelectorAll('.payment-method-card');
+                cards.forEach(function(card) {
+                    var method = card.getAttribute('data-method');
+                    if (method) {
+                        // Remove existing onclick and use event listener instead
+                        card.onclick = null;
+                        card.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            selectPaymentMethod(method, card);
+                        });
+                    }
+                });
             }
 
-            // Global function for onclick handlers
+            // Global function for onclick handlers (for backward compatibility)
             window.selectPaymentMethod = function(method, element) {
-                if (!method || !element) {
+                selectPaymentMethod(method, element);
+            };
+
+            function selectPaymentMethod(method, element) {
+                if (!method) {
                     console.error('Invalid payment method selection');
                     return;
+                }
+                
+                if (!element) {
+                    // Find element by data-method attribute
+                    element = document.querySelector('.payment-method-card[data-method="' + method + '"]');
+                    if (!element) {
+                        console.error('Payment method card not found for method:', method);
+                        return;
+                    }
                 }
                 
                 selectedMethod = method;
@@ -409,13 +447,16 @@
                 if (methodInput) {
                     methodInput.value = method;
                     methodInput.setAttribute('value', method);
+                    // Trigger change event to ensure form validation
+                    var event = new Event('change', { bubbles: true });
+                    methodInput.dispatchEvent(event);
                 }
                 
                 // Update UI - remove selected from all
                 var cards = document.querySelectorAll('.payment-method-card');
-                for (var i = 0; i < cards.length; i++) {
-                    cards[i].classList.remove('selected');
-                }
+                cards.forEach(function(card) {
+                    card.classList.remove('selected');
+                });
                 
                 // Add selected to clicked card
                 if (element) {
@@ -425,43 +466,74 @@
                 // Enable pay button
                 if (payButton) {
                     payButton.disabled = false;
+                    payButton.classList.remove('disabled');
                 }
                 
                 // Hide error
                 if (methodError) {
                     methodError.classList.remove('show');
+                    methodError.style.display = 'none';
                 }
                 
                 console.log('Payment method selected:', method);
-            };
+            }
 
             function handleFormSubmit(e) {
+                // Check if method is selected
+                if (!selectedMethod) {
+                    // Try to get from hidden input
+                    if (methodInput && methodInput.value) {
+                        selectedMethod = methodInput.value;
+                    }
+                }
+
                 if (!selectedMethod || !methodInput || !methodInput.value) {
                     e.preventDefault();
                     e.stopPropagation();
                     
                     if (methodError) {
                         methodError.classList.add('show');
+                        methodError.style.display = 'block';
                         methodError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    
+                    // Highlight payment method section
+                    var methodGrid = document.getElementById('paymentMethodGrid');
+                    if (methodGrid) {
+                        methodGrid.style.border = '2px solid #dc3545';
+                        methodGrid.style.borderRadius = '8px';
+                        methodGrid.style.padding = '10px';
+                        setTimeout(function() {
+                            methodGrid.style.border = '';
+                            methodGrid.style.borderRadius = '';
+                            methodGrid.style.padding = '';
+                        }, 2000);
                     }
                     
                     return false;
                 }
 
                 // Show loading state
-                var payButtonText = document.getElementById('payButtonText');
-                var payButtonLoader = document.getElementById('payButtonLoader');
-                
-                if (payButtonText) payButtonText.style.display = 'none';
-                if (payButtonLoader) payButtonLoader.style.display = 'inline';
-                if (payButton) payButton.disabled = true;
+                if (payButtonText) {
+                    payButtonText.style.display = 'none';
+                }
+                if (payButtonLoader) {
+                    payButtonLoader.style.display = 'inline';
+                }
+                if (payButton) {
+                    payButton.disabled = true;
+                }
+
+                // Form will submit normally
+                return true;
             }
 
             // Initialize when DOM is ready
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', init);
             } else {
-                init();
+                // DOM already loaded, initialize immediately
+                setTimeout(init, 100);
             }
         })();
     </script>

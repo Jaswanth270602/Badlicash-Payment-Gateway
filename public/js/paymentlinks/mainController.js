@@ -12,9 +12,9 @@
     var app = angular.module('badlicashApp', []);
 
     // Payment Links Controller
-    app.controller('PaymentLinksController', ['$http', '$window', PaymentLinksController]);
+    app.controller('PaymentLinksController', ['$http', '$window', '$timeout', '$scope', PaymentLinksController]);
 
-    function PaymentLinksController($http, $window) {
+    function PaymentLinksController($http, $window, $timeout, $scope) {
         var vm = this;
 
         // Data properties
@@ -38,7 +38,7 @@
             title: '',
             description: '',
             amount: '',
-            currency: 'USD',
+            currency: 'INR',
             expires_in_hours: 24
         };
 
@@ -50,13 +50,57 @@
         vm.loadPaymentLinks = loadPaymentLinks;
         vm.loadPage = loadPage;
         vm.getPages = getPages;
+        vm.getPaginationPages = getPaginationPages; // Alias for grid template
         vm.createPaymentLink = createPaymentLink;
         vm.copyLink = copyLink;
+        vm.initModal = initModal;
+        vm.applyFilters = applyFilters;
+        vm.clearFilters = clearFilters;
 
         // Initialize
         init();
 
         function init() {
+            loadPaymentLinks();
+        }
+
+        /**
+         * Initialize modal - reset form when opening
+         */
+        function initModal() {
+            vm.creating = false;
+            vm.newLink = {
+                title: '',
+                description: '',
+                amount: '',
+                currency: 'INR',
+                expires_in_hours: 24
+            };
+            
+            // Use $timeout to ensure Angular digest cycle
+            $timeout(function() {
+                $scope.$apply();
+            }, 0);
+        }
+
+        /**
+         * Apply filters and reload data
+         */
+        function applyFilters() {
+            vm.pagination.current_page = 1; // Reset to first page
+            loadPaymentLinks();
+        }
+
+        /**
+         * Clear all filters
+         */
+        function clearFilters() {
+            vm.filters = {
+                status: 'all',
+                search: ''
+            };
+            vm.perPage = 10;
+            vm.pagination.current_page = 1;
             loadPaymentLinks();
         }
 
@@ -69,20 +113,30 @@
             var params = {
                 page: vm.pagination.current_page,
                 per_page: vm.perPage,
-                status: vm.filters.status,
-                search: vm.filters.search
+                status: vm.filters.status === 'all' ? '' : vm.filters.status,
+                search: vm.filters.search || ''
             };
 
             $http.get('/merchant/payment-links/data', { params: params })
                 .then(function(response) {
-                    vm.paymentLinks = response.data.data;
-                    vm.pagination = response.data.pagination;
+                    if (response.data && response.data.success) {
+                        vm.paymentLinks = response.data.data || [];
+                        vm.pagination = response.data.pagination || vm.pagination;
+                    } else {
+                        vm.paymentLinks = [];
+                        showToast('Failed to load payment links', 'error');
+                    }
                     vm.loading = false;
                 })
                 .catch(function(error) {
                     console.error('Error loading payment links:', error);
+                    vm.paymentLinks = [];
                     vm.loading = false;
-                    showToast('Failed to load payment links', 'error');
+                    var errorMsg = 'Failed to load payment links';
+                    if (error.data && error.data.message) {
+                        errorMsg = error.data.message;
+                    }
+                    showToast(errorMsg, 'error');
                 });
         }
 
@@ -101,7 +155,18 @@
          * Get array of page numbers for pagination
          */
         function getPages() {
+            return getPaginationPages();
+        }
+
+        /**
+         * Get array of page numbers for pagination (used by grid template)
+         */
+        function getPaginationPages() {
             var pages = [];
+            if (!vm.pagination || !vm.pagination.last_page) {
+                return pages;
+            }
+            
             var start = Math.max(1, vm.pagination.current_page - 2);
             var end = Math.min(vm.pagination.last_page, vm.pagination.current_page + 2);
 
@@ -115,63 +180,152 @@
         /**
          * Create new payment link
          */
-        function createPaymentLink() {
+        function createPaymentLink(event) {
+            // Prevent default form submission
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            // Validate form
+            if (!vm.newLink.title || !vm.newLink.amount || parseFloat(vm.newLink.amount) <= 0) {
+                showToast('Please fill in all required fields', 'error');
+                return false;
+            }
+
             vm.creating = true;
 
             // Get CSRF token
-            var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken) {
+                vm.creating = false;
+                showToast('CSRF token not found', 'error');
+                return false;
+            }
+            csrfToken = csrfToken.getAttribute('content');
 
-            $http.post('/merchant/payment-links', vm.newLink, {
+            // Prepare data
+            var postData = {
+                title: vm.newLink.title,
+                description: vm.newLink.description || '',
+                amount: parseFloat(vm.newLink.amount),
+                currency: vm.newLink.currency || 'INR',
+                expires_in_hours: parseInt(vm.newLink.expires_in_hours) || 24
+            };
+
+            $http.post('/merchant/payment-links', postData, {
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json'
                 }
             })
             .then(function(response) {
                 vm.creating = false;
-                showToast('Payment link created successfully', 'success');
                 
-                // Close modal
-                var modal = bootstrap.Modal.getInstance(document.getElementById('createLinkModal'));
-                if (modal) {
-                    modal.hide();
+                if (response.data && response.data.success) {
+                    showToast('Payment link created successfully', 'success');
+                    
+                    // Close modal using Bootstrap 5 API
+                    var modalElement = document.getElementById('createLinkModal');
+                    if (modalElement) {
+                        var modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        } else {
+                            // If no instance exists, create one and hide it
+                            var newModal = new bootstrap.Modal(modalElement);
+                            newModal.hide();
+                        }
+                    }
+
+                    // Reset form
+                    vm.newLink = {
+                        title: '',
+                        description: '',
+                        amount: '',
+                        currency: 'INR',
+                        expires_in_hours: 24
+                    };
+
+                    // Reload list after a short delay to ensure modal is closed
+                    $timeout(function() {
+                        loadPaymentLinks();
+                    }, 300);
+                } else {
+                    var errorMsg = 'Failed to create payment link';
+                    if (response.data && response.data.message) {
+                        errorMsg = response.data.message;
+                    }
+                    showToast(errorMsg, 'error');
                 }
-
-                // Reset form
-                vm.newLink = {
-                    title: '',
-                    description: '',
-                    amount: '',
-                    currency: 'USD',
-                    expires_in_hours: 24
-                };
-
-                // Reload list
-                loadPaymentLinks();
             })
             .catch(function(error) {
                 vm.creating = false;
                 console.error('Error creating payment link:', error);
-                showToast('Failed to create payment link', 'error');
+                
+                var errorMsg = 'Failed to create payment link';
+                if (error.data) {
+                    if (error.data.message) {
+                        errorMsg = error.data.message;
+                    } else if (error.data.errors) {
+                        // Handle validation errors
+                        var firstError = Object.values(error.data.errors)[0];
+                        if (Array.isArray(firstError)) {
+                            errorMsg = firstError[0];
+                        } else {
+                            errorMsg = firstError;
+                        }
+                    }
+                }
+                
+                showToast(errorMsg, 'error');
             });
+
+            return false;
         }
 
         /**
          * Copy payment link to clipboard
          */
         function copyLink(link) {
+            if (!link || !link.link_token) {
+                showToast('Invalid payment link', 'error');
+                return;
+            }
+
             var paymentUrl = $window.location.origin + '/pay/' + link.link_token;
             
-            // Create temporary textarea to copy
+            // Use modern clipboard API if available
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(paymentUrl).then(function() {
+                    showToast('Payment link copied to clipboard', 'success');
+                }).catch(function() {
+                    fallbackCopy(paymentUrl);
+                });
+            } else {
+                fallbackCopy(paymentUrl);
+            }
+        }
+
+        /**
+         * Fallback copy method for older browsers
+         */
+        function fallbackCopy(text) {
             var textarea = document.createElement('textarea');
-            textarea.value = paymentUrl;
+            textarea.value = text;
             textarea.style.position = 'fixed';
             textarea.style.opacity = '0';
+            textarea.style.left = '-9999px';
             document.body.appendChild(textarea);
             textarea.select();
             
             try {
-                document.execCommand('copy');
-                showToast('Payment link copied to clipboard', 'success');
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('Payment link copied to clipboard', 'success');
+                } else {
+                    showToast('Failed to copy link', 'error');
+                }
             } catch (err) {
                 showToast('Failed to copy link', 'error');
             }
@@ -184,11 +338,19 @@
          */
         function showToast(message, type) {
             vm.toastMessage = message;
-            vm.toastType = type;
+            vm.toastType = type || 'success';
 
-            var toastEl = document.getElementById('toast');
-            var toast = new bootstrap.Toast(toastEl);
-            toast.show();
+            // Use $timeout to ensure Angular digest cycle
+            $timeout(function() {
+                var toastEl = document.getElementById('toast');
+                if (toastEl) {
+                    var toast = bootstrap.Toast.getInstance(toastEl);
+                    if (!toast) {
+                        toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+                    }
+                    toast.show();
+                }
+            }, 0);
         }
     }
 })();

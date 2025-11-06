@@ -54,7 +54,7 @@
             <div class="text-muted small">Showing @{{ plc.pagination.from || 0 }} to @{{ plc.pagination.to || 0 }} of @{{ plc.pagination.total || 0 }} results</div>
             <div class="pagination">
                 <a href="#" class="page-link" ng-if="plc.pagination.current_page > 1" ng-click="plc.loadPage(plc.pagination.current_page - 1)">Previous</a>
-                <a href="#" class="page-link" ng-repeat="page in plc.getPaginationPages() track by page" ng-class="{'active': page === plc.pagination.current_page}" ng-click="plc.loadPage(page)">@{{ page }}</a>
+                <a href="#" class="page-link" ng-repeat="page in plc.getPaginationPages() track by $index" ng-class="{'active': page === plc.pagination.current_page}" ng-click="plc.loadPage(page)">@{{ page }}</a>
                 <a href="#" class="page-link" ng-if="plc.pagination.current_page < plc.pagination.last_page" ng-click="plc.loadPage(plc.pagination.current_page + 1)">Next</a>
             </div>
         </div>

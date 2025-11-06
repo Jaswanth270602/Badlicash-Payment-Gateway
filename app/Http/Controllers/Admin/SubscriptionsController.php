@@ -85,6 +85,8 @@ class SubscriptionsController extends Controller
             default => now()->addMonths(1),
         };
 
+        $merchant = Merchant::findOrFail($validated['merchant_id']);
+        
         $subscription = Subscription::create([
             'merchant_id' => $validated['merchant_id'],
             'plan_id' => $plan->id,
@@ -92,6 +94,10 @@ class SubscriptionsController extends Controller
             'current_period_start' => $start,
             'current_period_end' => $end,
             'cancel_at_period_end' => false,
+            'test_mode' => (bool)($merchant->test_mode ?? true),
+            'metadata' => [
+                'created_via' => 'admin_portal',
+            ],
         ]);
 
         return response()->json(['success' => true, 'data' => $subscription->load(['plan','merchant'])]);

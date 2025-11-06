@@ -257,11 +257,102 @@ Switch modes via the `test_mode` flag in the `merchants` table.
 
 ### Developer Notes
 
-- If live bank APIs are not configured, test mode continues to function fully via `SandboxBankProvider`.
-- Ensure migrations are up to date:
-  ```bash
-  php artisan migrate
-  ```
+#### Recent Fixes and Improvements
+
+**1. Subscriptions & Plans System**
+- **Merchant Access**: Merchants can now view all active plans and create/manage subscriptions from the merchant portal (`/merchant/subscriptions`)
+- **Test Mode Handling**: Subscriptions automatically inherit the merchant's `test_mode` setting when created
+- **Model Updates**: 
+  - `Subscription` model now includes `test_mode` in fillable and casts
+  - `Merchant` model includes `subscriptions()` relationship
+- **Controllers**: Both merchant and admin controllers properly handle test mode when creating subscriptions
+- **Database**: Migration `2025_11_06_000201_add_test_mode_to_subscriptions_table.php` adds test_mode column
+
+**2. API Keys - Test vs Live Mode**
+- **Separation**: Test and live mode API keys are completely separate
+  - Test keys: `pk_test_...` / `sk_test_...`
+  - Live keys: `pk_live_...` / `sk_live_...`
+- **Key Generation**: The `ApiKey::generate()` method creates keys with mode-specific prefixes
+- **Middleware**: `AuthenticateApiKey` middleware extracts the mode from the API key and attaches it to the request as `api_key_mode`
+- **Usage**: Controllers use `$request->get('api_key_mode')` to determine the effective mode, overriding merchant's default test_mode if needed
+- **Seeder**: Updated to always create both test and live keys for all merchants (previously only created live keys for non-test merchants)
+
+**3. Payment Link Creation Modal - Angular Controller Fixes**
+- **Issues Fixed**:
+  - Modal always showing "Creating..." state
+  - Missing `initModal()`, `applyFilters()`, and `clearFilters()` methods
+  - Angular digest cycle not being triggered properly
+  - Form not resetting after successful creation
+- **Solutions Implemented**:
+  - Added `$timeout` and `$scope` to controller dependencies for proper digest handling
+  - Implemented `initModal()` to reset form when modal opens
+  - Added `applyFilters()` and `clearFilters()` for filter management
+  - Fixed `getPaginationPages()` method (was `getPages()` in template)
+  - Improved error handling with proper validation messages
+  - Added proper Bootstrap 5 modal instance management
+  - Fixed form submission to prevent default and handle errors gracefully
+
+**4. Payment Checkout Page - Payment Method Selection**
+- **Issues Fixed**:
+  - Clicking on payment method cards (Card/UPI) didn't enable the Pay button
+  - Payment method selection not being captured properly
+  - Form validation not working correctly
+- **Solutions Implemented**:
+  - Replaced inline `onclick` handlers with proper event listeners
+  - Added proper initialization in DOM ready handler
+  - Fixed hidden input value updates with event triggering
+  - Improved form validation with visual feedback
+  - Added error highlighting for payment method section
+  - Enhanced accessibility with proper ARIA labels and keyboard support
+  - Fixed button state management (disabled/enabled)
+
+**5. Code Quality Improvements**
+- **Error Handling**: Improved error messages and validation feedback throughout
+- **Angular Best Practices**: Proper use of `$timeout` for digest cycles, dependency injection
+- **JavaScript**: Modern event handling, proper DOM manipulation
+- **Accessibility**: Added ARIA labels, keyboard navigation support
+
+#### Migration Requirements
+
+Ensure all migrations are up to date:
+```bash
+php artisan migrate
+```
+
+Key migrations:
+- `2025_11_05_000100_create_plans_table.php` - Plans table
+- `2025_11_05_000101_create_subscriptions_table.php` - Subscriptions table
+- `2025_11_06_000201_add_test_mode_to_subscriptions_table.php` - Test mode support
+
+#### Test Mode vs Live Mode
+
+- **Test Mode**: Uses `SandboxBankProvider` for simulated payments (always works)
+- **Live Mode**: Requires real bank API integration (currently uses `DummyBankApi` as placeholder)
+- **API Keys**: Each merchant has separate test and live API keys
+- **Subscriptions**: Inherit merchant's test_mode when created
+- **Payment Links**: Inherit merchant's test_mode when created
+
+#### Frontend Architecture Notes
+
+- **Blade + Angular Pattern**: Blade renders initial HTML, Angular handles interactivity
+- **Angular Controllers**: Located in `public/js/` matching view folder structure
+- **Digest Cycles**: Use `$timeout` when updating scope outside Angular context
+- **Bootstrap 5**: Modal instances must be properly managed (getInstance vs new Modal)
+- **Event Handling**: Prefer `addEventListener` over inline `onclick` for better control
+
+#### Common Issues and Solutions
+
+**Issue**: Payment link modal stuck on "Creating..."
+- **Solution**: Ensure Angular controller has `initModal()` method and proper digest cycle handling
+
+**Issue**: Payment method selection not working on checkout page
+- **Solution**: Check that event listeners are properly attached in DOM ready handler
+
+**Issue**: Subscriptions not creating
+- **Solution**: Verify `test_mode` is in Subscription model fillable array and migration is run
+
+**Issue**: API keys not working in live mode
+- **Solution**: Ensure live mode API keys exist and are active. Check middleware is extracting mode correctly.
 
 ## 🛠️ Development
 

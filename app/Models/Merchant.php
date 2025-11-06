@@ -139,6 +139,14 @@ class Merchant extends Model
     }
 
     /**
+     * Get subscriptions for this merchant.
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
      * Calculate fee for a given amount.
      */
     public function calculateFee(float $amount): float

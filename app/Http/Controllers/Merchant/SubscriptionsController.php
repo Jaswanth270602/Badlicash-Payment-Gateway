@@ -71,7 +71,7 @@ class SubscriptionsController extends Controller
             'current_period_start' => $start,
             'current_period_end' => $end,
             'cancel_at_period_end' => false,
-            'test_mode' => (bool)($merchant->test_mode ?? false),
+            'test_mode' => (bool)($merchant->test_mode ?? true),
             'metadata' => [
                 'created_via' => 'merchant_portal',
             ],
