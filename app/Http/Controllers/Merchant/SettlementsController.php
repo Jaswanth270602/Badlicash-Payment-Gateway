@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Controllers\Merchant;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
+
+class SettlementsController extends Controller
+{
+    public function index(): View
+    {
+        return view('merchant.settlements.index');
+    }
+
+    public function getData(Request $request): JsonResponse
+    {
+        $merchant = $request->user()->merchant;
+        $perPage = min($request->get('per_page', 10), 100);
+        
+        $status = $request->get('status');
+        $search = $request->get('search');
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+
+        $query = $merchant->settlements()->latest();
+
+        if ($status && $status !== 'all' && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('settlement_id', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
+            });
+        }
+
+        if ($fromDate) {
+            $query->whereDate('settlement_date', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $query->whereDate('settlement_date', '<=', $toDate);
+        }
+
+        $settlements = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $settlements->items(),
+            'pagination' => [
+                'current_page' => $settlements->currentPage(),
+                'per_page' => $settlements->perPage(),
+                'total' => $settlements->total(),
+                'last_page' => $settlements->lastPage(),
+                'from' => $settlements->firstItem(),
+                'to' => $settlements->lastItem(),
+            ],
+        ]);
+    }
+}
+
