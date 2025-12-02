@@ -185,6 +185,30 @@
             margin: 12px 20px;
         }
 
+        .sidebar-menu-dropdown {
+            cursor: pointer;
+        }
+
+        .sidebar-submenu {
+            background: rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-submenu-item {
+            font-size: 14px;
+            padding: 10px 20px 10px 50px !important;
+        }
+
+        .sidebar-submenu-item:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .sidebar-menu-dropdown.active .bi-chevron-down {
+            transform: rotate(180deg);
+            transition: transform 0.3s ease;
+        }
+
         /* Main Content Area */
         .main-content {
             margin-left: 260px;
@@ -556,6 +580,10 @@
             <i class="bi bi-link-45deg"></i>
             <span>Payment Links</span>
         </a>
+        <a href="<?php echo e(route('merchant.subscriptions.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('merchant.subscriptions.*') || request()->routeIs('merchant.plans.*') ? 'active' : ''); ?>">
+            <i class="bi bi-receipt"></i>
+            <span>Subscriptions</span>
+        </a>
         <a href="<?php echo e(route('merchant.refunds.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('merchant.refunds.*') ? 'active' : ''); ?>">
             <i class="bi bi-arrow-counterclockwise"></i>
             <span>Refunds</span>
@@ -598,10 +626,96 @@
             <i class="bi bi-shield-check"></i>
             <span>Admin Dashboard</span>
         </a>
-        <a href="<?php echo e(route('admin.merchants.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.merchants.*') ? 'active' : ''); ?>">
+        <div class="sidebar-menu-item sidebar-menu-dropdown <?php echo e(request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') ? 'active' : ''); ?>" onclick="toggleDropdown(this)">
             <i class="bi bi-building"></i>
             <span>Merchants</span>
-        </a>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: <?php echo e(request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') ? 'block' : 'none'); ?>;">
+            <a href="<?php echo e(route('admin.merchants.index')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.merchants.index') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-list-ul"></i>
+                <span>Merchants</span>
+            </a>
+            <a href="<?php echo e(route('admin.merchant-accounts.index')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.merchant-accounts.*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-person-badge"></i>
+                <span>Merchant Accounts</span>
+            </a>
+        </div>
+        <!-- Payments Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown <?php echo e(request()->routeIs('admin.payments.*') ? 'active' : ''); ?>" onclick="toggleDropdown(this)">
+            <i class="bi bi-wallet2"></i>
+            <span>Payments</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: <?php echo e(request()->routeIs('admin.payments.*') ? 'block' : 'none'); ?>;">
+            <a href="<?php echo e(route('admin.payments.transactions')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.transactions*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-credit-card"></i>
+                <span>Transactions</span>
+            </a>
+            <a href="<?php echo e(route('admin.payments.refunds')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.refunds*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <span>Refunds</span>
+            </a>
+            <a href="<?php echo e(route('admin.payments.bulk-refund-update')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.bulk-refund-update*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-upload"></i>
+                <span>Bulk Update Refund Status</span>
+            </a>
+            <a href="<?php echo e(route('admin.payments.chargebacks')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.chargebacks*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Chargebacks Upload</span>
+            </a>
+            <a href="<?php echo e(route('admin.payments.bulk-chargebacks')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.bulk-chargebacks*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-cloud-upload"></i>
+                <span>Bulk Chargebacks Upload</span>
+            </a>
+            <a href="<?php echo e(route('admin.payments.split-transactions')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.split-transactions*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-diagram-3"></i>
+                <span>Split Transactions</span>
+            </a>
+            <a href="<?php echo e(route('admin.payments.federal-vpa')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.payments.federal-vpa*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-bank"></i>
+                <span>Federal Direct VPA Payments</span>
+            </a>
+        </div>
+
+        <!-- Settlements Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown <?php echo e(request()->routeIs('admin.settlements.*') ? 'active' : ''); ?>" onclick="toggleDropdown(this)">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Settlements</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: <?php echo e(request()->routeIs('admin.settlements.*') ? 'block' : 'none'); ?>;">
+            <a href="<?php echo e(route('admin.settlements.summary')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.settlements.summary*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-list-ul"></i>
+                <span>Settlement Summary</span>
+            </a>
+            <a href="<?php echo e(route('admin.settlements.details')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.settlements.details*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-list-check"></i>
+                <span>Settlement Details</span>
+            </a>
+            <a href="<?php echo e(route('admin.settlements.fund-transfer')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.settlements.fund-transfer*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-arrow-left-right"></i>
+                <span>Fund Transfer</span>
+            </a>
+        </div>
+
+        <!-- Manage Settlements Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown <?php echo e(request()->routeIs('admin.manage-settlements.*') ? 'active' : ''); ?>" onclick="toggleDropdown(this)">
+            <i class="bi bi-gear"></i>
+            <span>Manage Settlements</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: <?php echo e(request()->routeIs('admin.manage-settlements.*') ? 'block' : 'none'); ?>;">
+            <a href="<?php echo e(route('admin.manage-settlements.pending')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.manage-settlements.pending*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-clock-history"></i>
+                <span>Pending Settlement</span>
+            </a>
+            <a href="<?php echo e(route('admin.manage-settlements.mis-report')); ?>" class="sidebar-menu-item sidebar-submenu-item <?php echo e(request()->routeIs('admin.manage-settlements.mis-report*') ? 'active' : ''); ?>" style="padding-left: 50px;">
+                <i class="bi bi-download"></i>
+                <span>Download MIS Report</span>
+            </a>
+        </div>
+
         <a href="<?php echo e(route('admin.transactions.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.transactions.*') ? 'active' : ''); ?>">
             <i class="bi bi-credit-card-2-front"></i>
             <span>All Transactions</span>
@@ -695,6 +809,15 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function toggleDropdown(element) {
+    const submenu = element.nextElementSibling;
+    if (submenu && submenu.classList.contains('sidebar-submenu')) {
+        const isVisible = submenu.style.display === 'block';
+        submenu.style.display = isVisible ? 'none' : 'block';
+        element.classList.toggle('active');
+    }
+}
+
 function switchMode(mode) {
     const overlay = document.createElement('div');
     overlay.className = 'loader-overlay';
@@ -797,4 +920,4 @@ window.addEventListener('resize', function() {
 <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
- <?php /**PATH C:\Users\pc\Desktop\Badlicash-Payment-Gateway\resources\views/layouts/app-sidebar.blade.php ENDPATH**/ ?>
+ <?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/layouts/app-sidebar.blade.php ENDPATH**/ ?>

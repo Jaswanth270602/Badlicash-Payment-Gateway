@@ -1,3 +1,4 @@
+<!-- Version: <?php echo time(); ?> -->
 <div class="modal fade" id="createLinkModal" tabindex="-1" aria-labelledby="createLinkModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -81,20 +82,40 @@
                         ng-disabled="plc.creating">
                     Cancel
                 </button>
-                <button type="submit" 
-                        form="createLinkForm"
+                <button type="button" 
+                        id="createLinkButton"
                         class="btn btn-primary" 
-                        ng-disabled="plc.creating || !plc.newLink.title || !plc.newLink.amount">
-                    <span ng-switch="plc.creating">
-                        <span ng-switch-when="true" class="d-inline-flex align-items-center">
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            Creating...
-                        </span>
-                        <span ng-switch-default class="d-inline-flex align-items-center">
-                            <i class="bi bi-plus-circle me-2"></i>
-                            Create Link
-                        </span>
-                    </span>
+                        onclick="
+                            var btn = this;
+                            var btnText = btn.querySelector('.btn-text');
+                            var btnSpinner = btn.querySelector('.btn-spinner');
+                            
+                            // Show loading state
+                            btnText.textContent = 'Creating...';
+                            btnSpinner.style.display = 'inline-block';
+                            btn.disabled = true;
+                            
+                            console.log('BUTTON CLICKED'); 
+                            var scope = angular.element(document.getElementById('paymentLinksApp')).scope();
+                            if (scope && scope.plc && scope.plc.createPaymentLink) {
+                                console.log('Calling createPaymentLink...');
+                                scope.plc.createPaymentLink(event).finally(function() {
+                                    // Reset button state
+                                    btnText.textContent = 'Create Link';
+                                    btnSpinner.style.display = 'none';
+                                    btn.disabled = false;
+                                });
+                            } else {
+                                console.error('createPaymentLink not found!');
+                                btnText.textContent = 'Create Link';
+                                btnSpinner.style.display = 'none';
+                                btn.disabled = false;
+                            }
+                            return false;
+                        ">
+                    <span class="spinner-border spinner-border-sm me-2 btn-spinner" role="status" aria-hidden="true" style="display: none;"></span>
+                    <i class="bi bi-plus-circle me-2"></i>
+                    <span class="btn-text">Create Link</span>
                 </button>
             </div>
         </div>

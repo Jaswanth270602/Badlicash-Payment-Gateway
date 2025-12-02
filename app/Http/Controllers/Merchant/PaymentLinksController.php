@@ -49,6 +49,12 @@ class PaymentLinksController extends Controller
             $status = $request->get('status');
             $search = $request->get('search');
 
+            // Auto-expire links that have passed their expiration time
+            $merchant->paymentLinks()
+                ->where('status', 'active')
+                ->where('expires_at', '<=', now())
+                ->update(['status' => 'expired']);
+
             $query = $merchant->paymentLinks()->latest();
 
             if ($status && $status !== 'all' && $status !== '') {
@@ -64,6 +70,25 @@ class PaymentLinksController extends Controller
 
             $paymentLinks = $query->paginate($perPage);
 
+            // Format the payment links data
+            $formattedLinks = collect($paymentLinks->items())->map(function ($link) {
+                return [
+                    'id' => $link->id,
+                    'link_token' => $link->link_token,
+                    'title' => $link->title,
+                    'description' => $link->description,
+                    'amount' => $link->amount,
+                    'currency' => $link->currency,
+                    'status' => $link->status,
+                    'payment_url' => $link->getPaymentUrl(),
+                    'expires_at' => $link->expires_at ? $link->expires_at->toIso8601String() : null,
+                    'created_at' => $link->created_at->toIso8601String(),
+                    'test_mode' => $link->test_mode,
+                    'usage_count' => $link->usage_count,
+                    'max_usage' => $link->max_usage,
+                ];
+            });
+
             $this->logDebug('Payment links retrieved', [
                 'count' => $paymentLinks->count(),
                 'total' => $paymentLinks->total()
@@ -71,7 +96,7 @@ class PaymentLinksController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $paymentLinks->items(),
+                'data' => $formattedLinks,
                 'pagination' => [
                     'current_page' => $paymentLinks->currentPage(),
                     'per_page' => $paymentLinks->perPage(),
@@ -116,7 +141,7 @@ class PaymentLinksController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'amount' => 'required|numeric|min:0.01|max:999999999.99',
-                'currency' => 'nullable|string|size:3',
+                'currency' => 'nullable|string|size:3|in:INR,USD,EUR,GBP',
                 'expires_in_hours' => 'nullable|integer|min:1|max:720',
                 'payment_methods' => 'nullable|array',
                 'payment_methods.*' => 'in:card,upi,netbanking,wallet',

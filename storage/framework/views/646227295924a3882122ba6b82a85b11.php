@@ -5,7 +5,7 @@
 <?php $__env->startSection('page-title','Payment Links'); ?>
 
 <?php $__env->startSection('content'); ?>
-<div id="paymentLinksApp" ng-controller="PaymentLinksController as plc">
+<div id="paymentLinksApp" ng-app="badlicashApp" ng-controller="PaymentLinksController as plc">
     <?php if (isset($component)) { $__componentOriginal360d002b1b676b6f84d43220f22129e2 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal360d002b1b676b6f84d43220f22129e2 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.breadcrumbs','data' => ['items' => [
@@ -76,32 +76,5 @@
 
 <?php echo $__env->make('merchant.paymentlinks.angular.main_controller', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-<?php $__env->startPush('scripts'); ?>
-<script>
-// Manual bootstrap after controller is registered
-(function() {
-    function bootstrapApp() {
-        if (typeof angular === 'undefined') {
-            setTimeout(bootstrapApp, 10);
-            return;
-        }
-        try {
-            var app = angular.module('badlicashApp');
-            var element = document.getElementById('paymentLinksApp');
-            if (element && !angular.element(element).injector()) {
-                angular.bootstrap(element, ['badlicashApp']);
-            }
-        } catch(e) {
-            setTimeout(bootstrapApp, 10);
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootstrapApp);
-    } else {
-        bootstrapApp();
-    }
-})();
-</script>
-<?php $__env->stopPush(); ?>
 
-<?php echo $__env->make('layouts.app-sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\dell\Desktop\gateway\resources\views/merchant/paymentlinks/index.blade.php ENDPATH**/ ?>
+<?php echo $__env->make('layouts.app-sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/merchant/paymentlinks/index.blade.php ENDPATH**/ ?>

@@ -2159,3 +2159,7 @@
 #52 C:\\Users\\ushar\\OneDrive\\Desktop\\Badlicash-Payment-Gateway\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(16): require_once('C:\\\\Users\\\\ushar\\\\...')
 #53 {main}
 "} 
+[2025-12-02 14:54:56] local.ERROR: Webhook delivery failed {"webhook_id":1,"error":"Webhook delivery failed with status: 404","attempt":1} 
+[2025-12-02 14:54:56] local.INFO: Settlement entry created {"transaction_id":"TXN_JMZX2IG8ZPLDWTIANPVL","net_amount":"97.20"} 
+[2025-12-02 14:55:32] local.ERROR: Webhook delivery failed {"webhook_id":2,"error":"Webhook delivery failed with status: 404","attempt":1} 
+[2025-12-02 14:55:32] local.INFO: Settlement entry created {"transaction_id":"TXN_P5KDSO5BVQMI8ETYTQ8I","net_amount":"97.20"} 

@@ -5,7 +5,7 @@
 @section('page-title','Payment Links')
 
 @section('content')
-<div id="paymentLinksApp" ng-controller="PaymentLinksController as plc">
+<div id="paymentLinksApp" ng-app="badlicashApp" ng-controller="PaymentLinksController as plc">
     <x-breadcrumbs :items="[
         ['label'=>'Dashboard','url'=>route('dashboard')],
         ['label'=>'Payment Links']
@@ -54,30 +54,3 @@
 
 @include('merchant.paymentlinks.angular.main_controller')
 
-@push('scripts')
-<script>
-// Manual bootstrap after controller is registered
-(function() {
-    function bootstrapApp() {
-        if (typeof angular === 'undefined') {
-            setTimeout(bootstrapApp, 10);
-            return;
-        }
-        try {
-            var app = angular.module('badlicashApp');
-            var element = document.getElementById('paymentLinksApp');
-            if (element && !angular.element(element).injector()) {
-                angular.bootstrap(element, ['badlicashApp']);
-            }
-        } catch(e) {
-            setTimeout(bootstrapApp, 10);
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootstrapApp);
-    } else {
-        bootstrapApp();
-    }
-})();
-</script>
-@endpush

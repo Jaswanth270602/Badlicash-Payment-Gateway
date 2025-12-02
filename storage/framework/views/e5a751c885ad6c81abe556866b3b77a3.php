@@ -24,4 +24,4 @@
 </nav>
 
 
-<?php /**PATH C:\Users\ushar\OneDrive\Desktop\Badlicash-Payment-Gateway\resources\views/components/breadcrumbs.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/components/breadcrumbs.blade.php ENDPATH**/ ?>

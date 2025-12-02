@@ -1,15 +1,21 @@
 <?php $__env->startPush('scripts'); ?>
 <script>
+console.log('=== Payment Links Controller Script Loaded ===');
 (function() {
     'use strict';
+    console.log('Inside IIFE');
     function registerController() {
+        console.log('registerController function called');
         if (typeof angular === 'undefined') {
             setTimeout(registerController, 50);
             return;
         }
         try {
+            console.log('Trying to get badlicashApp module...');
             var app = angular.module('badlicashApp');
+            console.log('Got badlicashApp module, registering controller...');
             app.controller('PaymentLinksController', ['$http', '$window', '$timeout', '$scope', function($http, $window, $timeout, $scope) {
+                console.log('PaymentLinksController initialized');
                 var vm = this;
                 
                 // Initialize all data
@@ -141,6 +147,8 @@
 
                 // Create payment link - COMPLETELY REWRITTEN
                 vm.createPaymentLink = function(event) {
+                    console.log('createPaymentLink called', vm.newLink);
+                    
                     if (event) {
                         event.preventDefault();
                         event.stopPropagation();
@@ -148,8 +156,21 @@
                     
                     // PREVENT DUPLICATE - check immediately
                     if (vm.creating === true) {
+                        console.log('Already creating, preventing duplicate');
                         return false;
                     }
+                    
+                    // READ FORM VALUES DIRECTLY (always read to ensure fresh data)
+                    vm.newLink.title = document.getElementById('linkTitle').value || vm.newLink.title;
+                    vm.newLink.amount = document.getElementById('linkAmount').value || vm.newLink.amount;
+                    vm.newLink.description = document.getElementById('linkDescription').value || vm.newLink.description;
+                    vm.newLink.expires_in_hours = document.getElementById('linkExpires').value || vm.newLink.expires_in_hours;
+                    
+                    // Get selected value from dropdown
+                    var currencySelect = document.getElementById('linkCurrency');
+                    vm.newLink.currency = currencySelect.options[currencySelect.selectedIndex].value;
+                    
+                    console.log('After reading form values:', vm.newLink);
                     
                     // Validate
                     if (!vm.newLink.title || !String(vm.newLink.title).trim()) {
@@ -193,41 +214,53 @@
                     };
 
                     // HTTP Request
+                    console.log('Sending POST request with payload:', payload);
                     $http.post('/merchant/payment-links', payload, {
                         headers: {
                             'X-CSRF-TOKEN': csrfToken
                         },
                         timeout: 30000
                     }).then(function(response) {
+                        console.log('Response received:', response);
+                        
+                        // FORCE reset creating flag
                         vm.creating = false;
-                        if (!$scope.$$phase) {
-                            $scope.$apply();
-                        }
                         
                         if (response && response.data && response.data.success) {
                             vm.showToast('Payment link created successfully!', 'success');
+                            
+                            // Close modal immediately
+                            var modalEl = document.getElementById('createLinkModal');
+                            if (modalEl) {
+                                var bsModal = bootstrap.Modal.getInstance(modalEl);
+                                if (bsModal) {
+                                    bsModal.hide();
+                                } else {
+                                    var newModal = new bootstrap.Modal(modalEl);
+                                    newModal.hide();
+                                }
+                            }
+                            
+                            // Reset form
                             vm.initModal();
                             
-                            $timeout(function() {
-                                var modalEl = document.getElementById('createLinkModal');
-                                if (modalEl) {
-                                    var bsModal = bootstrap.Modal.getInstance(modalEl);
-                                    if (bsModal) {
-                                        bsModal.hide();
-                                    }
-                                }
-                            }, 500);
-                            
+                            // Reload links
                             $timeout(function() {
                                 vm.loadPaymentLinks();
-                            }, 800);
+                            }, 300);
                         } else {
                             var msg = response && response.data && response.data.message 
                                 ? response.data.message 
                                 : 'Failed to create payment link';
                             vm.showToast(msg, 'error');
                         }
+                        
+                        // Force digest
+                        if (!$scope.$$phase) {
+                            $scope.$apply();
+                        }
                     }, function(error) {
+                        console.error('Error creating payment link:', error);
                         vm.creating = false;
                         if (!$scope.$$phase) {
                             $scope.$apply();
@@ -336,4 +369,4 @@
 })();
 </script>
 <?php $__env->stopPush(); ?>
-<?php /**PATH C:\Users\pc\Desktop\Badlicash-Payment-Gateway\resources\views/merchant/paymentlinks/angular/main_controller.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/merchant/paymentlinks/angular/main_controller.blade.php ENDPATH**/ ?>
