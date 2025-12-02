@@ -1,14 +1,36 @@
-@extends('layouts.app-sidebar')
 
-@section('title', 'All Transactions - Admin - BadliCash')
-@section('page-title', 'All Transactions')
 
-@section('content')
+<?php $__env->startSection('title', 'All Transactions - Admin - BadliCash'); ?>
+<?php $__env->startSection('page-title', 'All Transactions'); ?>
+
+<?php $__env->startSection('content'); ?>
 <div ng-app="badlicashApp" ng-controller="AdminTransactionsController as atc">
-    <x-breadcrumbs :items="[
+    <?php if (isset($component)) { $__componentOriginal360d002b1b676b6f84d43220f22129e2 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal360d002b1b676b6f84d43220f22129e2 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.breadcrumbs','data' => ['items' => [
         ['label'=>'Dashboard','url'=>route('admin.dashboard')],
         ['label'=>'All Transactions']
-    ]" />
+    ]]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('breadcrumbs'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['items' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute([
+        ['label'=>'Dashboard','url'=>route('admin.dashboard')],
+        ['label'=>'All Transactions']
+    ])]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal360d002b1b676b6f84d43220f22129e2)): ?>
+<?php $attributes = $__attributesOriginal360d002b1b676b6f84d43220f22129e2; ?>
+<?php unset($__attributesOriginal360d002b1b676b6f84d43220f22129e2); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal360d002b1b676b6f84d43220f22129e2)): ?>
+<?php $component = $__componentOriginal360d002b1b676b6f84d43220f22129e2; ?>
+<?php unset($__componentOriginal360d002b1b676b6f84d43220f22129e2); ?>
+<?php endif; ?>
 
     <div class="stat-card mb-4">
         <div class="row g-3">
@@ -69,19 +91,19 @@
                             <td colspan="11" class="text-center text-muted py-4">No transactions found</td>
                         </tr>
                         <tr ng-repeat="t in atc.transactions track by $index">
-                            <td>@{{ (atc.pagination.current_page - 1) * atc.pagination.per_page + $index + 1 }}</td>
+                            <td>{{ (atc.pagination.current_page - 1) * atc.pagination.per_page + $index + 1 }}</td>
                             <td>
-                                <code class="text-primary" style="font-size: 12px;">@{{ t.transaction_id || t.txn_id }}</code>
+                                <code class="text-primary" style="font-size: 12px;">{{ t.transaction_id || t.txn_id }}</code>
                             </td>
                             <td>
                                 <div ng-if="t.merchant">
-                                    <strong style="font-size: 13px;">@{{ t.merchant.name }}</strong>
-                                    <br><small class="text-muted">ID: @{{ t.merchant.id }}</small>
+                                    <strong style="font-size: 13px;">{{ t.merchant.name }}</strong>
+                                    <br><small class="text-muted">ID: {{ t.merchant.id }}</small>
                                 </div>
                                 <span ng-if="!t.merchant" class="text-muted">N/A</span>
                             </td>
                             <td>
-                                <code class="text-info" style="font-size: 12px;">@{{ (t.order && t.order.order_id) || 'N/A' }}</code>
+                                <code class="text-info" style="font-size: 12px;">{{ (t.order && t.order.order_id) || 'N/A' }}</code>
                             </td>
                             <td>
                                 <span ng-if="t.order && t.order.payment_link_id" class="badge bg-primary">
@@ -93,19 +115,19 @@
                             </td>
                             <td>
                                 <div ng-if="t.customer_email || (t.order && t.order.customer_details)">
-                                    <div class="fw-semibold" style="font-size: 13px;">@{{ t.customer_email || (t.order && t.order.customer_details.name) || 'N/A' }}</div>
-                                    <small class="text-muted">@{{ t.customer_phone || (t.order && t.order.customer_details.phone) || '' }}</small>
+                                    <div class="fw-semibold" style="font-size: 13px;">{{ t.customer_email || (t.order && t.order.customer_details.name) || 'N/A' }}</div>
+                                    <small class="text-muted">{{ t.customer_phone || (t.order && t.order.customer_details.phone) || '' }}</small>
                                 </div>
                                 <span ng-if="!t.customer_email && (!t.order || !t.order.customer_details)" class="text-muted">N/A</span>
                             </td>
                             <td>
-                                <strong class="text-success">@{{ t.currency || 'INR' }} @{{ t.amount | number:2 }}</strong>
-                                <div ng-if="t.fee_amount" style="font-size: 11px; color: #94a3b8;">Fee: @{{ t.currency }} @{{ t.fee_amount | number:2 }}</div>
+                                <strong class="text-success">{{ t.currency || 'INR' }} {{ t.amount | number:2 }}</strong>
+                                <div ng-if="t.fee_amount" style="font-size: 11px; color: #94a3b8;">Fee: {{ t.currency }} {{ t.fee_amount | number:2 }}</div>
                             </td>
                             <td>
-                                <span class="badge" style="background: #6366f1;">@{{ t.payment_method | uppercase }}</span>
+                                <span class="badge" style="background: #6366f1;">{{ t.payment_method | uppercase }}</span>
                                 <div ng-if="t.payment_details && t.payment_details.card_number" style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                                    **** @{{ t.payment_details.card_number }}
+                                    **** {{ t.payment_details.card_number }}
                                 </div>
                             </td>
                             <td>
@@ -116,12 +138,12 @@
                                     'bg-info': t.status==='processing',
                                     'bg-secondary': t.status==='initiated'
                                 }">
-                                    @{{ t.status | uppercase }}
+                                    {{ t.status | uppercase }}
                                 </span>
                             </td>
                             <td style="white-space: nowrap;">
-                                <div style="font-size: 13px;">@{{ t.created_at | date:'MMM d, y' }}</div>
-                                <small class="text-muted">@{{ t.created_at | date:'HH:mm:ss' }}</small>
+                                <div style="font-size: 13px;">{{ t.created_at | date:'MMM d, y' }}</div>
+                                <small class="text-muted">{{ t.created_at | date:'HH:mm:ss' }}</small>
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" ng-click="atc.viewDetails(t)" title="View Details">
@@ -139,7 +161,7 @@
                         <a class="page-link" href="#" ng-click="atc.changePage(atc.pagination.current_page - 1)">Previous</a>
                     </li>
                     <li class="page-item" ng-repeat="page in atc.getPageNumbers() track by $index" ng-class="{'active': page === atc.pagination.current_page}">
-                        <a class="page-link" href="#" ng-click="atc.changePage(page)">@{{ page }}</a>
+                        <a class="page-link" href="#" ng-click="atc.changePage(page)">{{ page }}</a>
                     </li>
                     <li class="page-item" ng-class="{'disabled': atc.pagination.current_page === atc.pagination.last_page}">
                         <a class="page-link" href="#" ng-click="atc.changePage(atc.pagination.current_page + 1)">Next</a>
@@ -149,6 +171,8 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@include('admin.transactions.angular.main_controller')
+<?php echo $__env->make('admin.transactions.angular.main_controller', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
+<?php echo $__env->make('layouts.app-sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/admin/transactions/index.blade.php ENDPATH**/ ?>

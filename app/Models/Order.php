@@ -14,9 +14,12 @@ class Order extends Model
 
     protected $fillable = [
         'merchant_id',
+        'payment_link_id',
         'order_id',
         'amount',
         'currency',
+        'payment_method',
+        'payment_details',
         'customer_details',
         'status',
         'description',
@@ -30,6 +33,7 @@ class Order extends Model
 
     protected $casts = [
         'customer_details' => 'array',
+        'payment_details' => 'array',
         'metadata' => 'array',
         'test_mode' => 'boolean',
         'amount' => 'decimal:2',
@@ -42,6 +46,14 @@ class Order extends Model
     public function merchant(): BelongsTo
     {
         return $this->belongsTo(Merchant::class);
+    }
+
+    /**
+     * Get the payment link that created this order.
+     */
+    public function paymentLink(): BelongsTo
+    {
+        return $this->belongsTo(PaymentLink::class);
     }
 
     /**

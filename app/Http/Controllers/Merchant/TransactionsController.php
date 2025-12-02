@@ -33,7 +33,7 @@ class TransactionsController extends Controller
         $toDate = $request->get('to_date');
         $search = $request->get('search');
 
-        $query = $merchant->transactions()->with('order')->latest();
+        $query = $merchant->transactions()->with(['order.paymentLink'])->latest();
 
         if ($status && $status !== 'all' && $status !== '') {
             $query->where('status', $status);
@@ -101,7 +101,7 @@ class TransactionsController extends Controller
             $merchantId = $request->get('merchant_id');
             $status = $request->get('status');
 
-            $query = \App\Models\Transaction::with('order', 'merchant')->latest();
+            $query = \App\Models\Transaction::with(['order.paymentLink', 'merchant'])->latest();
 
             if ($merchantId) {
                 $query->where('merchant_id', $merchantId);

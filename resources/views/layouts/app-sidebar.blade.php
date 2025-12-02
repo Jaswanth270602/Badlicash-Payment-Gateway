@@ -715,6 +715,10 @@
             </a>
         </div>
 
+        <a href="{{ route('admin.orders.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+            <i class="bi bi-cart-check"></i>
+            <span>All Orders</span>
+        </a>
         <a href="{{ route('admin.transactions.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.transactions.*') ? 'active' : '' }}">
             <i class="bi bi-credit-card-2-front"></i>
             <span>All Transactions</span>

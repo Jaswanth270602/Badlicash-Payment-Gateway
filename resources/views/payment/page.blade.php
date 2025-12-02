@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <title>Payment - <?php echo e($paymentLink->title); ?> - BadliCash</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Payment - {{ $paymentLink->title }} - BadliCash</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -14,375 +14,224 @@
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --light-bg: #f8fafc;
+            --border: #e2e8f0;
         }
 
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 20px;
         }
 
         .payment-container {
-            max-width: 900px;
-            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
         .payment-card {
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
             display: grid;
-            grid-template-columns: 300px 1fr;
-            max-height: 90vh;
+            grid-template-columns: 380px 1fr;
+            min-height: 600px;
         }
 
-        /* LEFT PANEL */
         .left-panel {
             background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 25px 20px;
+            padding: 40px 30px;
             display: flex;
             flex-direction: column;
-            position: relative;
-            overflow: auto;
-        }
-
-        .left-panel::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            pointer-events: none;
         }
 
         .merchant-info {
-            position: relative;
-            z-index: 1;
-            margin-bottom: 20px;
+            margin-bottom: 40px;
         }
 
         .merchant-logo {
-            width: 42px;
-            height: 42px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            width: 50px;
+            height: 50px;
+            background: white;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            margin-bottom: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 15px;
         }
 
         .merchant-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0 0 4px 0;
-        }
-
-        .merchant-desc {
-            font-size: 13px;
-            opacity: 0.95;
-            line-height: 1.4;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
         }
 
         .amount-section {
-            position: relative;
-            z-index: 1;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            margin-bottom: 30px;
         }
 
         .amount-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 14px;
             opacity: 0.9;
             margin-bottom: 8px;
-            font-weight: 500;
         }
 
         .amount-value {
-            font-size: 30px;
-            font-weight: 800;
+            font-size: 36px;
+            font-weight: 700;
             margin: 0;
-            line-height: 1;
-        }
-
-        .test-mode-badge {
-            position: relative;
-            z-index: 1;
-            background: rgba(245, 158, 11, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 2px solid rgba(245, 158, 11, 0.4);
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 18px;
-        }
-
-        .test-mode-badge strong {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-
-        .test-mode-badge div {
-            font-size: 11px;
-            line-height: 1.5;
-            opacity: 0.95;
         }
 
         .secured-by {
-            position: relative;
-            z-index: 1;
             margin-top: auto;
-            padding-top: 20px;
+            padding-top: 30px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 12px;
-            opacity: 0.95;
+            font-size: 13px;
+            opacity: 0.9;
         }
 
-        /* RIGHT PANEL */
         .right-panel {
-            padding: 25px 28px;
+            padding: 40px;
             overflow-y: auto;
-            max-height: 90vh;
         }
 
         .panel-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             color: #1e293b;
-            margin-bottom: 18px;
+            margin-bottom: 30px;
         }
 
-        .alert {
-            border-radius: 10px;
-            border: none;
-            padding: 12px 16px;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert i {
-            font-size: 20px;
-        }
-
-        .alert strong {
-            font-size: 14px;
-        }
-
-        .alert div {
-            font-size: 13px;
-        }
-
-        /* CUSTOMER FORM */
-        .customer-section {
-            margin-bottom: 18px;
+        .form-section {
+            margin-bottom: 30px;
         }
 
         .section-title {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
             color: #334155;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         .form-label {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
             color: #475569;
             margin-bottom: 6px;
-            display: block;
         }
 
         .form-control, .form-select {
-            border: 2px solid #e2e8f0;
+            border: 2px solid var(--border);
             border-radius: 8px;
-            padding: 10px 14px;
+            padding: 12px 16px;
             font-size: 14px;
             transition: all 0.2s;
-            width: 100%;
         }
 
         .form-control:focus, .form-select:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-            outline: none;
         }
 
-        /* PAYMENT METHODS */
-        .payment-methods-section {
-            margin-bottom: 18px;
-        }
-
-        .payment-methods-grid {
+        .payment-methods {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 18px;
+            gap: 12px;
+            margin-bottom: 30px;
         }
 
         .payment-method-btn {
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 14px 10px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s;
             position: relative;
         }
 
         .payment-method-btn:hover {
             border-color: var(--primary);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
-            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
         }
 
         .payment-method-btn.active {
             border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            background: rgba(99, 102, 241, 0.05);
         }
 
         .payment-method-btn i {
-            font-size: 24px;
+            font-size: 28px;
             color: var(--primary);
-            margin-bottom: 6px;
-            display: block;
+            margin-bottom: 8px;
         }
 
-        .payment-method-btn .method-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #1e293b;
-            display: block;
-            margin-bottom: 2px;
-        }
-
-        .payment-method-btn .method-desc {
-            font-size: 10px;
+        .payment-method-btn .label {
+            font-size: 13px;
+            font-weight: 500;
             color: #64748b;
         }
 
-        .payment-method-btn.active .method-label {
+        .payment-method-btn.active .label {
             color: var(--primary);
+            font-weight: 600;
         }
 
-        /* PAYMENT FORMS */
         .payment-form {
             display: none;
-            animation: fadeIn 0.3s ease;
         }
 
         .payment-form.active {
             display: block;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card-preview {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            color: white;
-            padding: 24px;
-            border-radius: 14px;
-            margin-bottom: 25px;
-        }
-
-        .card-number-display {
-            font-family: 'Courier New', monospace;
-            font-size: 20px;
-            letter-spacing: 3px;
-            margin: 15px 0;
-        }
-
-        /* PAY BUTTON */
         .pay-button {
-            background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
-            border-radius: 10px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 16px;
             width: 100%;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .pay-button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .pay-button:hover::before {
-            width: 300px;
-            height: 300px;
         }
 
         .pay-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
         }
 
         .pay-button:not(:disabled):hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 28px rgba(99, 102, 241, 0.4);
-        }
-
-        .pay-button:not(:disabled):active {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
         }
 
         .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
@@ -392,15 +241,54 @@
             to { transform: rotate(360deg); }
         }
 
-        @media (max-width: 992px) {
+        .success-message, .error-message {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            border: 2px solid var(--success);
+            color: #065f46;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            border: 2px solid var(--danger);
+            color: #991b1b;
+        }
+
+        .success-message.show, .error-message.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .test-cards-info {
+            background: #fef3c7;
+            border: 2px solid var(--warning);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .test-cards-info strong {
+            color: #92400e;
+        }
+
+        @media (max-width: 768px) {
             .payment-card {
                 grid-template-columns: 1fr;
             }
+
             .left-panel {
-                padding: 35px 25px;
-                min-height: auto;
+                padding: 30px 20px;
             }
-            .payment-methods-grid {
+
+            .payment-methods {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
@@ -409,142 +297,139 @@
 <body>
     <div class="payment-container">
         <div class="payment-card">
-            <!-- LEFT PANEL -->
+            <!-- Left Panel - Payment Summary -->
             <div class="left-panel">
                 <div class="merchant-info">
                     <div class="merchant-logo">
                         <i class="bi bi-wallet2"></i>
                     </div>
-                    <h1 class="merchant-name"><?php echo e($paymentLink->title); ?></h1>
-                    <?php if($paymentLink->description): ?>
-                        <p class="merchant-desc"><?php echo e($paymentLink->description); ?></p>
-                    <?php endif; ?>
+                    <h3 class="merchant-name">{{ $paymentLink->title }}</h3>
+                    @if($paymentLink->description)
+                        <p style="font-size: 14px; opacity: 0.9; margin-top: 8px;">{{ $paymentLink->description }}</p>
+                    @endif
                 </div>
 
                 <div class="amount-section">
                     <div class="amount-label">Amount to Pay</div>
-                    <h2 class="amount-value"><?php echo e($paymentLink->currency); ?> <?php echo e(number_format($paymentLink->amount, 2)); ?></h2>
+                    <h2 class="amount-value">{{ $paymentLink->currency }} {{ number_format($paymentLink->amount, 2) }}</h2>
                 </div>
 
-                <?php if($paymentLink->test_mode): ?>
-                <div class="test-mode-badge">
-                    <strong><i class="bi bi-info-circle"></i> TEST MODE - Use Test Cards</strong>
-                    <div><strong>✅ Success:</strong> 4242 4242 4242 4242</div>
-                    <div><strong>✅ Success:</strong> 5555 5555 5555 4444</div>
-                    <div style="margin-top: 8px;"><strong>❌ Fail:</strong> 4000 0000 0000 0002</div>
-                    <div><strong>❌ Fail:</strong> 4000 0000 0000 9995</div>
-                    <div style="margin-top: 10px; opacity: 0.9; font-size: 12px;">
-                        CVV: Any 3 digits | Expiry: Any future date<br>
-                        Other methods: 70% success rate
+                @if($paymentLink->test_mode)
+                <div class="test-cards-info">
+                    <strong><i class="bi bi-info-circle"></i> TEST MODE</strong>
+                    <div style="margin-top: 8px;">
+                        <div><strong>Success Cards:</strong></div>
+                        <div>4242 4242 4242 4242</div>
+                        <div>5555 5555 5555 4444</div>
+                        <div style="margin-top: 8px;"><strong>Failure Cards:</strong></div>
+                        <div>4000 0000 0000 0002</div>
+                        <div style="margin-top: 8px; opacity: 0.8;">CVV: Any 3 digits | Expiry: Any future date</div>
                     </div>
                 </div>
-                <?php endif; ?>
+                @endif
 
                 <div class="secured-by">
-                    <i class="bi bi-shield-check" style="font-size: 22px;"></i>
+                    <i class="bi bi-shield-check" style="font-size: 20px;"></i>
                     <span>Secured by <strong>BadliCash</strong></span>
                 </div>
             </div>
 
-            <!-- RIGHT PANEL -->
-            <div class="right-panel" id="paymentApp">
+            <!-- Right Panel - Payment Form -->
+            <div class="right-panel">
                 <h2 class="panel-title">Complete Your Payment</h2>
 
-                <!-- Success/Error Messages -->
-                <div class="alert alert-success" id="successAlert" style="display: none;">
-                    <i class="bi bi-check-circle-fill"></i>
+                <!-- Success Message -->
+                <div class="success-message" id="successMessage">
+                    <i class="bi bi-check-circle-fill" style="font-size: 24px;"></i>
                     <div>
                         <strong>Payment Successful!</strong>
-                        <div style="font-size: 14px; margin-top: 4px;" id="successMessage"></div>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">Your payment has been processed successfully.</p>
                     </div>
                 </div>
 
-                <div class="alert alert-danger" id="errorAlert" style="display: none;">
-                    <i class="bi bi-x-circle-fill"></i>
+                <!-- Error Message -->
+                <div class="error-message" id="errorMessage">
+                    <i class="bi bi-exclamation-circle-fill" style="font-size: 24px;"></i>
                     <div>
                         <strong>Payment Failed</strong>
-                        <div style="font-size: 14px; margin-top: 4px;" id="errorMessage"></div>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;" id="errorText"></p>
                     </div>
                 </div>
 
                 <!-- Customer Details -->
-                <div class="customer-section">
+                <div class="form-section">
                     <h4 class="section-title">Customer Details</h4>
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <label class="form-label">Full Name *</label>
                             <input type="text" class="form-control" id="customerName" placeholder="John Doe" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <label class="form-label">Email *</label>
                             <input type="email" class="form-control" id="customerEmail" placeholder="john@example.com" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Phone <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="customerPhone" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" required>
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-control" id="customerPhone" placeholder="9876543210" maxlength="10" required>
                         </div>
                     </div>
                 </div>
 
                 <!-- Payment Methods -->
-                <div class="payment-methods-section">
+                <div class="form-section">
                     <h4 class="section-title">Select Payment Method</h4>
-                    <div class="payment-methods-grid">
+                    <div class="payment-methods">
                         <div class="payment-method-btn active" data-method="card">
-                            <i class="bi bi-credit-card-fill"></i>
-                            <div class="method-label">Card</div>
-                            <div class="method-desc">Credit/Debit</div>
+                            <i class="bi bi-credit-card"></i>
+                            <div class="label">Card</div>
                         </div>
                         <div class="payment-method-btn" data-method="upi">
-                            <i class="bi bi-phone-fill"></i>
-                            <div class="method-label">UPI</div>
-                            <div class="method-desc">Pay via UPI</div>
+                            <i class="bi bi-phone"></i>
+                            <div class="label">UPI</div>
                         </div>
                         <div class="payment-method-btn" data-method="netbanking">
                             <i class="bi bi-bank"></i>
-                            <div class="method-label">Net Banking</div>
-                            <div class="method-desc">Online Banking</div>
+                            <div class="label">Net Banking</div>
                         </div>
                         <div class="payment-method-btn" data-method="wallet">
-                            <i class="bi bi-wallet2"></i>
-                            <div class="method-label">Wallets</div>
-                            <div class="method-desc">Paytm, PhonePe</div>
+                            <i class="bi bi-wallet"></i>
+                            <div class="label">Wallets</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARD FORM -->
+                <!-- Card Form -->
                 <div class="payment-form active" id="cardForm">
-                    <div class="row g-3">
+                    <div class="row g-3 mb-3">
                         <div class="col-12">
-                            <label class="form-label">Card Number <span class="text-danger">*</span></label>
+                            <label class="form-label">Card Number *</label>
                             <input type="text" class="form-control" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Card Holder Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="cardHolder" placeholder="JOHN DOE" style="text-transform: uppercase;">
+                            <label class="form-label">Card Holder Name *</label>
+                            <input type="text" class="form-control" id="cardHolder" placeholder="JOHN DOE">
                         </div>
                         <div class="col-4">
-                            <label class="form-label">Month <span class="text-danger">*</span></label>
+                            <label class="form-label">Month *</label>
                             <input type="text" class="form-control" id="expiryMonth" placeholder="12" maxlength="2">
                         </div>
                         <div class="col-4">
-                            <label class="form-label">Year <span class="text-danger">*</span></label>
+                            <label class="form-label">Year *</label>
                             <input type="text" class="form-control" id="expiryYear" placeholder="2025" maxlength="4">
                         </div>
                         <div class="col-4">
-                            <label class="form-label">CVV <span class="text-danger">*</span></label>
+                            <label class="form-label">CVV *</label>
                             <input type="password" class="form-control" id="cvv" placeholder="123" maxlength="3">
                         </div>
                     </div>
                 </div>
 
-                <!-- UPI FORM -->
+                <!-- UPI Form -->
                 <div class="payment-form" id="upiForm">
                     <div class="mb-3">
-                        <label class="form-label">UPI ID</label>
+                        <label class="form-label">UPI ID *</label>
                         <input type="text" class="form-control" id="upiId" placeholder="yourname@upi">
-                        <div style="text-align: center; margin: 20px 0; color: #94a3b8; font-weight: 600;">OR</div>
+                        <div style="text-align: center; margin: 15px 0; color: #94a3b8;">OR</div>
                         <label class="form-label">Choose UPI App</label>
                         <select class="form-select" id="upiApp">
                             <option value="">Select UPI App</option>
@@ -556,10 +441,10 @@
                     </div>
                 </div>
 
-                <!-- NET BANKING FORM -->
+                <!-- Net Banking Form -->
                 <div class="payment-form" id="netbankingForm">
                     <div class="mb-3">
-                        <label class="form-label">Select Your Bank <span class="text-danger">*</span></label>
+                        <label class="form-label">Select Your Bank *</label>
                         <select class="form-select" id="bankCode">
                             <option value="">Choose your bank</option>
                             <option value="SBI">State Bank of India</option>
@@ -569,16 +454,14 @@
                             <option value="KOTAK">Kotak Mahindra Bank</option>
                             <option value="PNB">Punjab National Bank</option>
                             <option value="BOB">Bank of Baroda</option>
-                            <option value="IDBI">IDBI Bank</option>
-                            <option value="YES">Yes Bank</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- WALLET FORM -->
+                <!-- Wallet Form -->
                 <div class="payment-form" id="walletForm">
                     <div class="mb-3">
-                        <label class="form-label">Select Wallet <span class="text-danger">*</span></label>
+                        <label class="form-label">Select Wallet *</label>
                         <select class="form-select" id="walletProvider">
                             <option value="">Choose wallet</option>
                             <option value="paytm">Paytm</option>
@@ -590,7 +473,7 @@
                     </div>
                 </div>
 
-                <!-- PAY BUTTON -->
+                <!-- Pay Button -->
                 <button class="pay-button" id="payButton" disabled>
                     <span id="payButtonText">Enter details to continue</span>
                 </button>
@@ -600,48 +483,51 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const paymentLink = <?php echo json_encode($paymentLink, 15, 512) ?>;
+        // Payment link data
+        const paymentLink = @json($paymentLink);
         let selectedMethod = 'card';
         
+        // Elements
         const payButton = document.getElementById('payButton');
         const payButtonText = document.getElementById('payButtonText');
-        const successAlert = document.getElementById('successAlert');
-        const errorAlert = document.getElementById('errorAlert');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
 
         // Payment method switching
         document.querySelectorAll('.payment-method-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                // Update active states
                 document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
+                // Show corresponding form
                 const method = btn.dataset.method;
                 selectedMethod = method;
                 document.querySelectorAll('.payment-form').forEach(f => f.classList.remove('active'));
                 document.getElementById(method + 'Form').classList.add('active');
                 
+                // Validate form
                 validateForm();
             });
         });
 
         // Card number formatting
-        const cardNumberInput = document.getElementById('cardNumber');
-        if (cardNumberInput) {
-            cardNumberInput.addEventListener('input', (e) => {
-                let value = e.target.value.replace(/\s/g, '');
-                let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-                e.target.value = formattedValue;
-                validateForm();
-            });
-        }
+        document.getElementById('cardNumber')?.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+            validateForm();
+        });
 
-        // Real-time validation
-        document.querySelectorAll('input, select').forEach(input => {
+        // Real-time validation for all inputs
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
             input.addEventListener('input', validateForm);
             input.addEventListener('change', validateForm);
         });
 
+        // Form validation
         function validateForm() {
             const name = document.getElementById('customerName').value.trim();
             const email = document.getElementById('customerEmail').value.trim();
@@ -663,7 +549,7 @@
                 const cvv = document.getElementById('cvv').value.trim();
                 
                 methodValid = cardNumber.length >= 15 && cardHolder && 
-                             month.length === 2 && year.length === 4 && cvv.length === 3;
+                             month && year && cvv.length === 3;
             } else if (selectedMethod === 'upi') {
                 const upiId = document.getElementById('upiId').value.trim();
                 const upiApp = document.getElementById('upiApp').value;
@@ -676,7 +562,7 @@
 
             if (methodValid) {
                 payButton.disabled = false;
-                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                payButtonText.textContent = `Pay ${paymentLink.currency} ${paymentLink.amount}`;
             } else {
                 payButton.disabled = true;
                 payButtonText.textContent = 'Complete payment details';
@@ -689,12 +575,15 @@
         payButton.addEventListener('click', async () => {
             if (payButton.disabled) return;
             
-            successAlert.style.display = 'none';
-            errorAlert.style.display = 'none';
+            // Hide messages
+            successMessage.classList.remove('show');
+            errorMessage.classList.remove('show');
             
+            // Disable button and show loading
             payButton.disabled = true;
             payButtonText.innerHTML = '<span class="spinner"></span> Processing...';
 
+            // Prepare payment data
             const paymentData = {
                 payment_method: selectedMethod,
                 customer_details: {
@@ -705,6 +594,7 @@
                 payment_details: {}
             };
 
+            // Add method-specific details
             if (selectedMethod === 'card') {
                 paymentData.payment_details = {
                     card_number: document.getElementById('cardNumber').value.replace(/\s/g, ''),
@@ -741,32 +631,35 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    successMessage.textContent = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
-                    successAlert.style.display = 'flex';
+                    // Show success message
+                    successMessage.classList.add('show');
                     payButtonText.textContent = 'Payment Successful!';
                     payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                    successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     
-                    // Disable all inputs
-                    document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+                    // Scroll to success message
+                    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    errorMessage.textContent = result.message || 'Payment failed. Please try again.';
-                    errorAlert.style.display = 'flex';
+                    // Show error message
+                    errorText.textContent = result.message || 'Payment failed. Please try again.';
+                    errorMessage.classList.add('show');
                     payButton.disabled = false;
-                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
-                    errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${paymentLink.amount}`;
+                    
+                    // Scroll to error message
+                    errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             } catch (error) {
                 console.error('Payment error:', error);
-                errorMessage.textContent = 'Network error. Please check your connection and try again.';
-                errorAlert.style.display = 'flex';
+                errorText.textContent = 'An error occurred. Please try again.';
+                errorMessage.classList.add('show');
                 payButton.disabled = false;
-                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                payButtonText.textContent = `Pay ${paymentLink.currency} ${paymentLink.amount}`;
             }
         });
 
+        // Initialize validation
         validateForm();
     </script>
 </body>
 </html>
-<?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/checkout/payment.blade.php ENDPATH**/ ?>
+

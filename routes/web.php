@@ -32,6 +32,8 @@ use App\Http\Controllers\DisputesController;
 use App\Http\Controllers\PaymentCheckoutController;
 use App\Http\Controllers\Admin\SubscriptionsController;
 use App\Http\Controllers\Admin\RiskManagementController;
+use App\Http\Controllers\Admin\OrdersController as AdminOrdersController;
+use App\Http\Controllers\PaymentPageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,6 +49,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+// Public Payment Page Routes (no auth required)
+Route::prefix('pay')->name('payment.')->group(function () {
+    Route::get('/{token}', [PaymentPageController::class, 'show'])->name('page');
+    Route::post('/{token}/process', [PaymentPageController::class, 'process'])->name('process');
+    Route::get('/test-cards/info', [PaymentPageController::class, 'getTestCards'])->name('test-cards');
 });
 
 // Public payment checkout
@@ -253,6 +262,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.transactions.index');
         Route::get('/transactions/data', [MerchantTransactionsController::class, 'getDataAdmin'])
             ->name('admin.transactions.data');
+
+        // Orders
+        Route::get('/orders', [AdminOrdersController::class, 'index'])
+            ->name('admin.orders.index');
+        Route::get('/orders/data', [AdminOrdersController::class, 'getData'])
+            ->name('admin.orders.data');
 
         Route::get('/reports', [ReportsController::class, 'indexAdmin'])
             ->name('admin.reports.index');

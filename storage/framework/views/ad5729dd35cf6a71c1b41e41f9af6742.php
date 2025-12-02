@@ -716,6 +716,10 @@
             </a>
         </div>
 
+        <a href="<?php echo e(route('admin.orders.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.orders.*') ? 'active' : ''); ?>">
+            <i class="bi bi-cart-check"></i>
+            <span>All Orders</span>
+        </a>
         <a href="<?php echo e(route('admin.transactions.index')); ?>" class="sidebar-menu-item <?php echo e(request()->routeIs('admin.transactions.*') ? 'active' : ''); ?>">
             <i class="bi bi-credit-card-2-front"></i>
             <span>All Transactions</span>

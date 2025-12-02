@@ -1,9 +1,9 @@
-@extends('layouts.app-sidebar')
 
-@section('title','Transactions - BadliCash')
-@section('page-title','Transactions')
 
-@section('content')
+<?php $__env->startSection('title','Transactions - BadliCash'); ?>
+<?php $__env->startSection('page-title','Transactions'); ?>
+
+<?php $__env->startSection('content'); ?>
 <div ng-app="badlicashApp" ng-controller="TransactionsController as tc">
     <div class="stat-card mb-3">
         <div class="row g-3">
@@ -80,12 +80,12 @@
                 </thead>
                 <tbody>
                 <tr ng-repeat="t in tc.transactions track by $index">
-                    <td>@{{ (tc.pagination.current_page - 1) * tc.pagination.per_page + $index + 1 }}</td>
+                    <td>{{ (tc.pagination.current_page - 1) * tc.pagination.per_page + $index + 1 }}</td>
                     <td>
-                        <code class="text-primary" style="font-size: 12px;">@{{ t.transaction_id || t.txn_id }}</code>
+                        <code class="text-primary" style="font-size: 12px;">{{ t.transaction_id || t.txn_id }}</code>
                     </td>
                     <td>
-                        <code class="text-info" style="font-size: 12px;">@{{ (t.order && t.order.order_id) || 'N/A' }}</code>
+                        <code class="text-info" style="font-size: 12px;">{{ (t.order && t.order.order_id) || 'N/A' }}</code>
                     </td>
                     <td>
                         <span ng-if="t.order && t.order.payment_link_id" class="badge bg-primary">
@@ -97,19 +97,19 @@
                     </td>
                     <td>
                         <div ng-if="t.customer_email || (t.order && t.order.customer_details)">
-                            <div class="fw-semibold" style="font-size: 13px;">@{{ t.customer_email || (t.order && t.order.customer_details.name) || 'N/A' }}</div>
-                            <small class="text-muted">@{{ t.customer_phone || (t.order && t.order.customer_details.phone) || '' }}</small>
+                            <div class="fw-semibold" style="font-size: 13px;">{{ t.customer_email || (t.order && t.order.customer_details.name) || 'N/A' }}</div>
+                            <small class="text-muted">{{ t.customer_phone || (t.order && t.order.customer_details.phone) || '' }}</small>
                         </div>
                         <span ng-if="!t.customer_email && (!t.order || !t.order.customer_details)" class="text-muted">N/A</span>
                     </td>
                     <td>
-                        <strong class="text-success">@{{ t.currency || 'INR' }} @{{ t.amount | number:2 }}</strong>
-                        <div ng-if="t.fee_amount" style="font-size: 11px; color: #94a3b8;">Fee: @{{ t.currency }} @{{ t.fee_amount | number:2 }}</div>
+                        <strong class="text-success">{{ t.currency || 'INR' }} {{ t.amount | number:2 }}</strong>
+                        <div ng-if="t.fee_amount" style="font-size: 11px; color: #94a3b8;">Fee: {{ t.currency }} {{ t.fee_amount | number:2 }}</div>
                     </td>
                     <td>
-                        <span class="badge" style="background: #6366f1;">@{{ t.payment_method | uppercase }}</span>
+                        <span class="badge" style="background: #6366f1;">{{ t.payment_method | uppercase }}</span>
                         <div ng-if="t.payment_details && t.payment_details.card_number" style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                            **** @{{ t.payment_details.card_number }}
+                            **** {{ t.payment_details.card_number }}
                         </div>
                     </td>
                     <td>
@@ -120,12 +120,12 @@
                             'bg-info': t.status==='processing',
                             'bg-secondary': t.status==='initiated'
                         }">
-                            @{{ t.status | uppercase }}
+                            {{ t.status | uppercase }}
                         </span>
                     </td>
                     <td style="white-space: nowrap;">
-                        <div style="font-size: 13px;">@{{ t.created_at | date:'MMM d, y' }}</div>
-                        <small class="text-muted">@{{ t.created_at | date:'HH:mm:ss' }}</small>
+                        <div style="font-size: 13px;">{{ t.created_at | date:'MMM d, y' }}</div>
+                        <small class="text-muted">{{ t.created_at | date:'HH:mm:ss' }}</small>
                     </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" ng-click="tc.viewDetails(t)" title="View Details">
@@ -143,9 +143,30 @@
             </table>
         </div>
 
-        <x-pagination />
+        <?php if (isset($component)) { $__componentOriginal41032d87daf360242eb88dbda6c75ed1 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal41032d87daf360242eb88dbda6c75ed1 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.pagination','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('pagination'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal41032d87daf360242eb88dbda6c75ed1)): ?>
+<?php $attributes = $__attributesOriginal41032d87daf360242eb88dbda6c75ed1; ?>
+<?php unset($__attributesOriginal41032d87daf360242eb88dbda6c75ed1); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal41032d87daf360242eb88dbda6c75ed1)): ?>
+<?php $component = $__componentOriginal41032d87daf360242eb88dbda6c75ed1; ?>
+<?php unset($__componentOriginal41032d87daf360242eb88dbda6c75ed1); ?>
+<?php endif; ?>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@include('merchant.transactions.angular.main_controller')
+<?php echo $__env->make('merchant.transactions.angular.main_controller', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
+<?php echo $__env->make('layouts.app-sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/merchant/transactions/index.blade.php ENDPATH**/ ?>
