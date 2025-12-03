@@ -102,10 +102,13 @@
                                 <strong class="text-success">@{{ o.currency || 'INR' }} @{{ o.amount | number:2 }}</strong>
                             </td>
                             <td>
-                                <span class="badge" style="background: #6366f1;">@{{ o.payment_method | uppercase }}</span>
-                                <div ng-if="o.payment_details && o.payment_details.card_number" style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                                    **** @{{ o.payment_details.card_number }}
+                                <span ng-if="o.transactions && o.transactions.length > 0" class="badge" style="background: #6366f1;">
+                                    @{{ o.transactions[0].payment_method | uppercase }}
+                                </span>
+                                <div ng-if="o.transactions && o.transactions[0] && o.transactions[0].payment_details && o.transactions[0].payment_details.last4" style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                                    **** @{{ o.transactions[0].payment_details.last4 }}
                                 </div>
+                                <span ng-if="!o.transactions || o.transactions.length === 0" class="text-muted">-</span>
                             </td>
                             <td>
                                 <span class="badge" ng-class="{

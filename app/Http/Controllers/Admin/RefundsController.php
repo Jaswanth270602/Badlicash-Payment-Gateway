@@ -22,9 +22,23 @@ class RefundsController extends Controller
     public function getData(Request $request): JsonResponse
     {
         try {
+            // Get admin's viewing mode from session
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
+            $this->logInfo('Admin refunds data requested', [
+                'user_id' => auth()->id(),
+                'admin_view_mode' => $adminViewMode,
+            ]);
+
             $perPage = min($request->get('per_page', 5), 50);
             
-            $query = Refund::with(['merchant', 'transaction'])->latest();
+            // Filter by admin's viewing mode through transaction relationship
+            $query = Refund::with(['merchant', 'transaction'])
+                ->whereHas('transaction', function($q) use ($isTestMode) {
+                    $q->where('test_mode', $isTestMode);
+                })
+                ->latest();
 
             // Date range filter (only apply if provided)
             if ($request->has('date_range') && !empty($request->get('date_range'))) {

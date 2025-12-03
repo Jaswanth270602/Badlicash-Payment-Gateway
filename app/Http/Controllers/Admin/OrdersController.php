@@ -28,12 +28,19 @@ class OrdersController extends Controller
     public function getData(Request $request): JsonResponse
     {
         try {
+            // Get admin's viewing mode from session
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
             $perPage = min($request->get('per_page', 10), 100);
             $status = $request->get('status');
             $merchantId = $request->get('merchant_id');
             $search = $request->get('search');
 
-            $query = Order::with(['merchant', 'paymentLink', 'transactions'])->latest();
+            // Filter by admin's viewing mode
+            $query = Order::with(['merchant', 'paymentLink', 'transactions'])
+                ->where('test_mode', $isTestMode)
+                ->latest();
 
             if ($status && $status !== 'all') {
                 $query->where('status', $status);

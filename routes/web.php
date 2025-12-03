@@ -32,6 +32,7 @@ use App\Http\Controllers\DisputesController;
 use App\Http\Controllers\PaymentCheckoutController;
 use App\Http\Controllers\Admin\SubscriptionsController;
 use App\Http\Controllers\Admin\RiskManagementController;
+use App\Http\Controllers\Admin\AdminSettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -292,6 +293,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.plans.store');
         Route::post('/plans/{id}', [SubscriptionsController::class, 'updatePlan'])
             ->name('admin.plans.update');
+
+        // Admin Settings (Mode Switching)
+        Route::post('/settings/switch-mode', [AdminSettingsController::class, 'switchMode'])
+            ->name('admin.settings.switch-mode');
+        Route::get('/settings/mode', [AdminSettingsController::class, 'getMode'])
+            ->name('admin.settings.mode');
 
         // Risk Management
         Route::get('/risk', [RiskManagementController::class, 'index'])

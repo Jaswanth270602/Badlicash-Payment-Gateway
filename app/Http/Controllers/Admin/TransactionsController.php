@@ -22,14 +22,22 @@ class TransactionsController extends Controller
     public function getData(Request $request): JsonResponse
     {
         try {
+            // Get admin's viewing mode from session
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
             $this->logInfo('Admin payments transactions data requested', [
                 'user_id' => auth()->id(),
+                'admin_view_mode' => $adminViewMode,
                 'filters' => $request->all()
             ]);
 
             $perPage = min($request->get('per_page', 10), 50);
             
-            $query = Transaction::with(['merchant', 'order.paymentLink'])->latest();
+            // Filter by admin's viewing mode
+            $query = Transaction::with(['merchant', 'order.paymentLink'])
+                ->where('test_mode', $isTestMode)
+                ->latest();
 
             // Date range filter (only apply if provided)
             if ($request->has('date_range') && !empty($request->get('date_range'))) {

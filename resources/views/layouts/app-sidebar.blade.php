@@ -553,6 +553,10 @@
                 <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
                     {{ auth()->user()->merchant->test_mode ? 'TEST MODE' : 'LIVE MODE' }}
                 </div>
+            @elseif(auth()->user()->isAdmin())
+                <div class="mode-badge {{ session('admin_view_mode', 'test') === 'test' ? 'bg-warning text-dark' : 'bg-success' }}" id="adminModeBadge">
+                    {{ session('admin_view_mode', 'test') === 'test' ? 'TEST MODE' : 'LIVE MODE' }}
+                </div>
             @endif
         </div>
         <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
@@ -769,6 +773,15 @@
                     <i class="bi bi-check-circle"></i> Live
                 </button>
             </div>
+            @elseif(auth()->user()->isAdmin())
+            <div class="mode-toggle">
+                <button class="mode-toggle-btn {{ session('admin_view_mode', 'test') === 'test' ? 'active test' : '' }}" onclick="switchAdminMode('test')">
+                    <i class="bi bi-flask"></i> Test
+                </button>
+                <button class="mode-toggle-btn {{ session('admin_view_mode', 'test') === 'live' ? 'active live' : '' }}" onclick="switchAdminMode('live')">
+                    <i class="bi bi-check-circle"></i> Live
+                </button>
+            </div>
             @endif
             <form action="{{ route('logout') }}" method="POST" class="d-inline">
                 @csrf
@@ -840,6 +853,36 @@ function switchMode(mode) {
     .catch(error => {
         document.body.removeChild(overlay);
         alert('Failed to switch mode');
+        console.error('Error:', error);
+    });
+}
+
+function switchAdminMode(mode) {
+    const overlay = document.createElement('div');
+    overlay.className = 'loader-overlay';
+    overlay.innerHTML = '<div class="spinner-violet"></div>';
+    document.body.appendChild(overlay);
+
+    fetch("{{ route('admin.settings.switch-mode') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+        },
+        body: JSON.stringify({mode})
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.body.removeChild(overlay);
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to switch admin viewing mode');
+        }
+    })
+    .catch(error => {
+        document.body.removeChild(overlay);
+        alert('Failed to switch admin viewing mode');
         console.error('Error:', error);
     });
 }
