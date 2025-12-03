@@ -4,7 +4,7 @@
 @section('page-title', 'Transactions Details')
 
 @section('content')
-<div ng-app="badlicashApp" ng-controller="AdminTransactionsController as atc">
+<div ng-app="badlicashApp" ng-controller="AdminPaymentsTransactionsController as atc">
     <x-breadcrumbs :items="[
         ['label'=>'Home','url'=>route('admin.dashboard')],
         ['label'=>'Latest Transactions']
@@ -52,6 +52,9 @@
                 </select>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-secondary" ng-click="atc.clearFilters()">
+                    <i class="bi bi-funnel"></i> Clear Filters
+                </button>
                 <button class="btn btn-sm btn-outline-secondary" ng-click="atc.loadTransactions()">
                     <i class="bi bi-arrow-clockwise"></i> Reload
                 </button>
@@ -395,6 +398,62 @@
             </div>
         </div>
     </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal fade" id="transactionDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" ng-if="atc.selectedTransaction">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-receipt"></i> Transaction Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Transaction ID:</strong><br>
+                            <code>@{{atc.selectedTransaction.transaction_id}}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Merchant:</strong><br>
+                            @{{atc.selectedTransaction.merchant_name}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Amount:</strong><br>
+                            <span class="text-success">@{{atc.selectedTransaction.currency_code}} @{{atc.selectedTransaction.amount_paid_by_customer}}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong><br>
+                            <span class="badge" ng-class="{'bg-success': atc.selectedTransaction.payment_status==='success', 'bg-danger': atc.selectedTransaction.payment_status==='failed'}">
+                                @{{atc.selectedTransaction.payment_status | uppercase}}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Payment Mode:</strong><br>
+                            @{{atc.selectedTransaction.payment_mode}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Date:</strong><br>
+                            @{{atc.selectedTransaction.transaction_datetime}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>TDR Amount:</strong><br>
+                            @{{atc.selectedTransaction.tdr_amount}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Net Settlement:</strong><br>
+                            @{{atc.selectedTransaction.net_settlements_amount}}
+                        </div>
+                        <div class="col-12" ng-if="atc.selectedTransaction.card_number !== '-'">
+                            <strong>Card:</strong> @{{atc.selectedTransaction.card_number}}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -409,11 +468,11 @@
         }
         try {
             var app = angular.module('badlicashApp');
-            app.controller('AdminTransactionsController', ['$http', function($http) {
+            app.controller('AdminPaymentsTransactionsController', ['$http', function($http) {
                 var vm = this;
                 vm.transactions = [];
-                vm.pagination = { current_page: 1, per_page: 5, total: 0, last_page: 1 };
-                vm.filters = { status: 'all' };
+                vm.pagination = { current_page: 1, per_page: 10, total: 0, last_page: 1 };
+                vm.filters = { status: '' }; // Empty = no filter, show all
                 vm.loading = false;
                 vm.sortColumn = 'id';
                 vm.sortDirection = 'desc';
@@ -472,7 +531,10 @@
                         }
                     });
                     
+                    console.log('Making API call with params:', params);
                     $http.get('/admin/payments/transactions/data', { params: params }).then(function(response) {
+                        console.log('Admin Transactions API Response:', response.data);
+                        console.log('Response pagination:', response.data.pagination);
                         vm.transactions = response.data.data || [];
                         vm.pagination = {
                             current_page: response.data.pagination.current_page,
@@ -481,7 +543,10 @@
                             per_page: response.data.pagination.per_page
                         };
                         vm.loading = false;
+                        console.log('Transactions loaded:', vm.transactions.length, 'Total:', vm.pagination.total);
                     }, function(error) {
+                        console.error('Error loading admin transactions:', error);
+                        alert('Error loading transactions: ' + (error.data?.message || error.statusText));
                         vm.loading = false;
                         console.error('Error loading transactions:', error);
                     });
@@ -500,6 +565,7 @@
                 };
 
                 vm.setStatus = function(status) {
+                    console.log('Setting status filter to:', status);
                     vm.filters.status = status;
                     vm.applyFilters();
                 };
@@ -524,14 +590,33 @@
                     Object.keys(vm.visibleColumns).forEach(function(key) {
                         vm.visibleColumns[key].visible = true;
                     });
-                    vm.filters = { status: 'all' };
+                    vm.filters = { status: '' };
                     vm.applyFilters();
                 };
 
-                vm.viewTransaction = function(transaction) {
-                    alert('View transaction: ' + transaction.transaction_id);
+                vm.clearFilters = function() {
+                    console.log('Clearing all transaction filters');
+                    vm.filters = {};
+                    Object.keys(vm.filters).forEach(function(key) {
+                        if (key.startsWith('filter_')) {
+                            vm.filters[key] = '';
+                        }
+                    });
+                    vm.filters.status = '';
+                    vm.pagination.current_page = 1;
+                    vm.loadTransactions();
                 };
 
+                vm.selectedTransaction = null;
+                
+                vm.viewTransaction = function(transaction) {
+                    vm.selectedTransaction = transaction;
+                    var modal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
+                    modal.show();
+                };
+
+                // Initialize - load data on page load
+                console.log('AdminTransactionsController initialized');
                 vm.loadTransactions();
             }]);
         } catch(e) {

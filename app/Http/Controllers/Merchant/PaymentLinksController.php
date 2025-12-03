@@ -55,7 +55,10 @@ class PaymentLinksController extends Controller
                 ->where('expires_at', '<=', now())
                 ->update(['status' => 'expired']);
 
-            $query = $merchant->paymentLinks()->latest();
+            // Filter by current merchant mode (test or live)
+            $query = $merchant->paymentLinks()
+                ->where('test_mode', $merchant->test_mode)
+                ->latest();
 
             if ($status && $status !== 'all' && $status !== '') {
                 $query->where('status', $status);
@@ -134,6 +137,21 @@ class PaymentLinksController extends Controller
                     'success' => false,
                     'message' => 'Merchant not found',
                 ], 404);
+            }
+
+            // Check if merchant is in LIVE mode without proper credentials
+            if (!$merchant->test_mode && !$merchant->hasLiveCredentials()) {
+                $this->logWarning('Attempted to create payment link in LIVE mode without credentials', [
+                    'merchant_id' => $merchant->id,
+                    'test_mode' => $merchant->test_mode
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Live mode is not configured. Please configure your live API credentials and bank details before creating payment links in LIVE mode.',
+                    'error_code' => 'LIVE_MODE_NOT_CONFIGURED',
+                    'action_required' => 'Please contact support or configure your live credentials in Settings to activate LIVE mode.',
+                ], 403);
             }
 
             // Validate input

@@ -32,6 +32,21 @@ class AuthenticateApiKey
             ], 401);
         }
 
+        // Validate mode matching: test keys should only work with test mode merchants
+        $merchantMode = $key->merchant->test_mode ? 'test' : 'live';
+        
+        if ($key->mode !== $merchantMode) {
+            $expectedKeyType = $merchantMode === 'test' ? 'Test mode API key (pk_test_...)' : 'Live mode API key (pk_live_...)';
+            $currentMerchantMode = $merchantMode === 'test' ? 'TEST MODE' : 'LIVE MODE';
+            
+            return response()->json([
+                'error' => 'API key mode mismatch',
+                'message' => "Your merchant account is in {$currentMerchantMode}. {$expectedKeyType} is required. Please switch to the correct mode or use the appropriate API key.",
+                'merchant_mode' => $merchantMode,
+                'api_key_mode' => $key->mode,
+            ], 403);
+        }
+
         // Mark API key as used
         $key->markAsUsed();
 

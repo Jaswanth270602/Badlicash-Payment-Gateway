@@ -22,25 +22,25 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $merchant = $request->get('api_merchant');
+        $apiKeyMode = $request->get('api_key_mode');
 
         $perPage = min($request->get('per_page', 10), config('badlicash.pagination.max_per_page'));
         $status = $request->get('status');
-        $testMode = $request->get('test_mode');
 
-        $query = $merchant->orders()->latest();
+        // Filter orders by API key mode (test keys see only test orders, live keys see only live orders)
+        $query = $merchant->orders()
+            ->where('test_mode', $apiKeyMode === 'test')
+            ->latest();
 
         if ($status) {
             $query->where('status', $status);
-        }
-
-        if ($testMode !== null) {
-            $query->where('test_mode', filter_var($testMode, FILTER_VALIDATE_BOOLEAN));
         }
 
         $orders = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,
+            'mode' => $apiKeyMode,
             'data' => $orders->items(),
             'pagination' => [
                 'current_page' => $orders->currentPage(),
@@ -61,20 +61,24 @@ class OrderController extends Controller
     public function show(Request $request, string $orderId): JsonResponse
     {
         $merchant = $request->get('api_merchant');
+        $apiKeyMode = $request->get('api_key_mode');
 
         $order = $merchant->orders()
             ->where('order_id', $orderId)
+            ->where('test_mode', $apiKeyMode === 'test')
             ->with('transactions')
             ->first();
 
         if (!$order) {
             return response()->json([
                 'error' => 'Order not found',
+                'message' => 'Order not found or does not match your API key mode. Ensure you are using the correct API key (test/live) for this order.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
+            'mode' => $apiKeyMode,
             'data' => [
                 'order_id' => $order->order_id,
                 'amount' => $order->amount,

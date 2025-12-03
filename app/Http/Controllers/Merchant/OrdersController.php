@@ -24,7 +24,10 @@ class OrdersController extends Controller
         $fromDate = $request->get('from_date');
         $toDate = $request->get('to_date');
 
-        $query = $merchant->orders()->latest();
+        // Filter by current merchant mode (test or live)
+        $query = $merchant->orders()
+            ->where('test_mode', $merchant->test_mode)
+            ->latest();
 
         if ($status && $status !== 'all' && $status !== '') {
             $query->where('status', $status);

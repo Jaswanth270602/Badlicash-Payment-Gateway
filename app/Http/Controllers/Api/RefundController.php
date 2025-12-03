@@ -41,14 +41,17 @@ class RefundController extends Controller
 
         try {
             $merchant = $request->get('api_merchant');
+            $apiKeyMode = $request->get('api_key_mode');
 
             $transaction = $merchant->transactions()
                 ->where('txn_id', $request->transaction_id)
+                ->where('test_mode', $apiKeyMode === 'test')
                 ->first();
 
             if (!$transaction) {
                 return response()->json([
                     'error' => 'Transaction not found',
+                    'message' => 'Transaction not found or does not match your API key mode.',
                 ], 404);
             }
 
@@ -106,11 +109,18 @@ class RefundController extends Controller
     public function index(Request $request): JsonResponse
     {
         $merchant = $request->get('api_merchant');
+        $apiKeyMode = $request->get('api_key_mode');
 
         $perPage = min($request->get('per_page', 10), config('badlicash.pagination.max_per_page'));
         $status = $request->get('status');
 
-        $query = $merchant->refunds()->with('transaction')->latest();
+        // Filter refunds by test_mode through transaction relationship
+        $query = $merchant->refunds()
+            ->with('transaction')
+            ->whereHas('transaction', function ($q) use ($apiKeyMode) {
+                $q->where('test_mode', $apiKeyMode === 'test');
+            })
+            ->latest();
 
         if ($status) {
             $query->where('status', $status);
@@ -120,6 +130,7 @@ class RefundController extends Controller
 
         return response()->json([
             'success' => true,
+            'mode' => $apiKeyMode,
             'data' => $refunds->items(),
             'pagination' => [
                 'current_page' => $refunds->currentPage(),

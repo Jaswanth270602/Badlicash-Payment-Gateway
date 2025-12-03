@@ -22,22 +22,29 @@ class TransactionsController extends Controller
     public function getData(Request $request): JsonResponse
     {
         try {
-            $perPage = min($request->get('per_page', 5), 50);
-            
-            $query = Transaction::with(['merchant', 'order'])->latest();
+            $this->logInfo('Admin payments transactions data requested', [
+                'user_id' => auth()->id(),
+                'filters' => $request->all()
+            ]);
 
-            // Date range filter
-            if ($request->has('date_range') && $request->get('date_range')) {
+            $perPage = min($request->get('per_page', 10), 50);
+            
+            $query = Transaction::with(['merchant', 'order.paymentLink'])->latest();
+
+            // Date range filter (only apply if provided)
+            if ($request->has('date_range') && !empty($request->get('date_range'))) {
                 $dates = explode(' - ', $request->get('date_range'));
-                if (count($dates) === 2) {
+                if (count($dates) === 2 && !empty(trim($dates[0])) && !empty(trim($dates[1]))) {
                     $query->whereBetween('created_at', [trim($dates[0]), trim($dates[1])]);
                 }
             }
 
-            // Status filter
-            if ($request->has('status') && $request->get('status') !== 'all') {
-                $query->where('status', $request->get('status'));
+            // Status filter - be very permissive
+            $status = $request->get('status');
+            if (!empty($status) && $status !== 'all' && $status !== '') {
+                $query->where('status', $status);
             }
+            // Otherwise show ALL transactions
 
             // Column filters
             if ($request->has('filter_merchant_id') && $request->get('filter_merchant_id')) {
@@ -45,14 +52,17 @@ class TransactionsController extends Controller
             }
             if ($request->has('filter_merchant_name') && $request->get('filter_merchant_name')) {
                 $query->whereHas('merchant', function($q) use ($request) {
-                    $q->where('name', 'like', "%{$request->get('filter_merchant_name')}%");
+                    $q->where('name', 'like', "%{$request->get('filter_merchant_name')}%")
+                      ->orWhere('business_name', 'like', "%{$request->get('filter_merchant_name')}%");
                 });
             }
             if ($request->has('filter_transaction_id') && $request->get('filter_transaction_id')) {
                 $query->where('txn_id', 'like', "%{$request->get('filter_transaction_id')}%");
             }
             if ($request->has('filter_order_id') && $request->get('filter_order_id')) {
-                $query->where('order_id', 'like', "%{$request->get('filter_order_id')}%");
+                $query->whereHas('order', function($q) use ($request) {
+                    $q->where('order_id', 'like', "%{$request->get('filter_order_id')}%");
+                });
             }
             if ($request->has('filter_payment_status') && $request->get('filter_payment_status') !== 'all') {
                 $query->where('status', $request->get('filter_payment_status'));
@@ -66,6 +76,22 @@ class TransactionsController extends Controller
             }
 
             $transactions = $query->paginate($perPage);
+
+            $this->logInfo('Admin payments transactions retrieved', [
+                'count' => $transactions->count(),
+                'total' => $transactions->total(),
+                'per_page' => $perPage,
+                'query_sql' => $query->toSql(),
+                'filters_applied' => $request->all()
+            ]);
+
+            // If no data, log why
+            if ($transactions->count() === 0) {
+                $this->logWarning('No transactions found', [
+                    'total_in_db' => Transaction::count(),
+                    'filters' => $request->all()
+                ]);
+            }
 
             // Format data with all required columns
             $data = $transactions->map(function($transaction) {

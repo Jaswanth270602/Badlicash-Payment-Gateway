@@ -26,10 +26,10 @@ class RefundsController extends Controller
             
             $query = Refund::with(['merchant', 'transaction'])->latest();
 
-            // Date range filter
-            if ($request->has('date_range') && $request->get('date_range')) {
+            // Date range filter (only apply if provided)
+            if ($request->has('date_range') && !empty($request->get('date_range'))) {
                 $dates = explode(' - ', $request->get('date_range'));
-                if (count($dates) === 2) {
+                if (count($dates) === 2 && !empty(trim($dates[0])) && !empty(trim($dates[1]))) {
                     $query->whereBetween('created_at', [trim($dates[0]), trim($dates[1])]);
                 }
             }

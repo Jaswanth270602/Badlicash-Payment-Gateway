@@ -729,7 +729,7 @@
             }
 
             try {
-                const response = await fetch(`/pay/${paymentLink.link_token}/process`, {
+                const response = await fetch(`/pay/${paymentLink.link_token}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

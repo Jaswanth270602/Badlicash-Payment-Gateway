@@ -145,6 +145,218 @@
 
         <x-pagination />
     </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal fade" id="transactionDetailsModal" tabindex="-1" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white;">
+                    <h5 class="modal-title" id="transactionDetailsModalLabel">
+                        <i class="bi bi-receipt"></i> Transaction Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" ng-if="tc.selectedTransaction">
+                    <div class="row g-3">
+                        <!-- Transaction Status Card -->
+                        <div class="col-12">
+                            <div class="alert" ng-class="{
+                                'alert-success': tc.selectedTransaction.status==='success' || tc.selectedTransaction.status==='completed',
+                                'alert-danger': tc.selectedTransaction.status==='failed',
+                                'alert-warning': tc.selectedTransaction.status==='pending',
+                                'alert-info': tc.selectedTransaction.status==='processing' || tc.selectedTransaction.status==='initiated'
+                            }" role="alert">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="bi" ng-class="{
+                                                'bi-check-circle-fill': tc.selectedTransaction.status==='success' || tc.selectedTransaction.status==='completed',
+                                                'bi-x-circle-fill': tc.selectedTransaction.status==='failed',
+                                                'bi-clock-fill': tc.selectedTransaction.status==='pending' || tc.selectedTransaction.status==='initiated',
+                                                'bi-arrow-repeat': tc.selectedTransaction.status==='processing'
+                                            }"></i>
+                                            Transaction @{{ tc.selectedTransaction.status | uppercase }}
+                                        </h6>
+                                        <small>@{{ tc.selectedTransaction.created_at | date:'MMM d, y - HH:mm:ss' }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <h4 class="mb-0">@{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.amount | number:2 }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Information -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Transaction Info</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless mb-0">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;">Transaction ID:</td>
+                                            <td><code class="text-primary">@{{ tc.selectedTransaction.txn_id || tc.selectedTransaction.transaction_id }}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Order ID:</td>
+                                            <td><code class="text-info">@{{ (tc.selectedTransaction.order && tc.selectedTransaction.order.order_id) || 'N/A' }}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Payment Method:</td>
+                                            <td><span class="badge" style="background: #6366f1;">@{{ tc.selectedTransaction.payment_method | uppercase }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Source:</td>
+                                            <td>
+                                                <span ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.payment_link_id" class="badge bg-primary">
+                                                    <i class="bi bi-link-45deg"></i> Payment Link
+                                                </span>
+                                                <span ng-if="!tc.selectedTransaction.order || !tc.selectedTransaction.order.payment_link_id" class="badge bg-secondary">
+                                                    <i class="bi bi-cart"></i> Direct Order
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.test_mode">
+                                            <td class="text-muted">Mode:</td>
+                                            <td><span class="badge bg-warning text-dark">TEST MODE</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Information -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-person"></i> Customer Info</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless mb-0">
+                                        <tr ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.customer_details && tc.selectedTransaction.order.customer_details.name">
+                                            <td class="text-muted" style="width: 40%;">Name:</td>
+                                            <td>@{{ tc.selectedTransaction.order.customer_details.name }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.customer_details && tc.selectedTransaction.order.customer_details.email">
+                                            <td class="text-muted">Email:</td>
+                                            <td>@{{ tc.selectedTransaction.order.customer_details.email }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.customer_details && tc.selectedTransaction.order.customer_details.phone">
+                                            <td class="text-muted">Phone:</td>
+                                            <td>@{{ tc.selectedTransaction.order.customer_details.phone }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.ip_address">
+                                            <td class="text-muted">IP Address:</td>
+                                            <td><code>@{{ tc.selectedTransaction.ip_address }}</code></td>
+                                        </tr>
+                                        <tr ng-if="!tc.selectedTransaction.order || !tc.selectedTransaction.order.customer_details">
+                                            <td colspan="2" class="text-muted">No customer information available</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Amount Breakdown -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-cash-stack"></i> Amount Breakdown</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm mb-0">
+                                        <tr>
+                                            <td class="text-muted">Transaction Amount:</td>
+                                            <td class="text-end"><strong class="text-success">@{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.amount | number:2 }}</strong></td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.fee_amount">
+                                            <td class="text-muted">Processing Fee:</td>
+                                            <td class="text-end text-danger">- @{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.fee_amount | number:2 }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.net_amount" class="border-top">
+                                            <td class="text-muted"><strong>Net Amount:</strong></td>
+                                            <td class="text-end"><strong class="text-primary">@{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.net_amount | number:2 }}</strong></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Details -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-credit-card"></i> Payment Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless mb-0">
+                                        <tr ng-if="tc.selectedTransaction.payment_details && tc.selectedTransaction.payment_details.last4">
+                                            <td class="text-muted" style="width: 40%;">Card:</td>
+                                            <td>**** **** **** @{{ tc.selectedTransaction.payment_details.last4 }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.payment_details && tc.selectedTransaction.payment_details.card_type">
+                                            <td class="text-muted">Card Type:</td>
+                                            <td>@{{ tc.selectedTransaction.payment_details.card_type | uppercase }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.payment_details && tc.selectedTransaction.payment_details.upi_id">
+                                            <td class="text-muted">UPI ID:</td>
+                                            <td>@{{ tc.selectedTransaction.payment_details.upi_id }}</td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.gateway_txn_id">
+                                            <td class="text-muted">Gateway Txn ID:</td>
+                                            <td><code>@{{ tc.selectedTransaction.gateway_txn_id }}</code></td>
+                                        </tr>
+                                        <tr ng-if="tc.selectedTransaction.captured_at">
+                                            <td class="text-muted">Captured At:</td>
+                                            <td>@{{ tc.selectedTransaction.captured_at | date:'MMM d, y HH:mm:ss' }}</td>
+                                        </tr>
+                                        <tr ng-if="!tc.selectedTransaction.payment_details || Object.keys(tc.selectedTransaction.payment_details).length === 0">
+                                            <td colspan="2" class="text-muted">No payment details available</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Description -->
+                        <div class="col-12" ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.description">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-file-text"></i> Description</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-0">@{{ tc.selectedTransaction.order.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gateway Response (if failed) -->
+                        <div class="col-12" ng-if="tc.selectedTransaction.status === 'failed' && tc.selectedTransaction.gateway_response">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Error Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-0 text-danger">
+                                        @{{ tc.selectedTransaction.gateway_response.message || 'Payment failed' }}
+                                    </p>
+                                    <small class="text-muted" ng-if="tc.selectedTransaction.gateway_response.error_code">
+                                        Error Code: @{{ tc.selectedTransaction.gateway_response.error_code }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 

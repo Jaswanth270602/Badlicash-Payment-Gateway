@@ -248,6 +248,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/manage-settlements/mis-report/download', [MISReportController::class, 'download'])
             ->name('admin.manage-settlements.mis-report.download');
 
+        // Orders
+        Route::get('/orders', [\App\Http\Controllers\Admin\OrdersController::class, 'index'])
+            ->name('admin.orders.index');
+        Route::get('/orders/data', [\App\Http\Controllers\Admin\OrdersController::class, 'getData'])
+            ->name('admin.orders.data');
+
         // Admin can also access all merchant routes
         Route::get('/transactions', [MerchantTransactionsController::class, 'indexAdmin'])
             ->name('admin.transactions.index');

@@ -719,10 +719,6 @@
             <i class="bi bi-cart-check"></i>
             <span>All Orders</span>
         </a>
-        <a href="{{ route('admin.transactions.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.transactions.*') ? 'active' : '' }}">
-            <i class="bi bi-credit-card-2-front"></i>
-            <span>All Transactions</span>
-        </a>
         <a href="{{ route('admin.reports.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph"></i>
             <span>Reports</span>

@@ -24,6 +24,26 @@ class SettlementsController extends Controller
         $fromDate = $request->get('from_date');
         $toDate = $request->get('to_date');
 
+        // For settlements, we need to be in live mode to see them
+        // Test mode merchants shouldn't have real settlements
+        // Settlements are only for live transactions
+        if ($merchant->test_mode) {
+            // Return empty result for test mode
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'per_page' => $perPage,
+                    'total' => 0,
+                    'last_page' => 1,
+                    'from' => null,
+                    'to' => null,
+                ],
+                'message' => 'Settlements are only available in LIVE mode. Switch to LIVE mode to view settlements.',
+            ]);
+        }
+
         $query = $merchant->settlements()->latest();
 
         if ($status && $status !== 'all' && $status !== '') {

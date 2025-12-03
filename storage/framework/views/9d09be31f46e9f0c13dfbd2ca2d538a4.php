@@ -1,14 +1,34 @@
-@extends('layouts.app-sidebar')
+<?php $__env->startSection('title', 'Refund Details - Admin - BadliCash'); ?>
+<?php $__env->startSection('page-title', 'Refund Details'); ?>
 
-@section('title', 'Refund Details - Admin - BadliCash')
-@section('page-title', 'Refund Details')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div ng-app="badlicashApp" ng-controller="AdminRefundsController as arc">
-    <x-breadcrumbs :items="[
+    <?php if (isset($component)) { $__componentOriginal360d002b1b676b6f84d43220f22129e2 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal360d002b1b676b6f84d43220f22129e2 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.breadcrumbs','data' => ['items' => [
         ['label'=>'Home','url'=>route('admin.dashboard')],
         ['label'=>'Refund Details']
-    ]" />
+    ]]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('breadcrumbs'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['items' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute([
+        ['label'=>'Home','url'=>route('admin.dashboard')],
+        ['label'=>'Refund Details']
+    ])]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal360d002b1b676b6f84d43220f22129e2)): ?>
+<?php $attributes = $__attributesOriginal360d002b1b676b6f84d43220f22129e2; ?>
+<?php unset($__attributesOriginal360d002b1b676b6f84d43220f22129e2); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal360d002b1b676b6f84d43220f22129e2)): ?>
+<?php $component = $__componentOriginal360d002b1b676b6f84d43220f22129e2; ?>
+<?php unset($__componentOriginal360d002b1b676b6f84d43220f22129e2); ?>
+<?php endif; ?>
 
     <div class="row mb-4">
         <div class="col-md-12">
@@ -53,7 +73,7 @@
                     <ul class="dropdown-menu">
                         <li ng-repeat="(key, col) in arc.visibleColumns">
                             <a class="dropdown-item" href="#" ng-click="arc.toggleColumn(key)">
-                                <i class="bi" ng-class="col.visible ? 'bi-check-square' : 'bi-square'"></i> @{{ col.label }}
+                                <i class="bi" ng-class="col.visible ? 'bi-check-square' : 'bi-square'"></i> {{ col.label }}
                             </a>
                         </li>
                     </ul>
@@ -240,17 +260,17 @@
                             <td colspan="23" class="text-center text-danger py-4">No matching records found</td>
                         </tr>
                         <tr ng-repeat="refund in arc.refunds track by $index">
-                            <td ng-show="arc.visibleColumns.refund_id.visible">@{{ refund.refund_id }}</td>
-                            <td ng-show="arc.visibleColumns.merchant_id.visible">@{{ refund.merchant_id }}</td>
-                            <td ng-show="arc.visibleColumns.merchant_name.visible">@{{ refund.merchant_name }}</td>
-                            <td ng-show="arc.visibleColumns.payment_id.visible">@{{ refund.payment_id }}</td>
-                            <td ng-show="arc.visibleColumns.customer_ip.visible">@{{ refund.customer_ip }}</td>
-                            <td ng-show="arc.visibleColumns.transaction_sequence_id.visible">@{{ refund.transaction_sequence_id }}</td>
-                            <td ng-show="arc.visibleColumns.transaction_id.visible">@{{ refund.transaction_id }}</td>
-                            <td ng-show="arc.visibleColumns.order_id.visible">@{{ refund.order_id }}</td>
-                            <td ng-show="arc.visibleColumns.payer_name.visible">@{{ refund.payer_name }}</td>
-                            <td ng-show="arc.visibleColumns.payer_email.visible">@{{ refund.payer_email }}</td>
-                            <td ng-show="arc.visibleColumns.payer_phone.visible">@{{ refund.payer_phone }}</td>
+                            <td ng-show="arc.visibleColumns.refund_id.visible">{{ refund.refund_id }}</td>
+                            <td ng-show="arc.visibleColumns.merchant_id.visible">{{ refund.merchant_id }}</td>
+                            <td ng-show="arc.visibleColumns.merchant_name.visible">{{ refund.merchant_name }}</td>
+                            <td ng-show="arc.visibleColumns.payment_id.visible">{{ refund.payment_id }}</td>
+                            <td ng-show="arc.visibleColumns.customer_ip.visible">{{ refund.customer_ip }}</td>
+                            <td ng-show="arc.visibleColumns.transaction_sequence_id.visible">{{ refund.transaction_sequence_id }}</td>
+                            <td ng-show="arc.visibleColumns.transaction_id.visible">{{ refund.transaction_id }}</td>
+                            <td ng-show="arc.visibleColumns.order_id.visible">{{ refund.order_id }}</td>
+                            <td ng-show="arc.visibleColumns.payer_name.visible">{{ refund.payer_name }}</td>
+                            <td ng-show="arc.visibleColumns.payer_email.visible">{{ refund.payer_email }}</td>
+                            <td ng-show="arc.visibleColumns.payer_phone.visible">{{ refund.payer_phone }}</td>
                             <td ng-show="arc.visibleColumns.refund_status.visible">
                                 <span class="badge" ng-class="{
                                     'bg-success': refund.refund_status === 'completed',
@@ -258,20 +278,20 @@
                                     'bg-info': refund.refund_status === 'processing',
                                     'bg-danger': refund.refund_status === 'failed'
                                 }">
-                                    @{{ refund.refund_status | uppercase }}
+                                    {{ refund.refund_status | uppercase }}
                                 </span>
                             </td>
-                            <td ng-show="arc.visibleColumns.refund_description.visible">@{{ refund.refund_description }}</td>
-                            <td ng-show="arc.visibleColumns.refund_amount.visible">@{{ refund.refund_amount }}</td>
-                            <td ng-show="arc.visibleColumns.refund_charges.visible">@{{ refund.refund_charges }}</td>
-                            <td ng-show="arc.visibleColumns.refund_tax_on_charges.visible">@{{ refund.refund_tax_on_charges }}</td>
-                            <td ng-show="arc.visibleColumns.transaction_amount.visible">@{{ refund.transaction_amount }}</td>
-                            <td ng-show="arc.visibleColumns.refund_request_date.visible">@{{ refund.refund_request_date }}</td>
-                            <td ng-show="arc.visibleColumns.refund_initiated_date.visible">@{{ refund.refund_initiated_date }}</td>
-                            <td ng-show="arc.visibleColumns.refund_reference_no.visible">@{{ refund.refund_reference_no }}</td>
-                            <td ng-show="arc.visibleColumns.is_refund_approved.visible">@{{ refund.is_refund_approved }}</td>
-                            <td ng-show="arc.visibleColumns.refund_pg_completed.visible">@{{ refund.refund_pg_completed }}</td>
-                            <td ng-show="arc.visibleColumns.latest_api_response.visible">@{{ refund.latest_api_response }}</td>
+                            <td ng-show="arc.visibleColumns.refund_description.visible">{{ refund.refund_description }}</td>
+                            <td ng-show="arc.visibleColumns.refund_amount.visible">{{ refund.refund_amount }}</td>
+                            <td ng-show="arc.visibleColumns.refund_charges.visible">{{ refund.refund_charges }}</td>
+                            <td ng-show="arc.visibleColumns.refund_tax_on_charges.visible">{{ refund.refund_tax_on_charges }}</td>
+                            <td ng-show="arc.visibleColumns.transaction_amount.visible">{{ refund.transaction_amount }}</td>
+                            <td ng-show="arc.visibleColumns.refund_request_date.visible">{{ refund.refund_request_date }}</td>
+                            <td ng-show="arc.visibleColumns.refund_initiated_date.visible">{{ refund.refund_initiated_date }}</td>
+                            <td ng-show="arc.visibleColumns.refund_reference_no.visible">{{ refund.refund_reference_no }}</td>
+                            <td ng-show="arc.visibleColumns.is_refund_approved.visible">{{ refund.is_refund_approved }}</td>
+                            <td ng-show="arc.visibleColumns.refund_pg_completed.visible">{{ refund.refund_pg_completed }}</td>
+                            <td ng-show="arc.visibleColumns.latest_api_response.visible">{{ refund.latest_api_response }}</td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" ng-click="arc.viewRefund(refund)">
                                     <i class="bi bi-eye"></i>
@@ -285,7 +305,7 @@
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <div>
-                    Showing @{{ (arc.pagination.current_page - 1) * arc.pagination.per_page + 1 }} to @{{ Math.min(arc.pagination.current_page * arc.pagination.per_page, arc.pagination.total) }} of @{{ arc.pagination.total }} entries
+                    Showing {{ (arc.pagination.current_page - 1) * arc.pagination.per_page + 1 }} to {{ Math.min(arc.pagination.current_page * arc.pagination.per_page, arc.pagination.total) }} of {{ arc.pagination.total }} entries
                 </div>
                 <div>
                     <button class="btn btn-sm btn-outline-secondary" 
@@ -316,33 +336,33 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <strong>Refund ID:</strong><br>
-                            <code>@{{arc.selectedRefund.refund_id}}</code>
+                            <code>{{arc.selectedRefund.refund_id}}</code>
                         </div>
                         <div class="col-md-6">
                             <strong>Transaction ID:</strong><br>
-                            <code>@{{arc.selectedRefund.transaction_id}}</code>
+                            <code>{{arc.selectedRefund.transaction_id}}</code>
                         </div>
                         <div class="col-md-6">
                             <strong>Merchant:</strong><br>
-                            @{{arc.selectedRefund.merchant_name}}
+                            {{arc.selectedRefund.merchant_name}}
                         </div>
                         <div class="col-md-6">
                             <strong>Refund Amount:</strong><br>
-                            <span class="text-danger">@{{arc.selectedRefund.refund_amount}}</span>
+                            <span class="text-danger">{{arc.selectedRefund.refund_amount}}</span>
                         </div>
                         <div class="col-md-6">
                             <strong>Status:</strong><br>
                             <span class="badge" ng-class="{'bg-success': arc.selectedRefund.refund_status==='completed', 'bg-danger': arc.selectedRefund.refund_status==='failed'}">
-                                @{{arc.selectedRefund.refund_status | uppercase}}
+                                {{arc.selectedRefund.refund_status | uppercase}}
                             </span>
                         </div>
                         <div class="col-md-6">
                             <strong>Request Date:</strong><br>
-                            @{{arc.selectedRefund.refund_request_date}}
+                            {{arc.selectedRefund.refund_request_date}}
                         </div>
                         <div class="col-12">
                             <strong>Reason:</strong><br>
-                            @{{arc.selectedRefund.refund_description}}
+                            {{arc.selectedRefund.refund_description}}
                         </div>
                     </div>
                 </div>
@@ -353,9 +373,9 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 (function() {
     'use strict';
@@ -502,7 +522,9 @@
     }
 })();
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
 
 
 
+
+<?php echo $__env->make('layouts.app-sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\agdp_projects\Badlicash-Payment-Gateway\resources\views/admin/payments/refunds.blade.php ENDPATH**/ ?>

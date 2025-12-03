@@ -22,6 +22,7 @@ class TransactionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $merchant = $request->get('api_merchant');
+        $apiKeyMode = $request->get('api_key_mode');
 
         $perPage = min($request->get('per_page', 10), config('badlicash.pagination.max_per_page'));
         $status = $request->get('status');
@@ -29,7 +30,11 @@ class TransactionController extends Controller
         $fromDate = $request->get('from_date');
         $toDate = $request->get('to_date');
 
-        $query = $merchant->transactions()->with('order')->latest();
+        // Filter transactions by API key mode
+        $query = $merchant->transactions()
+            ->where('test_mode', $apiKeyMode === 'test')
+            ->with('order')
+            ->latest();
 
         if ($status) {
             $query->where('status', $status);
@@ -51,6 +56,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success' => true,
+            'mode' => $apiKeyMode,
             'data' => $transactions->items(),
             'pagination' => [
                 'current_page' => $transactions->currentPage(),
@@ -71,20 +77,24 @@ class TransactionController extends Controller
     public function show(Request $request, string $transactionId): JsonResponse
     {
         $merchant = $request->get('api_merchant');
+        $apiKeyMode = $request->get('api_key_mode');
 
         $transaction = $merchant->transactions()
             ->where('txn_id', $transactionId)
+            ->where('test_mode', $apiKeyMode === 'test')
             ->with('order', 'refunds')
             ->first();
 
         if (!$transaction) {
             return response()->json([
                 'error' => 'Transaction not found',
+                'message' => 'Transaction not found or does not match your API key mode.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
+            'mode' => $apiKeyMode,
             'data' => [
                 'transaction_id' => $transaction->txn_id,
                 'order_id' => $transaction->order->order_id,
@@ -94,6 +104,7 @@ class TransactionController extends Controller
                 'currency' => $transaction->currency,
                 'payment_method' => $transaction->payment_method,
                 'status' => $transaction->status,
+                'test_mode' => $transaction->test_mode,
                 'refunds' => $transaction->refunds->map(function ($refund) {
                     return [
                         'refund_id' => $refund->refund_id,

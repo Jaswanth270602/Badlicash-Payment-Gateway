@@ -69,11 +69,28 @@
                     if (modal) modal.hide();
                     vm.newRefund = { transaction_id: '', amount: '', reason: '' };
                     vm.loadRefunds();
-                    alert('Refund created successfully');
+                    
+                    var refundData = response.data.data;
+                    var alertMsg = 'Refund Created Successfully!\n\n';
+                    alertMsg += 'Refund ID: ' + refundData.refund_id + '\n';
+                    alertMsg += 'Amount: ' + refundData.currency + ' ' + refundData.amount.toFixed(2) + '\n';
+                    alertMsg += 'Status: ' + refundData.status.toUpperCase() + '\n';
+                    alertMsg += (refundData.is_partial ? 'Type: Partial Refund' : 'Type: Full Refund');
+                    alert(alertMsg);
                 }
             }, function(error) {
                 vm.creating = false;
-                alert(error.data?.message || 'Failed to create refund');
+                var errorMsg = 'Failed to create refund.\n\n';
+                if (error.data && error.data.message) {
+                    errorMsg += error.data.message;
+                } else if (error.status === 404) {
+                    errorMsg += 'Transaction not found. Please check the Transaction ID.';
+                } else if (error.status === 400) {
+                    errorMsg += 'Invalid request. Please check your input.';
+                } else {
+                    errorMsg += 'An unexpected error occurred. Please try again.';
+                }
+                alert(errorMsg);
             });
         };
 

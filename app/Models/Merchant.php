@@ -194,5 +194,55 @@ class Merchant extends Model
     {
         return $this->status === 'active';
     }
+
+    /**
+     * Check if merchant has live credentials configured.
+     * Live mode requires proper API keys and bank account details.
+     */
+    public function hasLiveCredentials(): bool
+    {
+        // Check if live API key exists
+        $hasLiveApiKey = $this->apiKeys()
+            ->where('mode', 'live')
+            ->where('status', 'active')
+            ->exists();
+
+        // Check if bank account details are configured
+        $hasBankDetails = !empty($this->bank_account_number) 
+            && !empty($this->bank_ifsc_code) 
+            && !empty($this->bank_account_holder_name);
+
+        // Check if live payment provider credentials are configured in settings
+        $hasLiveProviderSettings = isset($this->settings['production_api_key']) 
+            && isset($this->settings['production_api_secret'])
+            && !empty($this->settings['production_api_key'])
+            && !empty($this->settings['production_api_secret']);
+
+        // All three conditions must be met for live mode
+        return $hasLiveApiKey && $hasBankDetails && $hasLiveProviderSettings;
+    }
+
+    /**
+     * Get the missing live credentials for helpful error messages.
+     */
+    public function getMissingLiveCredentials(): array
+    {
+        $missing = [];
+
+        if (!$this->apiKeys()->where('mode', 'live')->where('status', 'active')->exists()) {
+            $missing[] = 'Live API Key';
+        }
+
+        if (empty($this->bank_account_number) || empty($this->bank_ifsc_code) || empty($this->bank_account_holder_name)) {
+            $missing[] = 'Bank Account Details';
+        }
+
+        if (!isset($this->settings['production_api_key']) || !isset($this->settings['production_api_secret']) 
+            || empty($this->settings['production_api_key']) || empty($this->settings['production_api_secret'])) {
+            $missing[] = 'Live Payment Gateway Credentials';
+        }
+
+        return $missing;
+    }
 }
 

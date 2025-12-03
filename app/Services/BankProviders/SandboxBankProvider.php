@@ -70,35 +70,24 @@ class SandboxBankProvider implements BankProviderInterface
 
     /**
      * Process a refund.
+     * In test/sandbox mode, refunds always succeed for easier testing.
      */
     public function processRefund(string $transactionId, float $amount): array
     {
         usleep(rand($this->minDelayMs, $this->maxDelayMs) * 1000);
 
         $refundId = 'SBOX_RFD_' . strtoupper(Str::random(18));
-        $isSuccessful = $this->shouldSucceed();
-
-        if ($isSuccessful) {
-            return [
-                'success' => true,
-                'status' => 'completed',
-                'refund_id' => $refundId,
-                'transaction_id' => $transactionId,
-                'amount' => $amount,
-                'message' => 'Refund processed successfully',
-                'timestamp' => now()->toIso8601String(),
-            ];
-        } else {
-            return [
-                'success' => false,
-                'status' => 'failed',
-                'refund_id' => $refundId,
-                'transaction_id' => $transactionId,
-                'error_code' => 'REFUND_FAILED',
-                'message' => 'Refund processing failed',
-                'timestamp' => now()->toIso8601String(),
-            ];
-        }
+        
+        // In sandbox/test mode, refunds always succeed to make testing easier
+        return [
+            'success' => true,
+            'status' => 'completed',
+            'refund_id' => $refundId,
+            'transaction_id' => $transactionId,
+            'amount' => $amount,
+            'message' => 'Refund processed successfully',
+            'timestamp' => now()->toIso8601String(),
+        ];
     }
 
     /**

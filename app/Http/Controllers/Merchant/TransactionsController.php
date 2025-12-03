@@ -33,7 +33,11 @@ class TransactionsController extends Controller
         $toDate = $request->get('to_date');
         $search = $request->get('search');
 
-        $query = $merchant->transactions()->with(['order.paymentLink'])->latest();
+        // Filter by current merchant mode (test or live)
+        $query = $merchant->transactions()
+            ->where('test_mode', $merchant->test_mode)
+            ->with(['order.paymentLink'])
+            ->latest();
 
         if ($status && $status !== 'all' && $status !== '') {
             $query->where('status', $status);

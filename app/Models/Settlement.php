@@ -78,6 +78,14 @@ class Settlement extends Model
     }
 
     /**
+     * Get transactions for this settlement.
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /**
      * Generate a unique settlement ID.
      */
     public static function generateSettlementId(): string

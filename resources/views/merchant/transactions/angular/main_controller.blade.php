@@ -78,6 +78,21 @@
             return pages;
         };
 
+        // View transaction details
+        vm.selectedTransaction = null;
+        vm.viewDetails = function(transaction) {
+            vm.selectedTransaction = transaction;
+            var modal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
+            modal.show();
+        };
+
+        vm.closeModal = function() {
+            vm.selectedTransaction = null;
+            var modalEl = document.getElementById('transactionDetailsModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        };
+
         // Initialize
         vm.loadTransactions();
             }]);
