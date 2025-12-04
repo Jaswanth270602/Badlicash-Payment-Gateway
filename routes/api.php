@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\PaymentLinkController;
 use App\Http\Controllers\Api\RefundController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\SettlementController;
+use App\Http\Controllers\Api\StatusController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -60,6 +62,29 @@ Route::prefix('v1')->middleware(['App\Http\Middleware\AuthenticateApiKey'])->gro
     
     Route::get('/payment_links', [PaymentLinkController::class, 'index'])
         ->name('api.payment_links.index');
+
+    // Settlement endpoints (LIVE mode only)
+    Route::get('/settlements', [SettlementController::class, 'index'])
+        ->name('api.settlements.index');
+
+    Route::get('/settlements/{settlementId}', [SettlementController::class, 'show'])
+        ->name('api.settlements.show');
+
+    // Unified status check endpoints
+    Route::get('/status', [StatusController::class, 'index'])
+        ->name('api.status.index');
+
+    Route::get('/status/transaction/{transactionId}', [StatusController::class, 'transaction'])
+        ->name('api.status.transaction');
+
+    Route::get('/status/order/{orderId}', [StatusController::class, 'order'])
+        ->name('api.status.order');
+
+    Route::get('/status/refund/{refundId}', [StatusController::class, 'refund'])
+        ->name('api.status.refund');
+
+    Route::get('/status/payment-link/{token}', [StatusController::class, 'paymentLink'])
+        ->name('api.status.payment_link');
 
     // Webhook test endpoint
     Route::post('/webhooks/test', [WebhookController::class, 'test'])

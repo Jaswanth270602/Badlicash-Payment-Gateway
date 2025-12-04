@@ -371,6 +371,214 @@ Test merchant webhook endpoint.
 
 ---
 
+### 12. List Settlements (LIVE mode only)
+
+Get a paginated list of settlements for the authenticated merchant. Settlements are generated only for **LIVE** transactions.
+
+**Endpoint:** `GET /api/v1/settlements`
+
+**Query Parameters:**
+- `page` (int): Page number (default: 1)
+- `per_page` (int): Items per page (default: 10, max: 100)
+- `status` (string): Filter by status (e.g. pending, processing, completed, failed)
+- `search` (string): Search by settlement ID or reference number
+- `from_date` (date): Filter by settlement date from (YYYY-MM-DD)
+- `to_date` (date): Filter by settlement date to (YYYY-MM-DD)
+
+**Notes:**
+- When called with a **test** API key, this endpoint returns an empty list and a message indicating that settlements are only available in LIVE mode.
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "mode": "live",
+  "data": [
+    {
+      "id": 1,
+      "merchant_id": 10,
+      "settlement_id": "STL_ABC123XYZ456",
+      "amount": 10000.00,
+      "fee_amount": 250.00,
+      "refund_amount": 100.00,
+      "net_amount": 9650.00,
+      "currency": "USD",
+      "transaction_count": 120,
+      "refund_count": 3,
+      "status": "completed",
+      "settlement_date": "2024-01-16",
+      "created_at": "2024-01-16T12:00:00Z",
+      "updated_at": "2024-01-16T12:05:00Z"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 10,
+    "total": 15,
+    "last_page": 2,
+    "from": 1,
+    "to": 10
+  }
+}
+```
+
+---
+
+### 13. Get Settlement Details (LIVE mode only)
+
+Retrieve full details of a specific settlement including related transactions and payouts (if configured).
+
+**Endpoint:** `GET /api/v1/settlements/{settlementId}`
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "mode": "live",
+  "data": {
+    "settlement_id": "STL_ABC123XYZ456",
+    "amount": 10000.00,
+    "fee_amount": 250.00,
+    "refund_amount": 100.00,
+    "net_amount": 9650.00,
+    "payout_amount": 9650.00,
+    "currency": "USD",
+    "transaction_count": 120,
+    "refund_count": 3,
+    "status": "completed",
+    "settlement_date": "2024-01-16",
+    "period_start": "2024-01-15T00:00:00Z",
+    "period_end": "2024-01-15T23:59:59Z",
+    "processed_at": "2024-01-16T12:00:00Z",
+    "utr_number": "UTR1234567890",
+    "bank_details": {
+      "account_number": "XXXXXX1234",
+      "ifsc_code": "BANK0001234"
+    },
+    "bank_reference": "BANK-REF-001",
+    "account_name": "ACME INC",
+    "account_number": "XXXXXX1234",
+    "ifsc_code": "BANK0001234",
+    "bank_name": "Example Bank",
+    "bank_branch": "Main Branch",
+    "notes": "Weekly settlement",
+    "transactions": [
+      {
+        "transaction_id": "TXN_1",
+        "amount": 100.00,
+        "currency": "USD",
+        "status": "success",
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "payouts": [
+      {
+        "payout_id": 1001,
+        "amount": 9650.00,
+        "currency": "USD",
+        "status": "processed",
+        "created_at": "2024-01-16T12:00:00Z"
+      }
+    ],
+    "created_at": "2024-01-16T12:00:00Z",
+    "updated_at": "2024-01-16T12:05:00Z"
+  }
+}
+```
+
+**Error (test key):** `400 Bad Request`
+```json
+{
+  "error": "Settlements are only available in LIVE mode",
+  "message": "Use a LIVE API key to access settlement details."
+}
+```
+
+**Error (not found):** `404 Not Found`
+```json
+{
+  "error": "Settlement not found"
+}
+```
+
+---
+
+### 14. Unified Status Check
+
+Check the status of orders, transactions, refunds, and payment links using a single endpoint.
+
+**Endpoint:** `GET /api/v1/status`
+
+**Query Parameters (any combination):**
+- `order_id` (string)
+- `transaction_id` (string)
+- `refund_id` (string)
+- `payment_link_token` (string)
+
+**Example:** `GET /api/v1/status?transaction_id=TXN_DEF789GHI012&order_id=ORD_ABC123XYZ456`
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "mode": "test",
+    "order": {
+      "found": true,
+      "order_id": "ORD_ABC123XYZ456",
+      "status": "completed",
+      "amount": 100.00,
+      "currency": "USD",
+      "test_mode": true,
+      "created_at": "2024-01-15T10:28:00Z"
+    },
+    "transaction": {
+      "found": true,
+      "transaction_id": "TXN_DEF789GHI012",
+      "status": "success",
+      "amount": 100.00,
+      "currency": "USD",
+      "payment_method": "card",
+      "test_mode": true,
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    "refund": {
+      "found": false
+    },
+    "payment_link": {
+      "found": false
+    }
+  }
+}
+```
+
+**Error (no identifier):** `422 Unprocessable Entity`
+```json
+{
+  "error": "Validation failed",
+  "messages": {
+    "identifier": [
+      "Provide at least one of: order_id, transaction_id, refund_id, payment_link_token."
+    ]
+  }
+}
+```
+
+---
+
+### 15. Convenience Status Endpoints
+
+These are shorthand endpoints that internally call the unified status check.
+
+- **Transaction status:** `GET /api/v1/status/transaction/{transactionId}`
+- **Order status:** `GET /api/v1/status/order/{orderId}`
+- **Refund status:** `GET /api/v1/status/refund/{refundId}`
+- **Payment link status:** `GET /api/v1/status/payment-link/{token}`
+
+Each returns the same structure as `GET /api/v1/status` but focused on a single resource type.
+
+---
+
 ## Webhook Events
 
 BadliCash sends webhooks to your configured URL for the following events:
