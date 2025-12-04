@@ -1,6 +1,6 @@
-# BadliCash Payment Gateway
+# Badilicash Payment Gateway
 
-**BadliCash** is a production-ready payment gateway MVP built with Laravel 10, Blade templates, and AngularJS (via CDN). It provides a complete payment processing solution similar to Cashfree, with features for merchants, admins, and end users.
+**Badilicash** is a production-ready payment gateway MVP built with Laravel 10, Blade templates, and AngularJS (via CDN). It provides a complete payment processing solution similar to Cashfree, with features for merchants, admins, and end users.
 
 ## 🚀 Features
 
@@ -53,10 +53,10 @@
 
 3. **Update `.env` with your configuration**:
    ```env
-   DB_DATABASE=badlicash
-   DB_USERNAME=badlicash
+   DB_DATABASE=Badilicash
+   DB_USERNAME=Badilicash
    DB_PASSWORD=secret
-   BADLICASH_MODE=test
+   Badilicash_MODE=test
    ```
 
 4. **Build and start containers**:
@@ -122,9 +122,9 @@ After seeding, use these credentials to login:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@badlicash.test | Password123! |
-| Merchant 1 | merchant1@badlicash.test | Password123! |
-| Merchant 2 | merchant2@badlicash.test | Password123! |
+| Admin | admin@Badilicash.test | Password123! |
+| Merchant 1 | merchant1@Badilicash.test | Password123! |
+| Merchant 2 | merchant2@Badilicash.test | Password123! |
 
 ## 🔑 API Usage
 
@@ -212,14 +212,14 @@ Comprehensive documentation is available in the `docs/` directory:
 
 ## 🔄 Webhook Events
 
-BadliCash sends webhooks for the following events:
+Badilicash sends webhooks for the following events:
 
 - `payment.created`
 - `payment.success`
 - `payment.failed`
 - `refund.created`
 
-Webhook payloads include an `X-BadliCash-Signature` header for verification.
+Webhook payloads include an `X-Badilicash-Signature` header for verification.
 
 ## 📊 Database Schema
 
@@ -404,7 +404,7 @@ gateway/
 │   ├── Models/              # Eloquent models
 │   └── Services/            # Business logic services
 ├── config/
-│   └── badlicash.php        # Custom configuration
+│   └── Badilicash.php        # Custom configuration
 ├── database/
 │   ├── migrations/          # Database migrations
 │   └── seeders/             # Data seeders

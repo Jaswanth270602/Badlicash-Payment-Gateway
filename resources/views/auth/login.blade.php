@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - BadliCash</title>
+    <title>Login - BadiliCash</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
@@ -14,9 +14,9 @@
                 <div class="card shadow">
                     <div class="card-body p-5">
                         <h2 class="text-center mb-4">
-                            <strong>BadliCash</strong>
+                            <strong>BadiliCash</strong>
                         </h2>
-                        <p class="text-center text-muted mb-4">Sign in to your BadliCash dashboard</p>
+                        <p class="text-center text-muted mb-4">Sign in to your BadiliCash dashboard</p>
 
                         @if($errors->any())
                         <div class="alert alert-danger">
@@ -51,7 +51,7 @@
                         <hr class="my-4">
 
                         <div class="text-center small mb-3">
-                            New to BadliCash?
+                            New to BadiliCash?
                             <a href="{{ route('signup') }}">Create a merchant account</a>
                         </div>
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'BadliCash - Payment Gateway')</title>
+    <title>@yield('title', 'BadiliCash - Payment Gateway')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -547,7 +547,7 @@
         <div class="sidebar-header-content">
             <div class="sidebar-brand">
                 <i class="bi bi-wallet2"></i>
-                <span>BadliCash</span>
+                <span>BadiliCash</span>
             </div>
             @if(auth()->user()->merchant)
                 <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
@@ -635,10 +635,6 @@
             <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
         </div>
         <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') ? 'block' : 'none' }};">
-            <a href="{{ route('admin.merchants.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.merchants.index') ? 'active' : '' }}" style="padding-left: 50px;">
-                <i class="bi bi-list-ul"></i>
-                <span>Merchants</span>
-            </a>
             <a href="{{ route('admin.merchant-accounts.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.merchant-accounts.*') ? 'active' : '' }}" style="padding-left: 50px;">
                 <i class="bi bi-person-badge"></i>
                 <span>Merchant Accounts</span>

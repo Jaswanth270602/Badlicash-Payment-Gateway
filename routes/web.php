@@ -182,6 +182,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.merchant-accounts.data');
         Route::post('/merchant-accounts', [MerchantAccountsController::class, 'store'])
             ->name('admin.merchant-accounts.store');
+        Route::post('/merchant-accounts/{id}/update-status', [MerchantAccountsController::class, 'updateStatus'])
+            ->name('admin.merchant-accounts.update-status');
+        Route::post('/merchant-accounts/{id}/update-approval-status', [MerchantAccountsController::class, 'updateStatus'])
+            ->name('admin.merchant-accounts.update-approval-status');
         Route::post('/merchant-accounts/{id}/duplicate', [MerchantAccountsController::class, 'duplicate'])
             ->name('admin.merchant-accounts.duplicate');
 
@@ -238,6 +242,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.settlements.details.data');
         Route::post('/settlements/details', [SettlementDetailsController::class, 'store'])
             ->name('admin.settlements.details.store');
+        Route::get('/settlements/merchants', [SettlementDetailsController::class, 'getMerchants'])
+            ->name('admin.settlements.merchants');
         Route::get('/settlements/fund-transfer', [FundTransferController::class, 'index'])
             ->name('admin.settlements.fund-transfer');
         Route::get('/settlements/fund-transfer/data', [FundTransferController::class, 'getData'])

@@ -139,7 +139,7 @@
                             </th>
                             <th ng-show="amac.visibleColumns.status.visible">
                                 <div class="d-flex align-items-center gap-2">
-                                    <span>Merchant Status</span>
+                                    <span>Approval Status</span>
                                     <i class="bi bi-arrow-up-down" style="cursor: pointer;" ng-click="amac.sortBy('approval_status')"></i>
                                 </div>
                                 <select class="form-select form-select-sm mt-1" ng-model="amac.filters.filter_status" ng-change="amac.applyFilters()">
@@ -148,6 +148,16 @@
                                     <option value="test_approved">Test Approved</option>
                                     <option value="not_approved">Not Approved</option>
                                     <option value="rejected">Rejected</option>
+                                </select>
+                            </th>
+                            <th>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Account Status</span>
+                                </div>
+                                <select class="form-select form-select-sm mt-1">
+                                    <option value="all">All</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
                                 </select>
                             </th>
                             <th ng-show="amac.visibleColumns.partner.visible">
@@ -204,7 +214,7 @@
                     </thead>
                     <tbody>
                         <tr ng-if="amac.merchants.length === 0">
-                            <td colspan="12" class="text-center text-danger py-4">No matching records found</td>
+                            <td colspan="13" class="text-center text-danger py-4">No matching records found</td>
                         </tr>
                         <tr ng-repeat="merchant in amac.merchants track by $index" 
                             ng-click="amac.selectMerchant(merchant)" 
@@ -217,14 +227,26 @@
                             <td ng-show="amac.visibleColumns.email.visible">@{{ merchant.email }}</td>
                             <td ng-show="amac.visibleColumns.phone.visible">@{{ merchant.phone || '-' }}</td>
                             <td ng-show="amac.visibleColumns.status.visible">
-                                <span class="badge" ng-class="{
-                                    'bg-success': merchant.approval_status === 'approved',
-                                    'bg-info': merchant.approval_status === 'test_approved',
-                                    'bg-warning': merchant.approval_status === 'not_approved',
-                                    'bg-danger': merchant.approval_status === 'rejected'
-                                }">
-                                    @{{ merchant.approval_status | uppercase | replace:'_':' ' }}
-                                </span>
+                                <!-- Approval Status Dropdown -->
+                                <select class="form-select form-select-sm" 
+                                        ng-model="merchant.approval_status" 
+                                        ng-change="amac.updateApprovalStatus(merchant)"
+                                        ng-click="$event.stopPropagation()">
+                                    <option value="approved">Approved</option>
+                                    <option value="test_approved">Test Approved</option>
+                                    <option value="not_approved">Not Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </td>
+                            <td>
+                                <!-- Account Status Dropdown -->
+                                <select class="form-select form-select-sm" 
+                                        ng-model="merchant.status" 
+                                        ng-change="amac.updateAccountStatus(merchant)"
+                                        ng-click="$event.stopPropagation()">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
                             </td>
                             <td ng-show="amac.visibleColumns.partner.visible">@{{ merchant.partner_name || '-' }}</td>
                             <td ng-show="amac.visibleColumns.organization.visible">@{{ merchant.organization_name || merchant.company_name || '-' }}</td>
@@ -265,6 +287,210 @@
 
     <!-- New Merchant Modal -->
     @include('admin.merchants.partials.new-merchant-modal')
+
+    <!-- View Merchant Details Modal -->
+    <div class="modal fade" id="viewMerchantModal" tabindex="-1" aria-labelledby="viewMerchantModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="viewMerchantModalLabel">
+                        <i class="bi bi-eye"></i> Merchant Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row" ng-if="amac.selectedMerchant">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Basic Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;"><strong>Merchant ID:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.id }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Name:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Legal Name:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.legal_name || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Email:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.email }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Phone:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.phone || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Organization:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.organization_name || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Category:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.merchant_category || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Website:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.website_link || '-' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status & Financial Information -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-check-circle"></i> Status & Financial</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;"><strong>Approval Status:</strong></td>
+                                            <td>
+                                                <span class="badge" ng-class="{
+                                                    'bg-success': amac.selectedMerchant.approval_status === 'approved',
+                                                    'bg-info': amac.selectedMerchant.approval_status === 'test_approved',
+                                                    'bg-warning': amac.selectedMerchant.approval_status === 'not_approved',
+                                                    'bg-danger': amac.selectedMerchant.approval_status === 'rejected'
+                                                }">
+                                                    <span ng-bind="amac.formatStatus(amac.selectedMerchant.approval_status)"></span>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Account Status:</strong></td>
+                                            <td>
+                                                <span class="badge" ng-class="{
+                                                    'bg-success': amac.selectedMerchant.status === 'active',
+                                                    'bg-secondary': amac.selectedMerchant.status === 'inactive'
+                                                }">
+                                                    <span ng-bind="(amac.selectedMerchant.status || 'inactive') | uppercase"></span>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Test Mode:</strong></td>
+                                            <td>
+                                                <span class="badge" ng-class="amac.selectedMerchant.test_mode ? 'bg-warning' : 'bg-success'">
+                                                    @{{ amac.selectedMerchant.test_mode ? 'YES' : 'NO' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Fee Percentage:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.fee_percentage || 0 }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Fee Flat:</strong></td>
+                                            <td>₹@{{ amac.selectedMerchant.fee_flat || 0 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Registration Date:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.registration_date || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Created At:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.created_at || '-' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Details -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-building"></i> Business Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;"><strong>PAN Number:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.merchant_pan_number || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>GSTIN:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.gst_identification_no || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>TAN No:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.tan_no || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Address:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.address_line_1 || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>City:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.business_city || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>State:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.business_state || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Postal Code:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.business_postal_code || '-' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bank Details -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-bank"></i> Bank Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;"><strong>Account Holder:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.bank_account_holder_name || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Account Number:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.bank_account_number || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Bank Name:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.bank_name || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>IFSC Code:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.bank_ifsc_code || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Branch:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.bank_branch || '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Account Type:</strong></td>
+                                            <td>@{{ amac.selectedMerchant.account_type || '-' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 

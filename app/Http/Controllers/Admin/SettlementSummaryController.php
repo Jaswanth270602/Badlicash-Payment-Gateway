@@ -26,10 +26,10 @@ class SettlementSummaryController extends Controller
             
             $query = Settlement::with('merchant')->latest();
 
-            // Date range filter
-            if ($request->has('date_range') && $request->get('date_range')) {
+            // Date range filter (only apply if provided and not empty)
+            if ($request->has('date_range') && !empty($request->get('date_range'))) {
                 $dates = explode(' - ', $request->get('date_range'));
-                if (count($dates) === 2) {
+                if (count($dates) === 2 && !empty(trim($dates[0])) && !empty(trim($dates[1]))) {
                     $query->whereBetween('settlement_date', [trim($dates[0]), trim($dates[1])]);
                 }
             }

@@ -15,8 +15,12 @@ class Kernel extends ConsoleKernel
         // Schedule webhook retries
         $schedule->command('webhooks:retry')->everyFiveMinutes();
 
-        // Schedule settlement processing
-        $schedule->command('settlements:process')->daily();
+        // Schedule settlement processing at 11 PM daily
+        $schedule->command('settlements:process-daily')
+            ->dailyAt('23:00')
+            ->timezone('Asia/Kolkata')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
