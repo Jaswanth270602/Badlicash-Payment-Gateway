@@ -264,7 +264,7 @@
                 </h1>
                 <p class="hero-subtitle mb-3">
                     BadliCash is a developer-first, bank-grade payment gateway designed to feel as smooth as Razorpay,
-                    but with obsessive focus on observability, test mode parity, and merchant UX.
+                    but with obsessive focus on observability, sandbox–production parity, and merchant UX.
                 </p>
                 <ul class="list-unstyled mb-4" style="font-size:13px;color:#9ca3af;">
                     <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Unified APIs for payments, refunds, disputes & settlements</li>
@@ -309,7 +309,7 @@
                             <div style="font-size:16px;font-weight:600;color:#e5e7eb;">BadliCash Widget</div>
                         </div>
                         <span class="landing-badge">
-                            TEST MODE
+                            SANDBOX PREVIEW
                         </span>
                     </div>
                     <div class="mt-2 p-3 rounded-4" style="background:rgba(15,23,42,0.85);border:1px solid rgba(55,65,81,0.9);">
@@ -335,10 +335,10 @@
                             </span>
                         </div>
                         <button class="btn btn-primary w-100 mt-2" style="border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;">
-                            Simulate a test payment
+                            Try a sandbox payment
                         </button>
                         <div class="mt-2" style="font-size:11px;color:#9ca3af;">
-                            Test mode mirrors live-mode webhooks, so your QA environment behaves like production from day one.
+                            The sandbox mirrors live webhooks and flows, so your QA environment behaves like production from day one.
                         </div>
                     </div>
 
@@ -417,10 +417,10 @@
             <div class="landing-badge mb-2">Get started in minutes</div>
             <h2 style="font-size:22px;font-weight:700;color:#e5e7eb;">Open your BadliCash merchant account today</h2>
             <p style="font-size:13px;color:#9ca3af;max-width:480px;margin:6px auto 16px;">
-                No calls. No PDFs. Fill a modern, guided signup and start integrating in test mode right away.
+                No calls. No PDFs. Fill a modern, guided signup and start integrating with BadliCash’s sandbox and live-ready APIs.
             </p>
             <a href="{{ route('signup') }}" class="btn btn-primary-hero">
-                Sign up – it’s free in test mode
+                Sign up – free developer account
                 <i class="bi bi-arrow-right-short"></i>
             </a>
         </div>
