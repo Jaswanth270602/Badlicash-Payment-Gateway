@@ -22,7 +22,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label">Select Date Range:</label>
-                <input type="text" class="form-control" ng-model="assc.dateRange" placeholder="14/11/2025 00:00:00 - 29/11/2025 23:59:59">
+                <input type="text" class="form-control" ng-model="assc.dateRange" placeholder="Leave empty to show all dates">
             </div>
             <div class="col-md-2">
                 <button class="btn btn-primary w-100">Advanced Filter</button>
@@ -285,7 +285,7 @@
                 vm.filters = {};
                 vm.loading = false;
                 vm.selectAll = false;
-                vm.dateRange = '14/11/2025 00:00:00 - 29/11/2025 23:59:59';
+                vm.dateRange = ''; // Empty = show all dates
                 vm.sortColumn = 'id';
                 vm.sortDirection = 'desc';
                 

@@ -36,14 +36,16 @@ class MerchantAccountsController extends Controller
             
             $query = Merchant::query();
 
-            // Status filter (approval_status)
-            if ($request->has('approval_status') && $request->get('approval_status') !== 'all') {
-                $query->where('approval_status', $request->get('approval_status'));
+            // Approval status filter
+            $approvalStatus = $request->get('approval_status');
+            if (!empty($approvalStatus) && $approvalStatus !== 'all' && $approvalStatus !== '') {
+                $query->where('approval_status', $approvalStatus);
             }
 
             // Merchant type filter
-            if ($request->has('merchant_type') && $request->get('merchant_type') !== 'all') {
-                $query->where('merchant_type', $request->get('merchant_type'));
+            $merchantType = $request->get('merchant_type');
+            if (!empty($merchantType) && $merchantType !== 'all' && $merchantType !== '') {
+                $query->where('merchant_type', $merchantType);
             }
 
             // Column filters
@@ -261,6 +263,35 @@ class MerchantAccountsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create merchant account: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateStatus(Request $request, $id): JsonResponse
+    {
+        try {
+            $merchant = Merchant::findOrFail($id);
+            
+            // Update approval_status if provided
+            if ($request->has('approval_status')) {
+                $merchant->approval_status = $request->input('approval_status');
+            }
+            
+            // Update status (active/inactive) if provided
+            if ($request->has('status')) {
+                $merchant->status = $request->input('status');
+            }
+            
+            $merchant->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status',
             ], 500);
         }
     }

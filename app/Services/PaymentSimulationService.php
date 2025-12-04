@@ -114,7 +114,10 @@ class PaymentSimulationService
     protected function createTransaction(Order $order, array $paymentData): Transaction
     {
         $feeAmount = $this->calculateFee($order->amount);
-        $netAmount = $order->amount - $feeAmount;
+        $gstAmount = $this->calculateGST($feeAmount);
+        $otherFees = 0; // Default 0, can be configured per merchant
+        $totalDeductions = $feeAmount + $gstAmount + $otherFees;
+        $netAmount = $order->amount - $totalDeductions;
 
         return Transaction::create([
             'order_id' => $order->id,
@@ -123,9 +126,12 @@ class PaymentSimulationService
             'payment_method' => $paymentData['payment_method'],
             'amount' => $order->amount,
             'fee_amount' => $feeAmount,
+            'gst_amount' => $gstAmount,
+            'other_fees' => $otherFees,
             'net_amount' => $netAmount,
             'currency' => $order->currency,
             'status' => 'initiated',
+            'settlement_status' => 'pending',
             'payment_details' => $this->sanitizePaymentDetails($paymentData['payment_details']),
             'test_mode' => $order->test_mode,
             'ip_address' => request()->ip(),
@@ -263,6 +269,15 @@ class PaymentSimulationService
     {
         // Default 2.5% fee
         return round($amount * 0.025, 2);
+    }
+
+    /**
+     * Calculate GST on commission (18%).
+     */
+    protected function calculateGST(float $feeAmount): float
+    {
+        // GST is 18% of the commission
+        return round($feeAmount * 0.18, 2);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Traits\LogsConditionally;
+use App\Models\Merchant;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -186,6 +187,29 @@ class SettlementDetailsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create settlement detail: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get list of merchants for dropdown
+     */
+    public function getMerchants(): JsonResponse
+    {
+        try {
+            $merchants = Merchant::where('status', 'active')
+                ->select('id', 'name', 'email')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $merchants,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch merchants',
             ], 500);
         }
     }

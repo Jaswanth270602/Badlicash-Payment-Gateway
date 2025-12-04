@@ -16,7 +16,7 @@
                 vm.pagination = { current_page: 1, per_page: 5, total: 0, last_page: 1 };
                 vm.filters = {
                     approval_status: 'all',
-                    merchant_type: 'merchant',
+                    merchant_type: 'all',
                     filter_id: '',
                     filter_name: '',
                     filter_email: '',
@@ -148,7 +148,7 @@
                 vm.clearFilters = function() {
                     vm.filters = {
                         approval_status: 'all',
-                        merchant_type: 'merchant',
+                        merchant_type: 'all',
                         filter_id: '',
                         filter_name: '',
                         filter_email: '',
@@ -348,8 +348,67 @@
                 };
 
                 vm.viewMerchant = function(merchant) {
-                    // TODO: Implement view merchant details
-                    alert('View merchant: ' + merchant.name);
+                    vm.selectedMerchant = merchant;
+                    var modal = new bootstrap.Modal(document.getElementById('viewMerchantModal'));
+                    modal.show();
+                };
+
+                // Update Approval Status
+                vm.updateApprovalStatus = function(merchant) {
+                    if (!merchant || !merchant.id) {
+                        return;
+                    }
+
+                    $http.post('/admin/merchant-accounts/' + merchant.id + '/update-approval-status', {
+                        approval_status: merchant.approval_status
+                    }, {
+                        headers: {
+                            'X-CSRF-TOKEN': csrf
+                        }
+                    }).then(function(response) {
+                        if (response.data.success) {
+                            alert('Approval status updated successfully to: ' + merchant.approval_status.replace(/_/g, ' ').toUpperCase());
+                        } else {
+                            alert('Failed to update approval status: ' + (response.data.message || 'Unknown error'));
+                            vm.loadMerchants(); // Reload to reset dropdown
+                        }
+                    }, function(error) {
+                        alert('Failed to update approval status');
+                        console.error('Error:', error);
+                        vm.loadMerchants(); // Reload to reset dropdown
+                    });
+                };
+
+                // Update Account Status (Active/Inactive)
+                vm.updateAccountStatus = function(merchant) {
+                    if (!merchant || !merchant.id) {
+                        return;
+                    }
+
+                    $http.post('/admin/merchant-accounts/' + merchant.id + '/update-status', {
+                        status: merchant.status
+                    }, {
+                        headers: {
+                            'X-CSRF-TOKEN': csrf
+                        }
+                    }).then(function(response) {
+                        if (response.data.success) {
+                            alert('Account status updated successfully to: ' + merchant.status.toUpperCase());
+                        } else {
+                            alert('Failed to update account status: ' + (response.data.message || 'Unknown error'));
+                            vm.loadMerchants(); // Reload to reset dropdown
+                        }
+                    }, function(error) {
+                        alert('Failed to update account status');
+                        console.error('Error:', error);
+                        vm.loadMerchants(); // Reload to reset dropdown
+                    });
+                };
+
+                // Format status helper
+                vm.formatStatus = function(status) {
+                    if (!status) return 'NOT APPROVED';
+                    return status.replace(/_/g, ' ').toUpperCase();
                 };
 
                 // Initialize
