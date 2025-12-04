@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\RegistrationController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Merchant\PaymentLinksController;
 use App\Http\Controllers\Merchant\TransactionsController as MerchantTransactionsController;
@@ -46,9 +48,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // Public payment checkout
 Route::get('/pay/{token}', [PaymentCheckoutController::class, 'show'])->name('payment.checkout');
@@ -60,6 +60,12 @@ Route::get('/payment/failed/{token}', [PaymentCheckoutController::class, 'failed
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Public merchant signup
+Route::middleware('guest')->group(function () {
+    Route::get('/signup', [RegistrationController::class, 'showSignup'])->name('signup');
+    Route::post('/signup', [RegistrationController::class, 'register'])->name('signup.post');
+});
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
