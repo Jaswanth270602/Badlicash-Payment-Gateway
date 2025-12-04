@@ -16,7 +16,7 @@
                         <h2 class="text-center mb-4">
                             <strong>BadliCash</strong>
                         </h2>
-                        <p class="text-center text-muted mb-4">Sign in to your account</p>
+                        <p class="text-center text-muted mb-4">Sign in to your BadliCash dashboard</p>
 
                         @if($errors->any())
                         <div class="alert alert-danger">
@@ -45,12 +45,17 @@
                                 <label class="form-check-label" for="remember">Remember me</label>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100">Sign In</button>
+                            <button type="submit" class="btn btn-primary w-100 mb-2">Sign In</button>
                         </form>
 
                         <hr class="my-4">
 
-                        <div class="text-center small">
+                        <div class="text-center small mb-3">
+                            New to BadliCash?
+                            <a href="{{ route('signup') }}">Create a merchant account</a>
+                        </div>
+
+                        <div class="text-center small text-muted">
                             <p class="mb-1"><strong>Test Credentials:</strong></p>
                             <p class="mb-0">Admin: admin@badlicash.test / Password123!</p>
                             <p class="mb-0">Merchant: merchant1@badlicash.test / Password123!</p>

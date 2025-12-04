@@ -159,11 +159,29 @@ class PaymentSimulationService
      */
     protected function simulateTestPayment(string $paymentMethod, array $paymentDetails): array
     {
+        // Check for explicit simulation result (from test mode buttons)
+        if (isset($paymentDetails['simulate']) && isset($paymentDetails['simulate_result'])) {
+            if ($paymentDetails['simulate_result'] === 'success') {
+                return [
+                    'success' => true,
+                    'gateway_txn_id' => 'TEST_' . strtoupper(uniqid()),
+                    'message' => 'Payment successful (simulated)',
+                    'payment_method' => $paymentMethod,
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Payment failed (simulated)',
+                    'error_code' => 'PAYMENT_FAILED',
+                ];
+            }
+        }
+
         if ($paymentMethod === 'card') {
             $cardNumber = str_replace(' ', '', $paymentDetails['card_number'] ?? '');
 
             // Test card numbers
-            $successCards = ['4111111111111111', '5555555555554444'];
+            $successCards = ['4242424242424242', '4111111111111111', '5555555555554444'];
             $failureCards = ['4000000000000002', '4000000000009995'];
 
             if (in_array($cardNumber, $successCards)) {

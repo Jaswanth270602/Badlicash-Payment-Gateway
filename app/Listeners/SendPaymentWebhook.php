@@ -5,11 +5,17 @@ namespace App\Listeners;
 use App\Events\PaymentCreated;
 use App\Events\PaymentSuccess;
 use App\Events\PaymentFailed;
-use App\Jobs\DeliverWebhookJob;
-use App\Models\WebhookEvent;
+use App\Services\WebhookService;
 
 class SendPaymentWebhook
 {
+    protected WebhookService $webhookService;
+
+    public function __construct(WebhookService $webhookService)
+    {
+        $this->webhookService = $webhookService;
+    }
+
     /**
      * Handle the event.
      */
@@ -17,53 +23,59 @@ class SendPaymentWebhook
     {
         if ($event instanceof PaymentCreated) {
             $merchant = $event->order->merchant;
-            $eventType = 'payment.created';
             $payload = [
-                'order_id' => $event->order->order_id,
-                'amount' => $event->order->amount,
-                'currency' => $event->order->currency,
-                'status' => $event->order->status,
-                'created_at' => $event->order->created_at->toIso8601String(),
+                'entity' => 'event',
+                'account_id' => (string) $merchant->id,
+                'event' => 'payment.created',
+                'contains' => ['order'],
+                'payload' => [
+                    'order' => [
+                        'entity' => [
+                            'id' => $event->order->order_id,
+                            'entity' => 'order',
+                            'amount' => (int) ($event->order->amount * 100),
+                            'currency' => $event->order->currency,
+                            'status' => $event->order->status,
+                            'created_at' => $event->order->created_at->timestamp,
+                        ],
+                    ],
+                ],
+                'created_at' => now()->timestamp,
             ];
+            
+            $this->webhookService->sendWebhook($merchant, 'payment.created', $payload);
+            
         } elseif ($event instanceof PaymentSuccess) {
-            $merchant = $event->transaction->merchant;
-            $eventType = 'payment.success';
-            $payload = [
-                'order_id' => $event->transaction->order->order_id,
-                'transaction_id' => $event->transaction->txn_id,
-                'amount' => $event->transaction->amount,
-                'currency' => $event->transaction->currency,
-                'payment_method' => $event->transaction->payment_method,
-                'status' => $event->transaction->status,
-                'captured_at' => $event->transaction->captured_at?->toIso8601String(),
-            ];
+            $payload = $this->webhookService->buildPaymentPayload($event->transaction, [
+                'event' => 'payment.success',
+            ]);
+            
+            $this->webhookService->sendWebhook(
+                $event->transaction->merchant,
+                'payment.success',
+                $payload
+            );
+            
+            // Also send payment.charged event
+            event(new \App\Events\PaymentCharged($event->transaction));
+            
         } else { // PaymentFailed
             $merchant = $event->transaction->merchant;
-            $eventType = 'payment.failed';
-            $payload = [
-                'order_id' => $event->transaction->order->order_id,
-                'transaction_id' => $event->transaction->txn_id,
-                'amount' => $event->transaction->amount,
-                'currency' => $event->transaction->currency,
-                'status' => $event->transaction->status,
-                'error' => $event->transaction->gateway_response['message'] ?? 'Payment failed',
-            ];
-        }
-
-        if ($merchant->webhook_url) {
-            $webhookEvent = WebhookEvent::create([
-                'merchant_id' => $merchant->id,
-                'event_type' => $eventType,
-                'payload' => $payload,
-                'webhook_url' => $merchant->webhook_url,
-                'delivered' => false,
-                'attempt_count' => 0,
-                'max_attempts' => config('badlicash.webhook.max_retry_attempts', 5),
-                'next_retry_at' => now(),
+            $payload = $this->webhookService->buildPaymentPayload($event->transaction, [
+                'event' => 'payment.failed',
+                'payload' => [
+                    'payment' => [
+                        'entity' => [
+                            'error' => [
+                                'code' => $event->transaction->gateway_response['code'] ?? 'PAYMENT_FAILED',
+                                'description' => $event->transaction->gateway_response['message'] ?? 'Payment failed',
+                            ],
+                        ],
+                    ],
+                ],
             ]);
-
-            // Dispatch webhook delivery job
-            DeliverWebhookJob::dispatch($webhookEvent);
+            
+            $this->webhookService->sendWebhook($merchant, 'payment.failed', $payload);
         }
     }
 }

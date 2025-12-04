@@ -428,14 +428,19 @@
 
                 @if($paymentLink->test_mode)
                 <div class="test-mode-badge">
-                    <strong><i class="bi bi-info-circle"></i> TEST MODE - Use Test Cards</strong>
-                    <div><strong>✅ Success:</strong> 4242 4242 4242 4242</div>
-                    <div><strong>✅ Success:</strong> 5555 5555 5555 4444</div>
-                    <div style="margin-top: 8px;"><strong>❌ Fail:</strong> 4000 0000 0000 0002</div>
-                    <div><strong>❌ Fail:</strong> 4000 0000 0000 9995</div>
-                    <div style="margin-top: 10px; opacity: 0.9; font-size: 12px;">
-                        CVV: Any 3 digits | Expiry: Any future date<br>
-                        Other methods: 70% success rate
+                    <strong><i class="bi bi-info-circle"></i> TEST MODE - Simulate Payment</strong>
+                    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <button class="btn btn-sm btn-success" id="simulateSuccessBtn" style="width: 100%; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: white; font-weight: 600;">
+                            <i class="bi bi-check-circle"></i> Simulate Success
+                        </button>
+                        <button class="btn btn-sm btn-danger" id="simulateFailBtn" style="width: 100%; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: white; font-weight: 600;">
+                            <i class="bi bi-x-circle"></i> Simulate Failure
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px; opacity: 0.9; font-size: 11px;">
+                        Or use test cards:<br>
+                        <strong>✅ Success:</strong> 4242 4242 4242 4242<br>
+                        <strong>❌ Fail:</strong> 4000 0000 0000 0002
                     </div>
                 </div>
                 @endif
@@ -766,6 +771,134 @@
         });
 
         validateForm();
+
+        // Test mode simulation buttons
+        @if($paymentLink->test_mode)
+        const simulateSuccessBtn = document.getElementById('simulateSuccessBtn');
+        const simulateFailBtn = document.getElementById('simulateFailBtn');
+
+        if (simulateSuccessBtn) {
+            simulateSuccessBtn.addEventListener('click', async () => {
+                if (payButton.disabled && !document.getElementById('customerName').value.trim()) {
+                    alert('Please fill in customer details first');
+                    return;
+                }
+
+                successAlert.style.display = 'none';
+                errorAlert.style.display = 'none';
+                
+                payButton.disabled = true;
+                payButtonText.innerHTML = '<span class="spinner"></span> Simulating Success...';
+
+                // Simulate successful payment
+                const paymentData = {
+                    payment_method: selectedMethod || 'card',
+                    customer_details: {
+                        name: document.getElementById('customerName').value.trim() || 'Test Customer',
+                        email: document.getElementById('customerEmail').value.trim() || 'test@example.com',
+                        phone: document.getElementById('customerPhone').value.trim() || '9876543210',
+                    },
+                    payment_details: {
+                        simulate: true,
+                        simulate_result: 'success'
+                    }
+                };
+
+                try {
+                    const response = await fetch(`/pay/${paymentLink.link_token}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: JSON.stringify(paymentData),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        successMessage.textContent = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
+                        successAlert.style.display = 'flex';
+                        payButtonText.textContent = 'Payment Successful!';
+                        payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                        successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+                    } else {
+                        errorMessage.textContent = result.message || 'Simulation failed';
+                        errorAlert.style.display = 'flex';
+                        payButton.disabled = false;
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                    }
+                } catch (error) {
+                    console.error('Simulation error:', error);
+                    errorMessage.textContent = 'Simulation error occurred';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                }
+            });
+        }
+
+        if (simulateFailBtn) {
+            simulateFailBtn.addEventListener('click', async () => {
+                if (payButton.disabled && !document.getElementById('customerName').value.trim()) {
+                    alert('Please fill in customer details first');
+                    return;
+                }
+
+                successAlert.style.display = 'none';
+                errorAlert.style.display = 'none';
+                
+                payButton.disabled = true;
+                payButtonText.innerHTML = '<span class="spinner"></span> Simulating Failure...';
+
+                // Simulate failed payment
+                const paymentData = {
+                    payment_method: selectedMethod || 'card',
+                    customer_details: {
+                        name: document.getElementById('customerName').value.trim() || 'Test Customer',
+                        email: document.getElementById('customerEmail').value.trim() || 'test@example.com',
+                        phone: document.getElementById('customerPhone').value.trim() || '9876543210',
+                    },
+                    payment_details: {
+                        simulate: true,
+                        simulate_result: 'failed'
+                    }
+                };
+
+                try {
+                    const response = await fetch(`/pay/${paymentLink.link_token}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: JSON.stringify(paymentData),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        errorMessage.textContent = 'Unexpected: Simulation returned success';
+                        errorAlert.style.display = 'flex';
+                    } else {
+                        errorMessage.textContent = result.message || 'Payment failed (simulated)';
+                        errorAlert.style.display = 'flex';
+                        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    
+                    payButton.disabled = false;
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                } catch (error) {
+                    console.error('Simulation error:', error);
+                    errorMessage.textContent = 'Payment failed (simulated)';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                }
+            });
+        }
+        @endif
     </script>
 </body>
 </html>
