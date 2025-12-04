@@ -137,12 +137,12 @@
                     </div>
                 </div>
                 <div class="step-pill mb-2">
-                    Guided · 4 short steps · Test mode ready
+                    Guided · 4 short steps · Production-ready account
                 </div>
                 <h2 class="h4 text-white mt-2 mb-2">Create your merchant account</h2>
                 <p class="small-muted mb-3">
                     Tell us about your business, bank account and login details. We’ll spin up a secure BadliCash
-                    account in test mode so you can start integrating immediately.
+                    account with full sandbox and live-mode readiness so you can start integrating immediately.
                 </p>
                 <ul class="list-unstyled mb-3 small-muted">
                     <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> No paperwork for sandbox access</li>
@@ -299,8 +299,8 @@
                                 </div>
                                 <div class="col-12">
                                     <p class="small-muted mb-0">
-                                        We use these details only to prepare your onboarding for live mode. They are
-                                        stored securely and are not used in test-mode settlements.
+                                        We use these details to prepare your onboarding for live payouts. During sandbox testing
+                                        no real charges or settlements are triggered.
                                     </p>
                                 </div>
                             </div>
@@ -345,8 +345,8 @@
                                 </div>
                                 <div class="col-12">
                                     <p class="small-muted mb-0">
-                                        In test mode, we never hit real banks. These details are validated and stored for your
-                                        future live-mode activation.
+                                        In sandbox, we never hit real banks while you are testing. Once you are approved for live mode,
+                                        these same details will be used for actual settlements.
                                     </p>
                                 </div>
                             </div>
@@ -390,8 +390,8 @@
                                 </div>
                                 <div class="col-12">
                                     <p class="small-muted mb-0">
-                                        By signing up, you agree that this is a test-mode account. Our team will contact you
-                                        before enabling real money flow.
+                                        By signing up, you’ll start in the BadliCash sandbox. Our team will review your details and
+                                        enable live money flow once compliance checks are complete.
                                     </p>
                                 </div>
                             </div>

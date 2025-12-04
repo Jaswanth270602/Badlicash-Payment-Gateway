@@ -92,7 +92,7 @@ class RegistrationController extends Controller
         try {
             DB::beginTransaction();
 
-            // Create merchant (in test mode, pending approval)
+            // Create merchant (starts in sandbox mode, pending live approval)
             $merchant = Merchant::create([
                 'name' => $request->business_name,
                 'legal_name' => $request->legal_name,
@@ -152,7 +152,7 @@ class RegistrationController extends Controller
 
             return redirect()
                 ->route('login')
-                ->with('success', 'Your BadliCash account has been created. Our team will review and approve your account shortly. You can log in with your email and password.');
+                ->with('success', 'Your BadliCash merchant account has been created. You can log in now and use the full sandbox environment while our team reviews and enables live payments.');
         } catch (\Exception $e) {
             DB::rollBack();
 
