@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             OrdersAndTransactionsSeeder::class,
             PaymentLinksSeeder::class,
             DisputesSeeder::class,
+            WebhookEventTypesSeeder::class,
         ]);
     }
 }

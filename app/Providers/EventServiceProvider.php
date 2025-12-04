@@ -29,9 +29,27 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\PaymentFailed::class => [
             \App\Listeners\SendPaymentWebhook::class,
         ],
+        \App\Events\PaymentCharged::class => [
+            \App\Listeners\SendGenericWebhook::class . '@handlePaymentCharged',
+        ],
+        \App\Events\PaymentActivated::class => [
+            \App\Listeners\SendGenericWebhook::class . '@handlePaymentActivated',
+        ],
+        \App\Events\PaymentAuthorized::class => [
+            \App\Listeners\SendGenericWebhook::class . '@handlePaymentAuthorized',
+        ],
         \App\Events\RefundCreated::class => [
             \App\Listeners\SendRefundWebhook::class,
             \App\Listeners\AdjustSettlement::class,
+        ],
+        \App\Events\SubscriptionCreated::class => [
+            \App\Listeners\SendGenericWebhook::class . '@handleSubscriptionCreated',
+        ],
+        \App\Events\SubscriptionActivated::class => [
+            \App\Listeners\SendGenericWebhook::class . '@handleSubscriptionActivated',
+        ],
+        \App\Events\SubscriptionCharged::class => [
+            \App\Listeners\SendGenericWebhook::class . '@handleSubscriptionCharged',
         ],
     ];
 

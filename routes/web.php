@@ -323,5 +323,15 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.risk.alerts.store');
         Route::post('/risk/alerts/{id}', [RiskManagementController::class, 'updateAlert'])
             ->name('admin.risk.alerts.update');
+
+        // Webhook Event Types Management
+        Route::get('/webhook-event-types', [\App\Http\Controllers\Admin\WebhookEventTypesController::class, 'index'])
+            ->name('admin.webhook-event-types.index');
+        Route::get('/webhook-event-types/data', [\App\Http\Controllers\Admin\WebhookEventTypesController::class, 'getData'])
+            ->name('admin.webhook-event-types.data');
+        Route::post('/webhook-event-types/{id}', [\App\Http\Controllers\Admin\WebhookEventTypesController::class, 'update'])
+            ->name('admin.webhook-event-types.update');
+        Route::post('/webhook-event-types/{id}/toggle', [\App\Http\Controllers\Admin\WebhookEventTypesController::class, 'toggle'])
+            ->name('admin.webhook-event-types.toggle');
     });
 });

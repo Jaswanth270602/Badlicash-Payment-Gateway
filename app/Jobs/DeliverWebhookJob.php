@@ -35,20 +35,36 @@ class DeliverWebhookJob implements ShouldQueue
         try {
             $merchant = $this->webhookEvent->merchant;
 
+            // Determine mode (check payload for test_mode or use merchant default)
+            $isTestMode = $this->webhookEvent->payload['payload']['payment']['entity']['test_mode'] ?? 
+                         $this->webhookEvent->payload['payload']['order']['entity']['test_mode'] ?? 
+                         $merchant->test_mode ?? true;
+
+            // Add mode information to payload if not present
+            if (!isset($this->webhookEvent->payload['mode'])) {
+                $payload = $this->webhookEvent->payload;
+                $payload['mode'] = $isTestMode ? 'test' : 'live';
+                $this->webhookEvent->update(['payload' => $payload]);
+            }
+
             // Generate signature for webhook
             $signature = $this->generateSignature(
                 $this->webhookEvent->payload,
                 $merchant->webhook_secret
             );
 
+            // Build headers
+            $headers = [
+                'Content-Type' => 'application/json',
+                'X-BadliCash-Signature' => $signature,
+                'X-BadliCash-Event' => $this->webhookEvent->event_type,
+                'X-BadliCash-Delivery-ID' => (string) $this->webhookEvent->id,
+                'X-BadliCash-Mode' => $isTestMode ? 'test' : 'live',
+            ];
+
             // Send webhook
             $response = Http::timeout($this->timeout)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'X-BadliCash-Signature' => $signature,
-                    'X-BadliCash-Event' => $this->webhookEvent->event_type,
-                    'X-BadliCash-Delivery-ID' => $this->webhookEvent->id,
-                ])
+                ->withHeaders($headers)
                 ->post($this->webhookEvent->webhook_url, $this->webhookEvent->payload);
 
             if ($response->successful()) {
@@ -57,6 +73,7 @@ class DeliverWebhookJob implements ShouldQueue
                 Log::info('Webhook delivered successfully', [
                     'webhook_id' => $this->webhookEvent->id,
                     'event_type' => $this->webhookEvent->event_type,
+                    'mode' => $isTestMode ? 'test' : 'live',
                 ]);
             } else {
                 throw new \Exception("Webhook delivery failed with status: {$response->status()}");
