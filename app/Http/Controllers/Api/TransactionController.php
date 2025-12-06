@@ -10,7 +10,7 @@ class TransactionController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('throttle.api');
+        // Middleware applied in routes
     }
 
     /**

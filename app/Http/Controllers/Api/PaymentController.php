@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Merchant;
+use App\Models\PaymentLink;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class PaymentController extends Controller
     public function __construct(PaymentService $paymentService)
     {
         $this->paymentService = $paymentService;
-        $this->middleware('throttle.api');
+        // Middleware applied in routes instead
     }
 
     /**
@@ -30,7 +31,9 @@ class PaymentController extends Controller
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:1',
             'currency' => 'nullable|string|size:3',
-            'payment_method' => 'required|in:card,netbanking,upi,wallet,emi',
+            'payment_method' => 'nullable|in:card,netbanking,upi,wallet,emi',
+            'customer_name' => 'nullable|string',
+            'customer_email' => 'nullable|email',
             'customer_details' => 'nullable|array',
             'customer_details.name' => 'nullable|string',
             'customer_details.email' => 'nullable|email',
@@ -39,6 +42,7 @@ class PaymentController extends Controller
             'metadata' => 'nullable|array',
             'return_url' => 'nullable|url',
             'cancel_url' => 'nullable|url',
+            'webhook_url' => 'nullable|url',
             'idempotency_key' => 'nullable|string|max:255',
         ]);
 
@@ -51,29 +55,42 @@ class PaymentController extends Controller
 
         try {
             $merchant = $request->get('api_merchant');
+            // Get validated data
+            $data = $validator->validated();
+            
             // Force effective mode from API key for this request only
             $effectiveMode = $request->get('api_key_mode');
             if ($effectiveMode) {
                 $merchant->setAttribute('test_mode', $effectiveMode === 'test');
             }
 
-            // Create order
-            $order = $this->paymentService->createOrder($merchant, $validator->validated());
+            // Create a PaymentLink for this payment
+            $paymentLink = PaymentLink::create([
+                'merchant_id' => $merchant->id,
+                'link_token' => PaymentLink::generateLinkToken(),
+                'title' => $data['description'] ?? 'Payment',
+                'description' => $data['description'] ?? null,
+                'amount' => $data['amount'],
+                'currency' => $data['currency'] ?? $merchant->default_currency ?? 'USD',
+                'status' => 'active',
+                'test_mode' => $merchant->test_mode,
+                'payment_methods' => ['card', 'upi', 'netbanking', 'wallet'],
+                'expires_at' => now()->addHours(24),
+                'usage_count' => 0,
+                'metadata' => $data['metadata'] ?? null,
+            ]);
 
-            // Process payment
-            $transaction = $this->paymentService->processPayment($order, $validator->validated());
-
+            // Generate checkout URL pointing to your payment gateway form
+            $checkoutUrl = url('/pay/' . $paymentLink->link_token);
+            
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'order_id' => $order->order_id,
-                    'transaction_id' => $transaction->txn_id,
-                    'amount' => $transaction->amount,
-                    'currency' => $transaction->currency,
-                    'status' => $transaction->status,
-                    'payment_method' => $transaction->payment_method,
-                    'created_at' => $transaction->created_at->toIso8601String(),
-                ],
+                'payment_url' => $checkoutUrl,
+                'checkout_url' => $checkoutUrl,
+                'link_token' => $paymentLink->link_token,
+                'amount' => $paymentLink->amount,
+                'currency' => $paymentLink->currency,
+                'expires_at' => $paymentLink->expires_at->toIso8601String(),
             ], 201);
 
         } catch (\Exception $e) {

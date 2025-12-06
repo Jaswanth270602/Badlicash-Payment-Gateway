@@ -25,6 +25,13 @@ use Illuminate\Support\Facades\Route;
 Route::post('/webhooks/receive', [WebhookController::class, 'receive'])
     ->name('api.webhooks.receive');
 
+// Quick access routes (without v1 prefix) - for test app
+Route::middleware([\App\Http\Middleware\AuthenticateApiKey::class])->group(function () {
+    Route::post('/payments', [PaymentController::class, 'createPayment'])->name('api.payments.create');
+    Route::get('/payments/{transactionId}', [TransactionController::class, 'show'])->name('api.payments.show');
+    Route::get('/webhooks/logs/{transactionId}', [WebhookController::class, 'getLogs'])->name('api.webhooks.logs');
+});
+
 // API v1 routes with API key authentication
 Route::prefix('v1')->middleware(['App\Http\Middleware\AuthenticateApiKey'])->group(function () {
     

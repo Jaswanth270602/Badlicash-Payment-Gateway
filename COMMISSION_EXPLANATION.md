@@ -293,3 +293,4 @@ Merchant::find(1)->update(['fee_percentage' => 0]);
 
 **This is everything your manager needs to know about commission structure!** 💼
 
+

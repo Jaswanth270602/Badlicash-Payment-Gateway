@@ -437,11 +437,6 @@
                             <i class="bi bi-x-circle"></i> Simulate Failure
                         </button>
                     </div>
-                    <div style="margin-top: 10px; opacity: 0.9; font-size: 11px;">
-                        Or use test cards:<br>
-                        <strong>✅ Success:</strong> 4242 4242 4242 4242<br>
-                        <strong>❌ Fail:</strong> 4000 0000 0000 0002
-                    </div>
                 </div>
                 @endif
 
@@ -752,14 +747,29 @@
                     payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                     successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     
+                    // Redirect to merchant test app success page after 2 seconds
+                    if (result.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = result.redirect_url;
+                        }, 2000);
+                    }
+                    
                     // Disable all inputs
                     document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
                 } else {
                     errorMessage.textContent = result.message || 'Payment failed. Please try again.';
                     errorAlert.style.display = 'flex';
-                    payButton.disabled = false;
-                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
                     errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Redirect to merchant test app failure page after 2 seconds
+                    if (result.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = result.redirect_url;
+                        }, 2000);
+                    } else {
+                        payButton.disabled = false;
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                    }
                 }
             } catch (error) {
                 console.error('Payment error:', error);
@@ -822,12 +832,20 @@
                         payButtonText.textContent = 'Payment Successful!';
                         payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                         successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+                        
+                        // Redirect after showing success
+                        setTimeout(() => {
+                            window.location.href = result.redirect_url || `http://localhost:8080/success-simple.html?transaction_id=${result.transaction_id}`;
+                        }, 2000);
                     } else {
                         errorMessage.textContent = result.message || 'Simulation failed';
                         errorAlert.style.display = 'flex';
-                        payButton.disabled = false;
-                        payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Redirect to failure page after showing error
+                        setTimeout(() => {
+                            window.location.href = result.redirect_url || `http://localhost:8080/failure-simple.html?transaction_id=${result.transaction_id}`;
+                        }, 2000);
                     }
                 } catch (error) {
                     console.error('Simulation error:', error);
@@ -885,6 +903,11 @@
                         errorMessage.textContent = result.message || 'Payment failed (simulated)';
                         errorAlert.style.display = 'flex';
                         errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Redirect to failure page
+                        setTimeout(() => {
+                            window.location.href = result.redirect_url || `http://localhost:8080/failure-simple.html?transaction_id=${result.transaction_id || ''}`;
+                        }, 2000);
                     }
                     
                     payButton.disabled = false;

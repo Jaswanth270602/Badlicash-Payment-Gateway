@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\WebhookEvent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -105,6 +106,41 @@ class WebhookController extends Controller
                 'error' => 'Webhook test failed',
                 'message' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Get webhook logs for a transaction.
+     *
+     * @param string $transactionId
+     * @return JsonResponse
+     */
+    public function getLogs(string $transactionId): JsonResponse
+    {
+        try {
+            $logs = WebhookEvent::where('transaction_id', $transactionId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'id' => $log->id,
+                        'event' => $log->event_type,
+                        'status' => $log->status,
+                        'payload' => $log->payload,
+                        'created_at' => $log->created_at->toIso8601String(),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'logs' => $logs,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch webhook logs',
+                'logs' => [],
+            ]);
         }
     }
 }

@@ -188,3 +188,4 @@ You should see:
 
 **Refresh your browser now (`Ctrl + Shift + R`) and your merchants will appear!** 🚀
 
+

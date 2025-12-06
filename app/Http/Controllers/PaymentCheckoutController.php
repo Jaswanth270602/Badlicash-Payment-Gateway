@@ -156,8 +156,16 @@ class PaymentCheckoutController extends Controller
                 $this->logInfo('Payment processed', [
                     'success' => $result['success'],
                     'order_id' => $result['order_id'] ?? null,
-                    'transaction_id' => $result['transaction_id'] ?? null
+                    'transaction_id' => $result['transaction_id'] ?? null,
+                    'status' => $result['status'] ?? 'unknown'
                 ]);
+
+                // Add redirect URLs for merchant test app
+                if ($result['success']) {
+                    $result['redirect_url'] = 'http://localhost:8080/success-simple.html?transaction_id=' . ($result['transaction_id'] ?? '');
+                } else {
+                    $result['redirect_url'] = 'http://localhost:8080/failure-simple.html?transaction_id=' . ($result['transaction_id'] ?? '');
+                }
 
                 return response()->json($result, $result['success'] ? 200 : 402);
                 
