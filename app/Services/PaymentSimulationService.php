@@ -201,11 +201,12 @@ class PaymentSimulationService
             }
 
             if (in_array($cardNumber, $failureCards)) {
+                $message = $cardNumber === '4000000000009995' 
+                    ? '(Test Mode) Test card used for failed payments - Insufficient funds' 
+                    : '(Test Mode) Test card used for failed payments - Payment declined';
                 return [
                     'success' => false,
-                    'message' => $cardNumber === '4000000000009995' 
-                        ? 'Insufficient funds' 
-                        : 'Payment declined',
+                    'message' => $message,
                     'error_code' => $cardNumber === '4000000000009995' 
                         ? 'INSUFFICIENT_FUNDS' 
                         : 'PAYMENT_DECLINED',

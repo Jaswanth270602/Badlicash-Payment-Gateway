@@ -218,6 +218,8 @@ class MerchantAccountsController extends Controller
                 'registration_date' => now(),
                 'default_currency' => 'INR',
                 'test_mode' => true,
+                'settlement_cycle_domestic' => $request->get('settlement_cycle_domestic', 1),
+                'settlement_cycle_international' => $request->get('settlement_cycle_international', 7),
             ]);
 
             // Create user login if requested
@@ -292,6 +294,67 @@ class MerchantAccountsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update status',
+            ], 500);
+        }
+    }
+
+    public function updateSettings(Request $request, $id): JsonResponse
+    {
+        try {
+            $merchant = Merchant::findOrFail($id);
+            
+            $validator = Validator::make($request->all(), [
+                'settlement_cycle_domestic' => 'nullable|integer|min:1|max:7',
+                'settlement_cycle_international' => 'nullable|integer|min:1|max:7',
+                'fee_percentage' => 'nullable|numeric|min:0|max:100',
+                'fee_flat' => 'nullable|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            if ($request->has('settlement_cycle_domestic')) {
+                $merchant->settlement_cycle_domestic = $request->input('settlement_cycle_domestic');
+            }
+            
+            if ($request->has('settlement_cycle_international')) {
+                $merchant->settlement_cycle_international = $request->input('settlement_cycle_international');
+            }
+
+            if ($request->has('fee_percentage')) {
+                $merchant->fee_percentage = $request->input('fee_percentage');
+            }
+
+            if ($request->has('fee_flat')) {
+                $merchant->fee_flat = $request->input('fee_flat');
+            }
+
+            $merchant->save();
+
+            $this->logInfo('Merchant settings updated', [
+                'merchant_id' => $merchant->id,
+                'settings' => $request->only(['settlement_cycle_domestic', 'settlement_cycle_international', 'fee_percentage', 'fee_flat'])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Merchant settings updated successfully',
+                'data' => $merchant->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            $this->logError('Error updating merchant settings', [
+                'merchant_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update merchant settings: ' . $e->getMessage(),
             ], 500);
         }
     }

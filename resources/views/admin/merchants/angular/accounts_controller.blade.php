@@ -91,7 +91,9 @@
                     login_name: '',
                     password: '',
                     retype_password: '',
-                    merchant_type: 'merchant'
+                    merchant_type: 'merchant',
+                    settlement_cycle_domestic: 1,
+                    settlement_cycle_international: 7
                 };
 
                 // States and cities (sample data - should be loaded from API)
@@ -249,7 +251,9 @@
                         login_name: '',
                         password: '',
                         retype_password: '',
-                        merchant_type: vm.filters.merchant_type
+                        merchant_type: vm.filters.merchant_type,
+                        settlement_cycle_domestic: 1,
+                        settlement_cycle_international: 7
                     };
                     var modal = new bootstrap.Modal(document.getElementById('newMerchantModal'));
                     modal.show();
@@ -409,6 +413,68 @@
                 vm.formatStatus = function(status) {
                     if (!status) return 'NOT APPROVED';
                     return status.replace(/_/g, ' ').toUpperCase();
+                };
+
+                // Settlement Settings
+                vm.settlementSettingsMerchant = null;
+                vm.settlementSettings = {
+                    settlement_cycle_domestic: 1,
+                    settlement_cycle_international: 7,
+                    fee_percentage: 0,
+                    fee_flat: 0
+                };
+                vm.savingSettlementSettings = false;
+
+                vm.openSettlementSettingsModal = function(merchant) {
+                    if (!merchant) return;
+                    vm.settlementSettingsMerchant = merchant;
+                    vm.settlementSettings = {
+                        settlement_cycle_domestic: merchant.settlement_cycle_domestic || 1,
+                        settlement_cycle_international: merchant.settlement_cycle_international || 7,
+                        fee_percentage: merchant.fee_percentage || 0,
+                        fee_flat: merchant.fee_flat || 0
+                    };
+                    var modal = new bootstrap.Modal(document.getElementById('settlementSettingsModal'));
+                    modal.show();
+                };
+
+                vm.saveSettlementSettings = function() {
+                    if (!vm.settlementSettingsMerchant || !vm.settlementSettingsMerchant.id) {
+                        alert('Invalid merchant');
+                        return;
+                    }
+
+                    vm.savingSettlementSettings = true;
+                    $http.post('/admin/merchant-accounts/' + vm.settlementSettingsMerchant.id + '/update-settings', vm.settlementSettings, {
+                        headers: {
+                            'X-CSRF-TOKEN': csrf
+                        }
+                    }).then(function(response) {
+                        vm.savingSettlementSettings = false;
+                        if (response.data.success) {
+                            var modal = bootstrap.Modal.getInstance(document.getElementById('settlementSettingsModal'));
+                            modal.hide();
+                            alert('Settlement settings updated successfully');
+                            vm.loadMerchants(); // Reload to get updated data
+                        } else {
+                            var errorMsg = response.data.message || 'Failed to update settings';
+                            if (response.data.errors) {
+                                var errors = Object.values(response.data.errors).flat();
+                                errorMsg = errors.join(', ');
+                            }
+                            alert(errorMsg);
+                        }
+                    }, function(error) {
+                        vm.savingSettlementSettings = false;
+                        var errorMsg = 'Failed to update settlement settings';
+                        if (error.data && error.data.message) {
+                            errorMsg = error.data.message;
+                        } else if (error.data && error.data.errors) {
+                            var errors = Object.values(error.data.errors).flat();
+                            errorMsg = errors.join(', ');
+                        }
+                        alert(errorMsg);
+                    });
                 };
 
                 // Initialize

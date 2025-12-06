@@ -25,6 +25,7 @@ class Transaction extends Model
         'net_amount',
         'currency',
         'status',
+        'failure_reason',
         'settlement_id',
         'settlement_status',
         'settled_at',

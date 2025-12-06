@@ -145,15 +145,15 @@ class SandboxBankProvider implements BankProviderInterface
     protected function getErrorMessage(string $errorCode): string
     {
         $messages = [
-            'INSUFFICIENT_FUNDS' => 'Insufficient funds in account',
-            'CARD_DECLINED' => 'Card declined by issuer',
-            'INVALID_CVV' => 'Invalid CVV code',
-            'CARD_EXPIRED' => 'Card has expired',
-            'TRANSACTION_LIMIT_EXCEEDED' => 'Transaction limit exceeded',
-            'SUSPECTED_FRAUD' => 'Transaction suspected as fraudulent',
+            'INSUFFICIENT_FUNDS' => 'Test card used for failed payments - Insufficient funds',
+            'CARD_DECLINED' => 'Test card used for failed payments - Card declined by issuer',
+            'INVALID_CVV' => 'Test card used for failed payments - Invalid CVV code',
+            'CARD_EXPIRED' => 'Test card used for failed payments - Card has expired',
+            'TRANSACTION_LIMIT_EXCEEDED' => 'Test card used for failed payments - Transaction limit exceeded',
+            'SUSPECTED_FRAUD' => 'Test card used for failed payments - Transaction suspected as fraudulent',
         ];
 
-        return $messages[$errorCode] ?? 'Payment failed';
+        return $messages[$errorCode] ?? 'Test card used for failed payments - Payment failed';
     }
 
     /**

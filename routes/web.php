@@ -186,6 +186,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.merchant-accounts.update-status');
         Route::post('/merchant-accounts/{id}/update-approval-status', [MerchantAccountsController::class, 'updateStatus'])
             ->name('admin.merchant-accounts.update-approval-status');
+        Route::post('/merchant-accounts/{id}/update-settings', [MerchantAccountsController::class, 'updateSettings'])
+            ->name('admin.merchant-accounts.update-settings');
         Route::post('/merchant-accounts/{id}/duplicate', [MerchantAccountsController::class, 'duplicate'])
             ->name('admin.merchant-accounts.duplicate');
 
@@ -345,5 +347,19 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.webhook-event-types.update');
         Route::post('/webhook-event-types/{id}/toggle', [\App\Http\Controllers\Admin\WebhookEventTypesController::class, 'toggle'])
             ->name('admin.webhook-event-types.toggle');
+
+        // Base Rates Management
+        Route::get('/base-rates', [\App\Http\Controllers\Admin\BaseRatesController::class, 'index'])
+            ->name('admin.base-rates.index');
+        Route::get('/base-rates/data', [\App\Http\Controllers\Admin\BaseRatesController::class, 'getData'])
+            ->name('admin.base-rates.data');
+        Route::get('/base-rates/entities', [\App\Http\Controllers\Admin\BaseRatesController::class, 'getEntities'])
+            ->name('admin.base-rates.entities');
+        Route::post('/base-rates', [\App\Http\Controllers\Admin\BaseRatesController::class, 'store'])
+            ->name('admin.base-rates.store');
+        Route::post('/base-rates/{id}', [\App\Http\Controllers\Admin\BaseRatesController::class, 'update'])
+            ->name('admin.base-rates.update');
+        Route::delete('/base-rates/{id}', [\App\Http\Controllers\Admin\BaseRatesController::class, 'destroy'])
+            ->name('admin.base-rates.destroy');
     });
 });

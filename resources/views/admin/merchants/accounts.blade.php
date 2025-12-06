@@ -394,6 +394,20 @@
                                             <td>₹@{{ amac.selectedMerchant.fee_flat || 0 }}</td>
                                         </tr>
                                         <tr>
+                                            <td class="text-muted"><strong>Settlement Cycle (Domestic):</strong></td>
+                                            <td>
+                                                <span class="badge bg-info">T+@{{ amac.selectedMerchant.settlement_cycle_domestic || 1 }}</span>
+                                                <small class="text-muted ms-2">(@{{ (amac.selectedMerchant.settlement_cycle_domestic || 1) }} day(s) after transaction)</small>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted"><strong>Settlement Cycle (International):</strong></td>
+                                            <td>
+                                                <span class="badge bg-info">T+@{{ amac.selectedMerchant.settlement_cycle_international || 7 }}</span>
+                                                <small class="text-muted ms-2">(@{{ (amac.selectedMerchant.settlement_cycle_international || 7) }} day(s) after transaction)</small>
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <td class="text-muted"><strong>Registration Date:</strong></td>
                                             <td>@{{ amac.selectedMerchant.registration_date || '-' }}</td>
                                         </tr>
@@ -486,7 +500,86 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" ng-click="amac.openSettlementSettingsModal(amac.selectedMerchant)">
+                        <i class="bi bi-gear"></i> Edit Settlement Settings
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settlement Settings Modal -->
+    <div class="modal fade" id="settlementSettingsModal" tabindex="-1" aria-labelledby="settlementSettingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="settlementSettingsModalLabel">
+                        <i class="bi bi-clock-history"></i> Settlement Settings
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" ng-if="amac.settlementSettingsMerchant">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Configure settlement cycles for <strong>@{{ amac.settlementSettingsMerchant.name }}</strong>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <strong>Settlement Cycle - Domestic (T+X)</strong>
+                                <small class="text-muted d-block">Number of days after transaction for domestic settlements</small>
+                            </label>
+                            <select class="form-select" ng-model="amac.settlementSettings.settlement_cycle_domestic">
+                                <option value="1">T+1 (1 day)</option>
+                                <option value="2">T+2 (2 days)</option>
+                                <option value="3">T+3 (3 days)</option>
+                                <option value="4">T+4 (4 days)</option>
+                                <option value="5">T+5 (5 days)</option>
+                                <option value="6">T+6 (6 days)</option>
+                                <option value="7">T+7 (7 days)</option>
+                            </select>
+                            <small class="text-muted">Transactions will be settled @{{ amac.settlementSettings.settlement_cycle_domestic || 1 }} day(s) after completion</small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <strong>Settlement Cycle - International (T+X)</strong>
+                                <small class="text-muted d-block">Number of days after transaction for international settlements</small>
+                            </label>
+                            <select class="form-select" ng-model="amac.settlementSettings.settlement_cycle_international">
+                                <option value="1">T+1 (1 day)</option>
+                                <option value="2">T+2 (2 days)</option>
+                                <option value="3">T+3 (3 days)</option>
+                                <option value="4">T+4 (4 days)</option>
+                                <option value="5">T+5 (5 days)</option>
+                                <option value="6">T+6 (6 days)</option>
+                                <option value="7">T+7 (7 days)</option>
+                            </select>
+                            <small class="text-muted">International transactions will be settled @{{ amac.settlementSettings.settlement_cycle_international || 7 }} day(s) after completion</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <strong>Fee Percentage (%)</strong>
+                            </label>
+                            <input type="number" class="form-control" ng-model="amac.settlementSettings.fee_percentage" step="0.01" min="0" max="100">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <strong>Flat Fee (INR)</strong>
+                            </label>
+                            <input type="number" class="form-control" ng-model="amac.settlementSettings.fee_flat" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="amac.saveSettlementSettings()" ng-disabled="amac.savingSettlementSettings">
+                        <span ng-if="amac.savingSettlementSettings" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="bi bi-check-lg" ng-if="!amac.savingSettlementSettings"></i> Save Settings
+                    </button>
                 </div>
             </div>
         </div>

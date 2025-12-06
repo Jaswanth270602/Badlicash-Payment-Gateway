@@ -340,6 +340,9 @@
                                 }">
                                     @{{ transaction.payment_status | uppercase }}
                                 </span>
+                                <div ng-if="transaction.payment_status === 'failed' && transaction.failure_reason" class="mt-1" style="font-size: 11px; color: #dc3545; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ transaction.failure_reason }}">
+                                    <i class="bi bi-exclamation-circle"></i> @{{ transaction.failure_reason }}
+                                </div>
                             </td>
                             <td ng-show="atc.visibleColumns.payment_mode.visible">@{{ transaction.payment_mode }}</td>
                             <td ng-show="atc.visibleColumns.payment_channel.visible">@{{ transaction.payment_channel }}</td>
@@ -426,6 +429,12 @@
                             <span class="badge" ng-class="{'bg-success': atc.selectedTransaction.payment_status==='success', 'bg-danger': atc.selectedTransaction.payment_status==='failed'}">
                                 @{{atc.selectedTransaction.payment_status | uppercase}}
                             </span>
+                        </div>
+                        <div class="col-12" ng-if="atc.selectedTransaction.payment_status === 'failed' && atc.selectedTransaction.failure_reason">
+                            <div class="alert alert-danger py-2">
+                                <strong><i class="bi bi-exclamation-triangle"></i> Failure Reason:</strong><br>
+                                @{{ atc.selectedTransaction.failure_reason }}
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <strong>Payment Mode:</strong><br>

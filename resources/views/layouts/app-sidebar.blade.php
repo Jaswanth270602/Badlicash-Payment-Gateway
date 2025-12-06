@@ -629,15 +629,19 @@
             <i class="bi bi-shield-check"></i>
             <span>Admin Dashboard</span>
         </a>
-        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') || request()->routeIs('admin.base-rates.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
             <i class="bi bi-building"></i>
             <span>Merchants</span>
             <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
         </div>
-        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') ? 'block' : 'none' }};">
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.merchants.*') || request()->routeIs('admin.merchant-accounts.*') || request()->routeIs('admin.base-rates.*') ? 'block' : 'none' }};">
             <a href="{{ route('admin.merchant-accounts.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.merchant-accounts.*') ? 'active' : '' }}" style="padding-left: 50px;">
                 <i class="bi bi-person-badge"></i>
                 <span>Merchant Accounts</span>
+            </a>
+            <a href="{{ route('admin.base-rates.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.base-rates.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-percent"></i>
+                <span>Base Rates</span>
             </a>
         </div>
         <!-- Payments Dropdown -->

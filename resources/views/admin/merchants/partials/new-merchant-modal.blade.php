@@ -212,6 +212,36 @@
                         </div>
                     </div>
 
+                    <h6 class="text-primary mb-3 mt-4">SETTLEMENT SETTINGS</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Settlement Cycle - Domestic</label>
+                            <select class="form-select" ng-model="amac.merchantForm.settlement_cycle_domestic">
+                                <option value="1">T+1 (1 day)</option>
+                                <option value="2">T+2 (2 days)</option>
+                                <option value="3">T+3 (3 days)</option>
+                                <option value="4">T+4 (4 days)</option>
+                                <option value="5">T+5 (5 days)</option>
+                                <option value="6">T+6 (6 days)</option>
+                                <option value="7">T+7 (7 days)</option>
+                            </select>
+                            <small class="text-muted">Default: T+1 for domestic transactions</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Settlement Cycle - International</label>
+                            <select class="form-select" ng-model="amac.merchantForm.settlement_cycle_international">
+                                <option value="1">T+1 (1 day)</option>
+                                <option value="2">T+2 (2 days)</option>
+                                <option value="3">T+3 (3 days)</option>
+                                <option value="4">T+4 (4 days)</option>
+                                <option value="5">T+5 (5 days)</option>
+                                <option value="6">T+6 (6 days)</option>
+                                <option value="7" selected>T+7 (7 days)</option>
+                            </select>
+                            <small class="text-muted">Default: T+7 for international transactions</small>
+                        </div>
+                    </div>
+
                     <h6 class="text-primary mb-3 mt-4">CREATE USER LOGIN FOR MERCHANT</h6>
                     <div class="row g-3 mb-3">
                         <div class="col-md-12">

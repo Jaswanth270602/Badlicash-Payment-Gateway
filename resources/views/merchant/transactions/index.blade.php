@@ -122,6 +122,9 @@
                         }">
                             @{{ t.status | uppercase }}
                         </span>
+                        <div ng-if="t.status==='failed' && t.failure_reason" class="mt-1" style="font-size: 11px; color: #dc3545; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ t.failure_reason }}">
+                            <i class="bi bi-exclamation-circle"></i> @{{ t.failure_reason }}
+                        </div>
                     </td>
                     <td style="white-space: nowrap;">
                         <div style="font-size: 13px;">@{{ t.created_at | date:'MMM d, y' }}</div>
@@ -332,16 +335,22 @@
                         </div>
 
                         <!-- Gateway Response (if failed) -->
-                        <div class="col-12" ng-if="tc.selectedTransaction.status === 'failed' && tc.selectedTransaction.gateway_response">
+                        <div class="col-12" ng-if="tc.selectedTransaction.status === 'failed'">
                             <div class="card border-danger">
                                 <div class="card-header bg-danger text-white">
-                                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Error Details</h6>
+                                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Failure Details</h6>
                                 </div>
                                 <div class="card-body">
-                                    <p class="mb-0 text-danger">
-                                        @{{ tc.selectedTransaction.gateway_response.message || 'Payment failed' }}
+                                    <p class="mb-2 text-danger fw-semibold" ng-if="tc.selectedTransaction.failure_reason">
+                                        @{{ tc.selectedTransaction.failure_reason }}
                                     </p>
-                                    <small class="text-muted" ng-if="tc.selectedTransaction.gateway_response.error_code">
+                                    <p class="mb-0 text-danger" ng-if="!tc.selectedTransaction.failure_reason && tc.selectedTransaction.gateway_response && tc.selectedTransaction.gateway_response.message">
+                                        @{{ tc.selectedTransaction.gateway_response.message }}
+                                    </p>
+                                    <p class="mb-0 text-danger" ng-if="!tc.selectedTransaction.failure_reason && (!tc.selectedTransaction.gateway_response || !tc.selectedTransaction.gateway_response.message)">
+                                        Payment failed
+                                    </p>
+                                    <small class="text-muted d-block mt-2" ng-if="tc.selectedTransaction.gateway_response && tc.selectedTransaction.gateway_response.error_code">
                                         Error Code: @{{ tc.selectedTransaction.gateway_response.error_code }}
                                     </small>
                                 </div>

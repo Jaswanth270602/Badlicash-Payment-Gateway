@@ -127,9 +127,20 @@ class PaymentService
                     $order->update(['status' => 'completed']);
                     event(new PaymentSuccess($transaction));
                 } else {
+                    // Extract failure reason from gateway response
+                    $failureReason = $result['message'] ?? 
+                                    ($result['error_code'] ?? 'Payment failed') . 
+                                    (isset($result['error']) ? ': ' . $result['error'] : '');
+                    
+                    // Add test mode context if applicable
+                    if ($order->test_mode) {
+                        $failureReason = '(Test Mode) ' . $failureReason;
+                    }
+
                     $transaction->update([
                         'status' => 'failed',
                         'gateway_response' => $result,
+                        'failure_reason' => $failureReason,
                     ]);
 
                     $order->update(['status' => 'failed']);
@@ -142,12 +153,18 @@ class PaymentService
                     'error' => $e->getMessage(),
                 ]);
 
+                $failureReason = 'Processing error: ' . $e->getMessage();
+                if ($order->test_mode) {
+                    $failureReason = '(Test Mode) ' . $failureReason;
+                }
+
                 $transaction->update([
                     'status' => 'failed',
                     'gateway_response' => [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ],
+                    'failure_reason' => $failureReason,
                 ]);
 
                 $order->update(['status' => 'failed']);

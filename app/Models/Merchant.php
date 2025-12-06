@@ -21,6 +21,8 @@ class Merchant extends Model
         'test_mode',
         'fee_percentage',
         'fee_flat',
+        'settlement_cycle_domestic',
+        'settlement_cycle_international',
         'business_details',
         'settings',
         // KYC Fields
