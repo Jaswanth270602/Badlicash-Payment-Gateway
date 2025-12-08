@@ -528,3 +528,753 @@
     "signature": "01aa0920b5579de7d9e4603259a3fb5afe6491873f914985b04bf1c9d4e4b46a"
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 11:53:47",
+    "datetime": "2025-12-06T11:53:47+01:00",
+    "event_type": [
+        "payment",
+        "payment.success"
+    ],
+    "transaction_id": "TXN_KBPYZ7KGDPLMIKYQ9FWL",
+    "order_id": "ORD_KC0IEUDJAH7X3XVI",
+    "status": "success",
+    "amount": 100000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.success"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_KBPYZ7KGDPLMIKYQ9FWL",
+                    "entity": "payment",
+                    "amount": 100000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_KC0IEUDJAH7X3XVI",
+                    "description": "Partial payment",
+                    "fee": 2500,
+                    "tax": 0,
+                    "created_at": 1765018425,
+                    "captured_at": 1765018425
+                }
+            }
+        },
+        "created_at": 1765018425,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "216354f85d53a58c90b72a731f6cc2a1ccb60308d0e382ff8e67fd9a6860bf04",
+        "X-BadliCash-Event": "payment.success",
+        "X-BadliCash-Delivery-ID": "23",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "422"
+    },
+    "signature": "216354f85d53a58c90b72a731f6cc2a1ccb60308d0e382ff8e67fd9a6860bf04"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 11:53:47",
+    "datetime": "2025-12-06T11:53:47+01:00",
+    "event_type": [
+        "payment",
+        "payment.charged"
+    ],
+    "transaction_id": "TXN_KBPYZ7KGDPLMIKYQ9FWL",
+    "order_id": "ORD_KC0IEUDJAH7X3XVI",
+    "status": "success",
+    "amount": 100000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.charged"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_KBPYZ7KGDPLMIKYQ9FWL",
+                    "entity": "payment",
+                    "amount": 100000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_KC0IEUDJAH7X3XVI",
+                    "description": "Partial payment",
+                    "fee": 2500,
+                    "tax": 0,
+                    "created_at": 1765018425,
+                    "captured_at": 1765018425
+                }
+            }
+        },
+        "created_at": 1765018427,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "0bc69626d8f629e79701598937515c41077513696518ab60377d9e478dcae04d",
+        "X-BadliCash-Event": "payment.charged",
+        "X-BadliCash-Delivery-ID": "24",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "422"
+    },
+    "signature": "0bc69626d8f629e79701598937515c41077513696518ab60377d9e478dcae04d"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 12:20:27",
+    "datetime": "2025-12-06T12:20:27+01:00",
+    "event_type": [
+        "payment",
+        "payment.success"
+    ],
+    "transaction_id": "TXN_H6QYSEPZDDDSAIQDQAV0",
+    "order_id": "ORD_3LUZP71PYBJEJC5W",
+    "status": "success",
+    "amount": 2000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.success"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_H6QYSEPZDDDSAIQDQAV0",
+                    "entity": "payment",
+                    "amount": 2000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_3LUZP71PYBJEJC5W",
+                    "description": "Partial payment (Partial Payment)",
+                    "fee": 50,
+                    "tax": 0,
+                    "created_at": 1765020027,
+                    "captured_at": 1765020027
+                }
+            }
+        },
+        "created_at": 1765020027,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "1f7fc41562b4d03b5735251722837a236210e884a3361853f56456a9ee7f545d",
+        "X-BadliCash-Event": "payment.success",
+        "X-BadliCash-Delivery-ID": "25",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "436"
+    },
+    "signature": "1f7fc41562b4d03b5735251722837a236210e884a3361853f56456a9ee7f545d"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 12:20:27",
+    "datetime": "2025-12-06T12:20:27+01:00",
+    "event_type": [
+        "payment",
+        "payment.charged"
+    ],
+    "transaction_id": "TXN_H6QYSEPZDDDSAIQDQAV0",
+    "order_id": "ORD_3LUZP71PYBJEJC5W",
+    "status": "success",
+    "amount": 2000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.charged"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_H6QYSEPZDDDSAIQDQAV0",
+                    "entity": "payment",
+                    "amount": 2000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_3LUZP71PYBJEJC5W",
+                    "description": "Partial payment (Partial Payment)",
+                    "fee": 50,
+                    "tax": 0,
+                    "created_at": 1765020027,
+                    "captured_at": 1765020027
+                }
+            }
+        },
+        "created_at": 1765020027,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "6d7dff3b7a4a05e0b03acc72c3b558b601ebd6040e485d0aa719be695728088e",
+        "X-BadliCash-Event": "payment.charged",
+        "X-BadliCash-Delivery-ID": "26",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "436"
+    },
+    "signature": "6d7dff3b7a4a05e0b03acc72c3b558b601ebd6040e485d0aa719be695728088e"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:20:54",
+    "datetime": "2025-12-06T16:20:54+01:00",
+    "event_type": [
+        "payment",
+        "payment.success"
+    ],
+    "transaction_id": "TXN_VEA19AJFLFIY3ZB2SYNR",
+    "order_id": "ORD_UWRLFLNCZFZT7TOC",
+    "status": "success",
+    "amount": 1000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.success"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_VEA19AJFLFIY3ZB2SYNR",
+                    "entity": "payment",
+                    "amount": 1000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_UWRLFLNCZFZT7TOC",
+                    "description": "test (Partial Payment)",
+                    "fee": 55,
+                    "tax": 0,
+                    "created_at": 1765034453,
+                    "captured_at": 1765034454
+                }
+            }
+        },
+        "created_at": 1765034454,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "de01c59dd69b344efa68d374db6befe8726fa815c2d4c43bb527b3471b422c50",
+        "X-BadliCash-Event": "payment.success",
+        "X-BadliCash-Delivery-ID": "27",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "425"
+    },
+    "signature": "de01c59dd69b344efa68d374db6befe8726fa815c2d4c43bb527b3471b422c50"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:20:54",
+    "datetime": "2025-12-06T16:20:54+01:00",
+    "event_type": [
+        "payment",
+        "payment.charged"
+    ],
+    "transaction_id": "TXN_VEA19AJFLFIY3ZB2SYNR",
+    "order_id": "ORD_UWRLFLNCZFZT7TOC",
+    "status": "success",
+    "amount": 1000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.charged"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_VEA19AJFLFIY3ZB2SYNR",
+                    "entity": "payment",
+                    "amount": 1000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_UWRLFLNCZFZT7TOC",
+                    "description": "test (Partial Payment)",
+                    "fee": 55,
+                    "tax": 0,
+                    "created_at": 1765034453,
+                    "captured_at": 1765034454
+                }
+            }
+        },
+        "created_at": 1765034454,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "58dfe14194ea1cf2e72819ded5fe4ae590baface6e93556c04f20395c1790a07",
+        "X-BadliCash-Event": "payment.charged",
+        "X-BadliCash-Delivery-ID": "28",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "425"
+    },
+    "signature": "58dfe14194ea1cf2e72819ded5fe4ae590baface6e93556c04f20395c1790a07"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:21:51",
+    "datetime": "2025-12-06T16:21:51+01:00",
+    "event_type": [
+        "payment",
+        "payment.success"
+    ],
+    "transaction_id": "TXN_0PDNMUHSMFURRTAKZ2VM",
+    "order_id": "ORD_HMDXESEVPOQLI6UW",
+    "status": "success",
+    "amount": 9000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.success"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_0PDNMUHSMFURRTAKZ2VM",
+                    "entity": "payment",
+                    "amount": 9000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_HMDXESEVPOQLI6UW",
+                    "description": "test (Partial Payment)",
+                    "fee": 254,
+                    "tax": 0,
+                    "created_at": 1765034511,
+                    "captured_at": 1765034511
+                }
+            }
+        },
+        "created_at": 1765034511,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "c3812ca66905fb882ad5841710ffb2ca8f62827285650ca9f8de1ede78fb420c",
+        "X-BadliCash-Event": "payment.success",
+        "X-BadliCash-Delivery-ID": "29",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "426"
+    },
+    "signature": "c3812ca66905fb882ad5841710ffb2ca8f62827285650ca9f8de1ede78fb420c"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:21:51",
+    "datetime": "2025-12-06T16:21:51+01:00",
+    "event_type": [
+        "payment",
+        "payment.charged"
+    ],
+    "transaction_id": "TXN_0PDNMUHSMFURRTAKZ2VM",
+    "order_id": "ORD_HMDXESEVPOQLI6UW",
+    "status": "success",
+    "amount": 9000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.charged"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_0PDNMUHSMFURRTAKZ2VM",
+                    "entity": "payment",
+                    "amount": 9000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_HMDXESEVPOQLI6UW",
+                    "description": "test (Partial Payment)",
+                    "fee": 254,
+                    "tax": 0,
+                    "created_at": 1765034511,
+                    "captured_at": 1765034511
+                }
+            }
+        },
+        "created_at": 1765034511,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "6de7aa8531e6c21fa15e001707262fca1ee05c4c10a090bf5b0562aa53736594",
+        "X-BadliCash-Event": "payment.charged",
+        "X-BadliCash-Delivery-ID": "30",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "426"
+    },
+    "signature": "6de7aa8531e6c21fa15e001707262fca1ee05c4c10a090bf5b0562aa53736594"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:42:49",
+    "datetime": "2025-12-06T16:42:49+01:00",
+    "event_type": [
+        "payment",
+        "payment.success"
+    ],
+    "transaction_id": "TXN_LVRDXV0V08TXVK5LZPEK",
+    "order_id": "ORD_STJXKAIY93MW2FTA",
+    "status": "success",
+    "amount": 10000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.success"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_LVRDXV0V08TXVK5LZPEK",
+                    "entity": "payment",
+                    "amount": 10000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_STJXKAIY93MW2FTA",
+                    "description": "course payment (Partial Payment)",
+                    "fee": 280,
+                    "tax": 0,
+                    "created_at": 1765035767,
+                    "captured_at": 1765035767
+                }
+            }
+        },
+        "created_at": 1765035767,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "7bf3079ca3adff14c75598809ea994dc0c1b635d7686bf76ca0d4229f73637ee",
+        "X-BadliCash-Event": "payment.success",
+        "X-BadliCash-Delivery-ID": "31",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "437"
+    },
+    "signature": "7bf3079ca3adff14c75598809ea994dc0c1b635d7686bf76ca0d4229f73637ee"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:42:50",
+    "datetime": "2025-12-06T16:42:50+01:00",
+    "event_type": [
+        "payment",
+        "payment.charged"
+    ],
+    "transaction_id": "TXN_LVRDXV0V08TXVK5LZPEK",
+    "order_id": "ORD_STJXKAIY93MW2FTA",
+    "status": "success",
+    "amount": 10000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.charged"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_LVRDXV0V08TXVK5LZPEK",
+                    "entity": "payment",
+                    "amount": 10000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_STJXKAIY93MW2FTA",
+                    "description": "course payment (Partial Payment)",
+                    "fee": 280,
+                    "tax": 0,
+                    "created_at": 1765035767,
+                    "captured_at": 1765035767
+                }
+            }
+        },
+        "created_at": 1765035770,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "11679a69da620041ac54c9fbf9dfd629ea853ea8874253052862d619b2a710e1",
+        "X-BadliCash-Event": "payment.charged",
+        "X-BadliCash-Delivery-ID": "32",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "437"
+    },
+    "signature": "11679a69da620041ac54c9fbf9dfd629ea853ea8874253052862d619b2a710e1"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:45:42",
+    "datetime": "2025-12-06T16:45:42+01:00",
+    "event_type": [
+        "payment",
+        "payment.failed"
+    ],
+    "transaction_id": "TXN_MQJVHZGGJULPNWYMKE8U",
+    "order_id": "ORD_PRDQOJID3ZVOM7QR",
+    "status": "failed",
+    "amount": 10000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.failed"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_MQJVHZGGJULPNWYMKE8U",
+                    "entity": "payment",
+                    "amount": 10000,
+                    "currency": "INR",
+                    "status": "failed",
+                    "method": "card",
+                    "order_id": "ORD_PRDQOJID3ZVOM7QR",
+                    "description": "course payment (Partial Payment)",
+                    "fee": 280,
+                    "tax": 0,
+                    "created_at": 1765035942,
+                    "captured_at": null,
+                    "error": {
+                        "code": "PAYMENT_FAILED",
+                        "description": "(Test Mode) Test card used for failed payments - Payment declined"
+                    }
+                }
+            }
+        },
+        "created_at": 1765035942,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "6c319ca157fd529f9e24033eca91f56e89e62a0e3b91744e4fc81c6eb62de52e",
+        "X-BadliCash-Event": "payment.failed",
+        "X-BadliCash-Delivery-ID": "33",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "545"
+    },
+    "signature": "6c319ca157fd529f9e24033eca91f56e89e62a0e3b91744e4fc81c6eb62de52e"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-06 16:47:36",
+    "datetime": "2025-12-06T16:47:36+01:00",
+    "event_type": "unknown",
+    "transaction_id": "TXN_LVRDXV0V08TXVK5LZPEK",
+    "order_id": null,
+    "status": "completed",
+    "amount": "100.00",
+    "payload": {
+        "refund_id": "RFD_R2SW5XHSJI1IP9XPQX",
+        "transaction_id": "TXN_LVRDXV0V08TXVK5LZPEK",
+        "amount": "100.00",
+        "currency": "INR",
+        "status": "completed",
+        "is_partial": false,
+        "processed_at": "2025-12-06T15:47:36+00:00",
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "96c0ef275fb378cb18ad481abc743ac4420a3485cb6f74204addb27144a8af50",
+        "X-BadliCash-Event": "refund.created",
+        "X-BadliCash-Delivery-ID": "34",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "214"
+    },
+    "signature": "96c0ef275fb378cb18ad481abc743ac4420a3485cb6f74204addb27144a8af50"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-08 05:38:45",
+    "datetime": "2025-12-08T05:38:45+01:00",
+    "event_type": [
+        "payment",
+        "payment.success"
+    ],
+    "transaction_id": "TXN_Y2I6ZFQETPPOBKS6ZEZA",
+    "order_id": "ORD_BDLDOA2NOYHFK1Y7",
+    "status": "success",
+    "amount": 10000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.success"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_Y2I6ZFQETPPOBKS6ZEZA",
+                    "entity": "payment",
+                    "amount": 10000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_BDLDOA2NOYHFK1Y7",
+                    "description": "course payment (Partial Payment)",
+                    "fee": 280,
+                    "tax": 0,
+                    "created_at": 1765168719,
+                    "captured_at": 1765168719
+                }
+            }
+        },
+        "created_at": 1765168720,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "800978a04a4b47904b34aa0bfb1d270b4949448e2b2623d28c9a68096ea3c5f9",
+        "X-BadliCash-Event": "payment.success",
+        "X-BadliCash-Delivery-ID": "35",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "437"
+    },
+    "signature": "800978a04a4b47904b34aa0bfb1d270b4949448e2b2623d28c9a68096ea3c5f9"
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2025-12-08 05:38:46",
+    "datetime": "2025-12-08T05:38:46+01:00",
+    "event_type": [
+        "payment",
+        "payment.charged"
+    ],
+    "transaction_id": "TXN_Y2I6ZFQETPPOBKS6ZEZA",
+    "order_id": "ORD_BDLDOA2NOYHFK1Y7",
+    "status": "success",
+    "amount": 10000,
+    "payload": {
+        "entity": "event",
+        "account_id": "1",
+        "event": [
+            "payment",
+            "payment.charged"
+        ],
+        "contains": [
+            "payment"
+        ],
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "TXN_Y2I6ZFQETPPOBKS6ZEZA",
+                    "entity": "payment",
+                    "amount": 10000,
+                    "currency": "INR",
+                    "status": "success",
+                    "method": "card",
+                    "order_id": "ORD_BDLDOA2NOYHFK1Y7",
+                    "description": "course payment (Partial Payment)",
+                    "fee": 280,
+                    "tax": 0,
+                    "created_at": 1765168719,
+                    "captured_at": 1765168719
+                }
+            }
+        },
+        "created_at": 1765168726,
+        "mode": "test"
+    },
+    "headers": {
+        "Host": "localhost:8080",
+        "User-Agent": "GuzzleHttp/7",
+        "Content-Type": "application/json",
+        "X-BadliCash-Signature": "cd5144a737aa52100e3510148873ecb1308140044de334e27905921b9b0e2d94",
+        "X-BadliCash-Event": "payment.charged",
+        "X-BadliCash-Delivery-ID": "36",
+        "X-BadliCash-Mode": "test",
+        "Content-Length": "437"
+    },
+    "signature": "cd5144a737aa52100e3510148873ecb1308140044de334e27905921b9b0e2d94"
+}
+--------------------------------------------------------------------------------

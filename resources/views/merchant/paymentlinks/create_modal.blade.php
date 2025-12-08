@@ -61,6 +61,24 @@
                     </div>
 
                     <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="allowPartialPayment"
+                                   ng-model="plc.newLink.allow_partial_payment"
+                                   ng-true-value="true"
+                                   ng-false-value="false"
+                                   ng-disabled="plc.creating">
+                            <label class="form-check-label" for="allowPartialPayment">
+                                <strong>Allow Partial Payment</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Enable this to allow customers to pay any amount less than or equal to the total. They can use the same link multiple times until fully paid.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="linkExpires" class="form-label">Expires In (hours)</label>
                         <input type="number" 
                                class="form-control" 

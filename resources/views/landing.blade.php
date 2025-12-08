@@ -409,11 +409,13 @@
     <header class="landing-nav">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2">
-                <div class="rounded-circle bg-primary bg-opacity-20 d-flex align-items-center justify-content-center" style="width:34px;height:34px;">
-                    <i class="bi bi-wallet2 text-primary"></i>
+                <div class="rounded-circle bg-primary bg-opacity-20 d-flex align-items-center justify-content-center" style="width:px;height:34px;">
+                    <!-- <i class="bi bi-wallet2 text-primary"></i> -->
                 </div>
                 <div>
-                    <div class="fw-bold text-white">BadiliCash</div>
+                    <!-- <div class="fw-bold text-white">BadiliCash</div> -->
+                    <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="BadiliCash" style="height: 72px; width: auto;">
+
                     <div style="font-size:11px;color:#9ca3af;">Safer payments for ambitious teams</div>
                 </div>
             </div>

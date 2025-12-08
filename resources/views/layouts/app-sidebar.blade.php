@@ -46,10 +46,28 @@
             z-index: 1000;
             overflow-y: auto;
             transition: transform 0.3s ease, width 0.3s ease;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .sidebar.collapsed {
-            width: 70px;
+            width: 70px !important;
+        }
+        
+        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .sidebar-menu-item span,
+        .sidebar.collapsed .mode-badge {
+            display: none !important;
+        }
+        
+        .sidebar.collapsed .sidebar-menu-item {
+            justify-content: center !important;
+            padding: 12px 20px !important;
+        }
+        
+        .sidebar.collapsed .sidebar-menu-item i {
+            margin-right: 0 !important;
         }
 
         .sidebar.collapsed .sidebar-brand span,
@@ -87,18 +105,24 @@
         }
 
         .sidebar-toggle {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #fff;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-left: auto;
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: none !important;
+            color: #fff !important;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 6px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            position: absolute !important;
+            top: 16px !important;
+            right: 16px !important;
+            z-index: 1001 !important;
+            font-size: 18px !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .sidebar-toggle:hover {
@@ -107,6 +131,7 @@
 
         .sidebar.collapsed .sidebar-toggle {
             margin-left: 0;
+            right: 19px;
         }
 
         .sidebar-header-content {
@@ -217,7 +242,7 @@
         }
 
         .sidebar.collapsed ~ .main-content {
-            margin-left: 70px;
+            margin-left: 70px !important;
         }
 
         /* Top Bar */
@@ -260,7 +285,27 @@
 
         @media (max-width: 768px) {
             .hamburger-menu {
-                display: block;
+                display: block !important;
+            }
+            
+            .sidebar-toggle {
+                display: flex !important;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .sidebar-toggle {
+                display: flex !important;
+                visibility: visible !important;
+            }
+            
+            .hamburger-menu {
+                display: none !important;
+            }
+            
+            .sidebar {
+                transform: translateX(0) !important;
+                left: 0 !important;
             }
         }
 
@@ -448,14 +493,28 @@
                 width: 260px;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                z-index: 9999;
             }
             
             .sidebar.show {
                 transform: translateX(0);
+                z-index: 9999;
             }
 
             .main-content {
                 margin-left: 0;
+            }
+            
+            /* Overlay when sidebar is open on mobile */
+            .sidebar.show::after {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 260px;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9998;
             }
 
             .topbar {
@@ -545,10 +604,11 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="sidebar-header-content">
-            <div class="sidebar-brand">
-                <i class="bi bi-wallet2"></i>
-                <span>BadiliCash</span>
-            </div>
+        <div class="sidebar-brand">
+    <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="BadiliCash" style="height:42px; width:auto;">
+    <!-- <span>BadiliCash</span> -->
+
+</div>
             @if(auth()->user()->merchant)
                 <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
                     {{ auth()->user()->merchant->test_mode ? 'TEST MODE' : 'LIVE MODE' }}
@@ -559,7 +619,8 @@
                 </div>
             @endif
         </div>
-        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+       
+        <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar" style="cursor: pointer;">
             <i class="bi bi-list" id="sidebarToggleIcon"></i>
         </button>
     </div>
@@ -758,7 +819,7 @@
 <div class="main-content">
     <div class="topbar">
         <div class="topbar-left">
-            <button class="hamburger-menu" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <button type="button" class="hamburger-menu" title="Toggle Sidebar" style="cursor: pointer;">
                 <i class="bi bi-list"></i>
             </button>
             <div class="topbar-title">@yield('page-title', 'Dashboard')</div>
@@ -891,17 +952,27 @@ function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const toggleIcon = document.getElementById('sidebarToggleIcon');
     
-    if (!sidebar) return;
+    if (!sidebar) {
+        console.error('Sidebar element not found');
+        return;
+    }
     
     if (window.innerWidth <= 768) {
         // Mobile: show/hide sidebar
-        sidebar.classList.toggle('show');
+        const isShowing = sidebar.classList.contains('show');
+        if (isShowing) {
+            sidebar.classList.remove('show');
+            document.body.style.overflow = '';
+        } else {
+            sidebar.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
     } else {
         // Desktop: collapse/expand sidebar
         sidebar.classList.toggle('collapsed');
         if (toggleIcon) {
             if (sidebar.classList.contains('collapsed')) {
-                toggleIcon.className = 'bi bi-list';
+                toggleIcon.className = 'bi bi-justify';
             } else {
                 toggleIcon.className = 'bi bi-list';
             }
@@ -911,7 +982,10 @@ function toggleSidebar() {
     }
 }
 
-// Restore sidebar state on page load
+// Make function globally accessible
+window.toggleSidebar = toggleSidebar;
+
+// Restore sidebar state on page load and setup event listeners
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && window.innerWidth > 768) {
@@ -919,6 +993,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (collapsed) {
             sidebar.classList.add('collapsed');
         }
+    }
+    
+    // Add event listeners as backup to onclick handlers
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const hamburgerMenu = document.querySelector('.hamburger-menu');
+    
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            window.toggleSidebar();
+        }, true);
+    }
+    
+    if (hamburgerMenu) {
+        hamburgerMenu.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            window.toggleSidebar();
+        }, true);
     }
 });
 
@@ -928,11 +1024,12 @@ document.addEventListener('click', function(event) {
     const hamburger = document.querySelector('.hamburger-menu');
     const sidebarToggle = document.getElementById('sidebarToggle');
     
-    if (window.innerWidth <= 768 && sidebar) {
+    if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('show')) {
         if (!sidebar.contains(event.target) && 
             !hamburger?.contains(event.target) && 
             !sidebarToggle?.contains(event.target)) {
             sidebar.classList.remove('show');
+            document.body.style.overflow = '';
         }
     }
 });

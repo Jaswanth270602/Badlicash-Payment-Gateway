@@ -170,6 +170,53 @@
             </div>
         </div>
     </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal fade" id="transactionDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" ng-if="astc.selectedTransaction">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-receipt"></i> Transaction Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Transaction ID:</strong><br>
+                            <code>@{{astc.selectedTransaction.tran_id}}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Order ID:</strong><br>
+                            @{{astc.selectedTransaction.order_id}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Merchant:</strong><br>
+                            @{{astc.selectedTransaction.merchant_name}} (ID: @{{astc.selectedTransaction.merchant_id}})
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Transaction Date:</strong><br>
+                            @{{astc.selectedTransaction.transaction_date}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Amount Paid by Customer:</strong><br>
+                            <span class="text-success fw-bold">@{{astc.selectedTransaction.amount_paid_by_customer}}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>MSAC Code:</strong><br>
+                            @{{astc.selectedTransaction.msac_code || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Account:</strong><br>
+                            @{{astc.selectedTransaction.account || '-'}}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -267,8 +314,11 @@
                     vm.clearFilters();
                 };
 
+                vm.selectedTransaction = null;
                 vm.viewTransaction = function(transaction) {
-                    alert('View transaction: ' + transaction.tran_id);
+                    vm.selectedTransaction = transaction;
+                    var modal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
+                    modal.show();
                 };
 
                 vm.loadTransactions();

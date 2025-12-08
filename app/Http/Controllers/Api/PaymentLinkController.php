@@ -28,6 +28,7 @@ class PaymentLinkController extends Controller
             'description' => 'nullable|string|max:1000',
             'amount' => 'required|numeric|min:1',
             'currency' => 'nullable|string|size:3',
+            'allow_partial_payment' => 'nullable|boolean',
             'customer_details' => 'nullable|array',
             'max_usage' => 'nullable|integer|min:1',
             'expires_in' => 'nullable|integer|min:60', // seconds
@@ -62,6 +63,8 @@ class PaymentLinkController extends Controller
                 'description' => $request->description,
                 'amount' => $request->amount,
                 'currency' => $request->currency ?? $merchant->default_currency,
+                'allow_partial_payment' => $request->boolean('allow_partial_payment', false),
+                'amount_paid' => 0,
                 'customer_details' => $request->customer_details,
                 'status' => 'active',
                 'max_usage' => $request->max_usage,

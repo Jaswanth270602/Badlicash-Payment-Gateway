@@ -72,6 +72,8 @@ class PaymentController extends Controller
                 'description' => $data['description'] ?? null,
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? $merchant->default_currency ?? 'USD',
+                'allow_partial_payment' => $data['allow_partial_payment'] ?? false,
+                'amount_paid' => 0,
                 'status' => 'active',
                 'test_mode' => $merchant->test_mode,
                 'payment_methods' => ['card', 'upi', 'netbanking', 'wallet'],

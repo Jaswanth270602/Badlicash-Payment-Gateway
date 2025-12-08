@@ -104,7 +104,7 @@
             <div class="stat-card">
                 <h5 class="mb-3"><i class="bi bi-book me-2"></i>Documentation</h5>
                 <div class="list-group">
-                    <a href="{{ route('docs.index') ?? '#' }}" class="list-group-item list-group-item-action">
+                    <a href="#" class="list-group-item list-group-item-action">
                         <i class="bi bi-file-earmark-text me-2"></i>API Documentation
                     </a>
                     <a href="#" class="list-group-item list-group-item-action">

@@ -33,5 +33,15 @@ class Bank extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Get base rates for this bank.
+     */
+    public function baseRates(): HasMany
+    {
+        return $this->hasMany(BaseRate::class, 'entity_id')
+            ->where('rate_type', BaseRate::RATE_TYPE_BANK)
+            ->where('entity_type', 'bank');
+    }
 }
 

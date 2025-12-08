@@ -43,8 +43,23 @@ class PaymentSimulationService
                     if (isset($paymentData['payment_link_id'])) {
                         $paymentLink = PaymentLink::find($paymentData['payment_link_id']);
                         if ($paymentLink) {
-                            $paymentLink->increment('usage_count');
-                            $paymentLink->update(['status' => 'paid']);
+                            // Handle partial payments
+                            if ($paymentLink->allow_partial_payment) {
+                                // Add partial payment amount
+                                $paymentAmount = $transaction->amount;
+                                $isFullyPaid = $paymentLink->addPartialPayment($paymentAmount);
+                                
+                                Log::info('Partial payment added to payment link', [
+                                    'payment_link_id' => $paymentLink->id,
+                                    'payment_amount' => $paymentAmount,
+                                    'amount_paid' => $paymentLink->amount_paid,
+                                    'total_amount' => $paymentLink->amount,
+                                    'is_fully_paid' => $isFullyPaid,
+                                ]);
+                            } else {
+                                // Full payment - mark as paid
+                                $paymentLink->markAsPaid();
+                            }
                         }
                     }
 
@@ -113,8 +128,21 @@ class PaymentSimulationService
      */
     protected function createTransaction(Order $order, array $paymentData): Transaction
     {
-        $feeAmount = $this->calculateFee($order->amount);
-        $gstAmount = $this->calculateGST($feeAmount);
+        // Calculate fee using BaseRateService
+        $baseRateService = app(\App\Services\BaseRateService::class);
+        $merchant = $order->merchant;
+        $bank = $merchant->bank ?? null;
+        $feeCalculation = $baseRateService->calculateFee(
+            $merchant,
+            $order->amount,
+            $paymentData['payment_method'],
+            $bank,
+            \App\Models\BaseRate::SERVICE_TYPE_PAYMENT,
+            \App\Models\BaseRate::TRANSACTION_TYPE_DOMESTIC // TODO: Determine from payment details
+        );
+
+        $feeAmount = $feeCalculation['fee_amount'];
+        $gstAmount = $feeCalculation['gst_amount'] ?? 0;
         $otherFees = 0; // Default 0, can be configured per merchant
         $totalDeductions = $feeAmount + $gstAmount + $otherFees;
         $netAmount = $order->amount - $totalDeductions;

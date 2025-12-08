@@ -37,6 +37,7 @@ console.log('=== Payment Links Controller Script Loaded ===');
                     description: '', 
                     amount: '', 
                     currency: 'INR', 
+                    allow_partial_payment: false,
                     expires_in_hours: 24
                 };
                 vm.toastMessage = '';
@@ -50,6 +51,7 @@ console.log('=== Payment Links Controller Script Loaded ===');
                         description: '', 
                         amount: '', 
                         currency: 'INR', 
+                        allow_partial_payment: false,
                         expires_in_hours: 24
                     };
                     // Force scope apply
@@ -170,6 +172,10 @@ console.log('=== Payment Links Controller Script Loaded ===');
                     var currencySelect = document.getElementById('linkCurrency');
                     vm.newLink.currency = currencySelect.options[currencySelect.selectedIndex].value;
                     
+                    // Get partial payment checkbox value
+                    var partialPaymentCheckbox = document.getElementById('allowPartialPayment');
+                    vm.newLink.allow_partial_payment = partialPaymentCheckbox ? partialPaymentCheckbox.checked : false;
+                    
                     console.log('After reading form values:', vm.newLink);
                     
                     // Validate
@@ -209,6 +215,7 @@ console.log('=== Payment Links Controller Script Loaded ===');
                         description: vm.newLink.description ? String(vm.newLink.description).trim() : '',
                         amount: amount,
                         currency: vm.newLink.currency || 'INR',
+                        allow_partial_payment: vm.newLink.allow_partial_payment || false,
                         expires_in_hours: parseInt(vm.newLink.expires_in_hours) || 24,
                         payment_methods: ['card', 'upi', 'netbanking', 'wallet']
                     };

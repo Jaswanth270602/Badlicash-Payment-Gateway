@@ -181,6 +181,16 @@ class Merchant extends Model
     }
 
     /**
+     * Get base rates for this merchant.
+     */
+    public function baseRates(): HasMany
+    {
+        return $this->hasMany(BaseRate::class, 'entity_id')
+            ->where('rate_type', BaseRate::RATE_TYPE_MERCHANT)
+            ->where('entity_type', 'merchant');
+    }
+
+    /**
      * Calculate fee for a given amount.
      */
     public function calculateFee(float $amount): float

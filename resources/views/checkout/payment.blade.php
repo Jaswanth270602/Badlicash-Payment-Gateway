@@ -236,6 +236,28 @@
             outline: none;
         }
 
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-control.is-valid {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        #amountError {
+            display: block;
+            margin-top: 6px;
+            padding: 8px 12px;
+            background-color: #fee;
+            border: 1px solid #fcc;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #dc3545;
+        }
+
         /* PAYMENT METHODS */
         .payment-methods-section {
             margin-bottom: 18px;
@@ -422,8 +444,27 @@
                 </div>
 
                 <div class="amount-section">
-                    <div class="amount-label">Amount to Pay</div>
+                    <div class="amount-label">Total Amount</div>
                     <h2 class="amount-value">{{ $paymentLink->currency }} {{ number_format($paymentLink->amount, 2) }}</h2>
+                    @if($paymentLink->allow_partial_payment)
+                        @if(($paymentLink->amount_paid ?? 0) > 0)
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 6px;">Amount Paid</div>
+                                <div style="font-size: 18px; font-weight: 600; color: #10b981;">{{ $paymentLink->currency }} {{ number_format($paymentLink->amount_paid ?? 0, 2) }}</div>
+                                <div style="font-size: 12px; opacity: 0.9; margin-top: 8px; margin-bottom: 6px;">Remaining Balance</div>
+                                <div style="font-size: 18px; font-weight: 600; color: #fbbf24;">{{ $paymentLink->currency }} {{ number_format($paymentLink->getRemainingBalance(), 2) }}</div>
+                            </div>
+                        @else
+                            <div style="margin-top: 10px; padding: 10px; background: rgba(251, 191, 36, 0.15); border-radius: 8px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                                <div style="font-size: 12px; opacity: 0.95; margin-bottom: 4px;">
+                                    <i class="bi bi-info-circle"></i> Partial Payment Enabled
+                                </div>
+                                <div style="font-size: 13px; opacity: 0.9;">
+                                    Pay any amount up to {{ $paymentLink->currency }} {{ number_format($paymentLink->amount, 2) }}
+                                </div>
+                            </div>
+                        @endif
+                    @endif
                 </div>
 
                 @if($paymentLink->test_mode)
@@ -466,6 +507,48 @@
                         <div style="font-size: 14px; margin-top: 4px;" id="errorMessage"></div>
                     </div>
                 </div>
+
+                @php
+                    // Check allow_partial_payment - the model casts it to boolean, so just check if truthy
+                    $isPartialEnabled = (bool)($paymentLink->allow_partial_payment ?? false);
+                @endphp
+                
+                @if($isPartialEnabled)
+                <!-- Partial Payment Amount - SHOWN FIRST -->
+                <div class="customer-section" id="partialPaymentSection" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 2px solid #667eea; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); position: relative; z-index: 10; display: block !important; visibility: visible !important; opacity: 1 !important;">
+                    <h4 class="section-title" style="color: white; margin-bottom: 16px; font-size: 18px; font-weight: 700;">
+                        <i class="bi bi-cash-coin" style="margin-right: 10px; font-size: 20px;"></i>Enter Payment Amount
+                    </h4>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label" style="font-weight: 600; color: white; font-size: 14px; margin-bottom: 10px;">
+                                How much would you like to pay? <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group" style="margin-bottom: 10px;">
+                                <span class="input-group-text" style="background: white; color: #667eea; font-weight: 700; font-size: 16px; border: none;">{{ $paymentLink->currency }}</span>
+                                <input type="number" class="form-control form-control-lg" id="customAmount" 
+                                       placeholder="Enter amount (max: {{ number_format($paymentLink->amount, 2) }})" 
+                                       min="0.01" 
+                                       max="{{ $paymentLink->amount }}" 
+                                       step="0.01"
+                                       value="{{ $paymentLink->getRemainingBalance() }}"
+                                       required
+                                       style="font-size: 18px; font-weight: 700; padding: 14px; border: none; border-radius: 0 8px 8px 0;">
+                            </div>
+                            <div id="amountError" class="text-danger mt-2" style="display: none; padding: 10px 14px; background-color: rgba(255, 255, 255, 0.95); border: 2px solid #dc3545; border-radius: 8px; font-size: 14px; font-weight: 600; color: #dc3545;"></div>
+                            <small class="d-block mt-2" style="font-size: 13px; color: rgba(255, 255, 255, 0.9);">
+                                @if(($paymentLink->amount_paid ?? 0) > 0)
+                                    <strong>✓ Already paid:</strong> {{ $paymentLink->currency }} {{ number_format($paymentLink->amount_paid, 2) }} | 
+                                    <strong>Remaining:</strong> {{ $paymentLink->currency }} {{ number_format($paymentLink->getRemainingBalance(), 2) }}
+                                @else
+                                    <strong>Total amount:</strong> {{ $paymentLink->currency }} {{ number_format($paymentLink->amount, 2) }}. 
+                                    <strong>You can pay any amount up to this total.</strong>
+                                @endif
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 <!-- Customer Details -->
                 <div class="customer-section">
@@ -642,6 +725,107 @@
             input.addEventListener('change', validateForm);
         });
 
+        // Update pay button text and validate amount in real-time (for partial payments)
+        @if($paymentLink->allow_partial_payment)
+        const customAmountInput = document.getElementById('customAmount');
+        const amountErrorDiv = document.getElementById('amountError');
+        
+        if (customAmountInput && amountErrorDiv) {
+            customAmountInput.addEventListener('input', () => {
+                const customAmount = parseFloat(customAmountInput.value) || 0;
+                const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                const totalAmount = parseFloat({{ $paymentLink->amount }});
+                
+                // Clear previous error styling
+                customAmountInput.classList.remove('is-invalid', 'is-valid');
+                amountErrorDiv.style.display = 'none';
+                amountErrorDiv.textContent = '';
+                
+                // Validate amount
+                if (customAmountInput.value && customAmountInput.value.trim() !== '') {
+                    // First check: Amount cannot exceed total amount
+                    if (customAmount > totalAmount) {
+                        customAmountInput.classList.add('is-invalid');
+                        customAmountInput.classList.remove('is-valid');
+                        amountErrorDiv.textContent = `❌ Error: Amount cannot exceed total amount of ${paymentLink.currency} ${totalAmount.toFixed(2)}`;
+                        amountErrorDiv.style.display = 'block';
+                        amountErrorDiv.style.color = '#dc3545';
+                        amountErrorDiv.style.fontWeight = '600';
+                        if (payButton) {
+                            payButton.disabled = true;
+                            payButtonText.textContent = 'Invalid Amount';
+                        }
+                        return;
+                    }
+                    
+                    // Second check: Amount cannot exceed remaining balance
+                    if (customAmount > remainingBalance) {
+                        customAmountInput.classList.add('is-invalid');
+                        customAmountInput.classList.remove('is-valid');
+                        amountErrorDiv.textContent = `❌ Error: Amount cannot exceed remaining balance of ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                        amountErrorDiv.style.display = 'block';
+                        amountErrorDiv.style.color = '#dc3545';
+                        amountErrorDiv.style.fontWeight = '600';
+                        if (payButton) {
+                            payButton.disabled = true;
+                            payButtonText.textContent = 'Invalid Amount';
+                        }
+                        return;
+                    }
+                    
+                    // Third check: Amount must be at least 0.01
+                    if (customAmount < 0.01) {
+                        customAmountInput.classList.add('is-invalid');
+                        customAmountInput.classList.remove('is-valid');
+                        amountErrorDiv.textContent = '❌ Error: Amount must be at least 0.01';
+                        amountErrorDiv.style.display = 'block';
+                        amountErrorDiv.style.color = '#dc3545';
+                        amountErrorDiv.style.fontWeight = '600';
+                        if (payButton) {
+                            payButton.disabled = true;
+                            payButtonText.textContent = 'Invalid Amount';
+                        }
+                        return;
+                    }
+                    
+                    // Valid amount - clear errors
+                    customAmountInput.classList.remove('is-invalid');
+                    customAmountInput.classList.add('is-valid');
+                    amountErrorDiv.style.display = 'none';
+                    amountErrorDiv.textContent = '';
+                    
+                    // Update pay button text immediately with custom amount
+                    if (payButton && payButtonText) {
+                        // Check if form is valid (customer details and payment method)
+                        const formValid = validateForm();
+                        if (formValid) {
+                            payButton.disabled = false;
+                            // Force update to custom amount (don't let validateForm override it)
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${customAmount.toFixed(2)}`;
+                        } else {
+                            payButton.disabled = true;
+                            payButtonText.textContent = 'Complete payment details';
+                        }
+                    }
+                } else {
+                    // Empty input - reset to default
+                    customAmountInput.classList.remove('is-invalid', 'is-valid');
+                    amountErrorDiv.style.display = 'none';
+                    if (payButton) {
+                        const formValid = validateForm();
+                        if (formValid) {
+                            payButton.disabled = false;
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                        } else {
+                            payButton.disabled = true;
+                            payButtonText.textContent = 'Complete payment details';
+                        }
+                    }
+                }
+            });
+        }
+        @endif
+
         function validateForm() {
             const name = document.getElementById('customerName').value.trim();
             const email = document.getElementById('customerEmail').value.trim();
@@ -676,7 +860,28 @@
 
             if (methodValid) {
                 payButton.disabled = false;
-                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @if($paymentLink->allow_partial_payment)
+                    // Check if custom amount is entered
+                    const customAmountInput = document.getElementById('customAmount');
+                    if (customAmountInput && customAmountInput.value && customAmountInput.value.trim() !== '') {
+                        const customAmount = parseFloat(customAmountInput.value) || 0;
+                        const totalAmount = parseFloat({{ $paymentLink->amount }});
+                        const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                        
+                        // Only update if amount is valid
+                        if (customAmount >= 0.01 && customAmount <= totalAmount && customAmount <= remainingBalance) {
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${customAmount.toFixed(2)}`;
+                        } else {
+                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                        }
+                    } else {
+                        const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    }
+                @else
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
             } else {
                 payButton.disabled = true;
                 payButtonText.textContent = 'Complete payment details';
@@ -728,6 +933,44 @@
                 };
             }
 
+            // Add custom amount if partial payment is enabled
+            @if($paymentLink->allow_partial_payment)
+            const customAmountInput = document.getElementById('customAmount');
+            if (customAmountInput && customAmountInput.value) {
+                const customAmount = parseFloat(customAmountInput.value);
+                const totalAmount = parseFloat({{ $paymentLink->amount }});
+                const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                
+                // Validate against total amount first
+                if (customAmount > totalAmount) {
+                    errorAlert.style.display = 'block';
+                    errorMessage.textContent = `Error: Amount cannot exceed total amount of ${paymentLink.currency} ${totalAmount.toFixed(2)}`;
+                    payButton.disabled = false;
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    return;
+                }
+                
+                // Validate against remaining balance
+                if (customAmount > remainingBalance) {
+                    errorAlert.style.display = 'block';
+                    errorMessage.textContent = `Error: Amount cannot exceed remaining balance of ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    payButton.disabled = false;
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    return;
+                }
+                
+                if (customAmount < 0.01) {
+                    errorAlert.style.display = 'block';
+                    errorMessage.textContent = 'Error: Payment amount must be at least 0.01';
+                    payButton.disabled = false;
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    return;
+                }
+                
+                paymentData.amount = customAmount;
+            }
+            @endif
+
             try {
                 const response = await fetch(`/pay/${paymentLink.link_token}`, {
                     method: 'POST',
@@ -741,7 +984,23 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    successMessage.textContent = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
+                    let successMsg = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
+                    
+                    // Show partial payment info if available
+                    @if($paymentLink->allow_partial_payment)
+                    if (result.payment_link) {
+                        const paymentLinkInfo = result.payment_link;
+                        if (paymentLinkInfo.is_partially_paid) {
+                            successMsg += `\n\nAmount Paid: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.amount_paid).toFixed(2)}`;
+                            successMsg += `\nRemaining Balance: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.remaining_balance).toFixed(2)}`;
+                            if (!paymentLinkInfo.is_fully_paid) {
+                                successMsg += `\n\nYou can use this same link to pay the remaining balance later.`;
+                            }
+                        }
+                    }
+                    @endif
+                    
+                    successMessage.textContent = successMsg;
                     successAlert.style.display = 'flex';
                     payButtonText.textContent = 'Payment Successful!';
                     payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
@@ -768,7 +1027,12 @@
                         }, 2000);
                     } else {
                         payButton.disabled = false;
-                        payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                        @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
                     }
                 }
             } catch (error) {
@@ -776,7 +1040,12 @@
                 errorMessage.textContent = 'Network error. Please check your connection and try again.';
                 errorAlert.style.display = 'flex';
                 payButton.disabled = false;
-                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
             }
         });
 
@@ -852,7 +1121,12 @@
                     errorMessage.textContent = 'Simulation error occurred';
                     errorAlert.style.display = 'flex';
                     payButton.disabled = false;
+                    @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
                     payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
                 }
             });
         }
@@ -911,13 +1185,23 @@
                     }
                     
                     payButton.disabled = false;
+                    @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
                     payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
                 } catch (error) {
                     console.error('Simulation error:', error);
                     errorMessage.textContent = 'Payment failed (simulated)';
                     errorAlert.style.display = 'flex';
                     payButton.disabled = false;
+                    @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
                     payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
                 }
             });
         }

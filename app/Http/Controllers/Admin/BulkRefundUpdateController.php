@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\ProcessBulkRefundUpdateJob;
 
 class BulkRefundUpdateController extends Controller
 {
@@ -35,15 +36,16 @@ class BulkRefundUpdateController extends Controller
             $job = DB::table('bulk_refund_jobs')->insertGetId([
                 'job_name' => 'Bulk Refund Update - ' . $fileName,
                 'file_path' => $filePath,
-                'status' => 'processing',
+                'status' => 'pending',
                 'progress' => 0,
-                'started_at' => now(),
+                'started_at' => null,
                 'user_id' => auth()->id(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // TODO: Queue job to process file
+            // Queue job to process file
+            ProcessBulkRefundUpdateJob::dispatch($job, $filePath);
 
             return response()->json([
                 'success' => true,
@@ -121,7 +123,15 @@ class BulkRefundUpdateController extends Controller
 
         $callback = function() {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Refund ID', 'Status', 'Notes']);
+            // All columns that can be updated in bulk refund update
+            fputcsv($file, [
+                'Refund ID',      // Required: Unique identifier for the refund (e.g., RFD_XXXXXXXXXXXXXX)
+                'Status',         // Required: pending, processing, completed, failed, cancelled
+                'Notes',          // Optional: Additional notes about the refund
+                'Reason',         // Optional: Reason for the refund
+                'Amount',         // Optional: Refund amount (decimal, e.g., 100.50)
+                'Currency'        // Optional: Currency code (e.g., USD, EUR) - 3 characters
+            ]);
             fclose($file);
         };
 
@@ -132,10 +142,44 @@ class BulkRefundUpdateController extends Controller
     {
         $job = DB::table('bulk_refund_jobs')->where('id', $id)->first();
         
-        if (!$job || !$job->export_file_path) {
-            abort(404, 'File not found');
+        if (!$job) {
+            abort(404, 'Job not found');
         }
 
-        return Storage::download($job->export_file_path);
+        // If export file exists, download it
+        if ($job->export_file_path && Storage::disk('local')->exists($job->export_file_path)) {
+            return Storage::download($job->export_file_path);
+        }
+
+        // Otherwise, generate a status file on-the-fly with current job information
+        $user = DB::table('users')->where('id', $job->user_id ?? null)->first();
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="bulk_refund_job_' . $id . '_status.csv"',
+        ];
+
+        $callback = function() use ($job, $user) {
+            $file = fopen('php://output', 'w');
+            
+            // Write section header
+            fputcsv($file, ['BULK REFUND UPDATE JOB DETAILS']);
+            fputcsv($file, []);
+            
+            // Write job information with all columns
+            fputcsv($file, ['Job Id', $job->id ?? 'N/A']);
+            fputcsv($file, ['Job Name', $job->job_name ?? 'N/A']);
+            fputcsv($file, ['Progress', ($job->progress ?? 0) . '%']);
+            fputcsv($file, ['Status', strtoupper($job->status ?? 'N/A')]);
+            fputcsv($file, ['Started At', $job->started_at ? date('Y-m-d H:i:s', strtotime($job->started_at)) : 'N/A']);
+            fputcsv($file, ['Finished At', $job->finished_at ? date('Y-m-d H:i:s', strtotime($job->finished_at)) : 'N/A']);
+            fputcsv($file, ['Error', $job->error ?? 'None']);
+            fputcsv($file, ['Status Info', $job->status_info ?? 'N/A']);
+            fputcsv($file, ['User Name', $user->name ?? 'Admin']);
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

@@ -225,6 +225,87 @@
             </div>
         </div>
     </div>
+
+    <!-- Settlement Details Modal -->
+    <div class="modal fade" id="settlementDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" ng-if="apsc.selectedSettlement">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-receipt"></i> Settlement Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Settlement ID:</strong><br>
+                            <code>@{{apsc.selectedSettlement.settlement_id}}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Merchant:</strong><br>
+                            @{{apsc.selectedSettlement.merchant_name}} (ID: @{{apsc.selectedSettlement.merchant_id}})
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Payout Amount:</strong><br>
+                            <span class="text-success fw-bold">@{{apsc.selectedSettlement.payout_amount}}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Settlement Status:</strong><br>
+                            <span class="badge" ng-class="{
+                                'bg-success': apsc.selectedSettlement.settlement_status === 'completed',
+                                'bg-warning': apsc.selectedSettlement.settlement_status === 'pending',
+                                'bg-info': apsc.selectedSettlement.settlement_status === 'processing'
+                            }">
+                                @{{apsc.selectedSettlement.settlement_status | uppercase}}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Settlement Date:</strong><br>
+                            @{{apsc.selectedSettlement.settlement_date || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Bank Reference:</strong><br>
+                            @{{apsc.selectedSettlement.bank_reference || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Account Name:</strong><br>
+                            @{{apsc.selectedSettlement.account_name || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Account Number:</strong><br>
+                            @{{apsc.selectedSettlement.account_number || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>IFSC Code:</strong><br>
+                            @{{apsc.selectedSettlement.ifsc_code || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Bank Name:</strong><br>
+                            @{{apsc.selectedSettlement.bank_name || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Bank Branch:</strong><br>
+                            @{{apsc.selectedSettlement.bank_branch || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Payment Start Date:</strong><br>
+                            @{{apsc.selectedSettlement.payment_start_date || '-'}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Payment End Date:</strong><br>
+                            @{{apsc.selectedSettlement.payment_end_date || '-'}}
+                        </div>
+                        <div class="col-12" ng-if="apsc.selectedSettlement.settlement_description">
+                            <strong>Settlement Description:</strong><br>
+                            @{{apsc.selectedSettlement.settlement_description}}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -325,8 +406,11 @@
                     vm.clearFilters();
                 };
 
+                vm.selectedSettlement = null;
                 vm.viewSettlement = function(settlement) {
-                    alert('View settlement: ' + settlement.settlement_id);
+                    vm.selectedSettlement = settlement;
+                    var modal = new bootstrap.Modal(document.getElementById('settlementDetailsModal'));
+                    modal.show();
                 };
 
                 vm.loadSettlements();

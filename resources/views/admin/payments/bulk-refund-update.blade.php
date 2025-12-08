@@ -32,7 +32,7 @@
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-primary" ng-click="abruc.downloadTemplate()">
-                        <i class="bi bi-download"></i>
+                        <i class="bi bi-download"></i> Download CSV Template
                     </button>
                 </div>
             </div>

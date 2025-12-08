@@ -17,6 +17,8 @@ class PaymentLink extends Model
         'title',
         'description',
         'amount',
+        'allow_partial_payment',
+        'amount_paid',
         'currency',
         'customer_details',
         'status',
@@ -36,7 +38,9 @@ class PaymentLink extends Model
         'metadata' => 'array',
         'payment_methods' => 'array',
         'test_mode' => 'boolean',
+        'allow_partial_payment' => 'boolean',
         'amount' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
         'expires_at' => 'datetime',
         'paid_at' => 'datetime',
     ];
@@ -71,8 +75,13 @@ class PaymentLink extends Model
      */
     public function isActive(): bool
     {
-        // Check status first
+        // Check status first - allow 'active' status even if partially paid
         if ($this->status !== 'active') {
+            return false;
+        }
+
+        // If fully paid, link is no longer active
+        if ($this->isFullyPaid()) {
             return false;
         }
 
@@ -125,12 +134,64 @@ class PaymentLink extends Model
     }
 
     /**
-     * Mark link as paid.
+     * Get the remaining balance to be paid.
+     */
+    public function getRemainingBalance(): float
+    {
+        return max(0, $this->amount - ($this->amount_paid ?? 0));
+    }
+
+    /**
+     * Check if the payment link is fully paid.
+     */
+    public function isFullyPaid(): bool
+    {
+        $amountPaid = $this->amount_paid ?? 0;
+        return $amountPaid >= $this->amount;
+    }
+
+    /**
+     * Check if the payment link is partially paid.
+     */
+    public function isPartiallyPaid(): bool
+    {
+        $amountPaid = $this->amount_paid ?? 0;
+        return $amountPaid > 0 && $amountPaid < $this->amount;
+    }
+
+    /**
+     * Add a partial payment amount.
+     * Returns true if the link is now fully paid.
+     */
+    public function addPartialPayment(float $amount): bool
+    {
+        $newAmountPaid = ($this->amount_paid ?? 0) + $amount;
+        
+        // Ensure we don't exceed the total amount
+        $newAmountPaid = min($newAmountPaid, $this->amount);
+        
+        $this->amount_paid = $newAmountPaid;
+        
+        // If fully paid, mark as paid
+        if ($this->isFullyPaid()) {
+            $this->status = 'paid';
+            $this->paid_at = now();
+        }
+        
+        $this->usage_count = $this->usage_count + 1;
+        $this->save();
+        
+        return $this->isFullyPaid();
+    }
+
+    /**
+     * Mark link as paid (for full payment or legacy support).
      */
     public function markAsPaid(): void
     {
         $this->update([
             'status' => 'paid',
+            'amount_paid' => $this->amount,
             'paid_at' => now(),
             'usage_count' => $this->usage_count + 1,
         ]);

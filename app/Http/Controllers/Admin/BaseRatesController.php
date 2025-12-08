@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BaseRate;
 use App\Models\Merchant;
 use App\Models\Bank;
+use App\Services\BaseRateService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -14,6 +15,13 @@ use Illuminate\Support\Facades\DB;
 
 class BaseRatesController extends Controller
 {
+    protected BaseRateService $baseRateService;
+
+    public function __construct(BaseRateService $baseRateService)
+    {
+        $this->baseRateService = $baseRateService;
+    }
+
     /**
      * Display base rates management page.
      */
@@ -122,7 +130,8 @@ class BaseRatesController extends Controller
                 }
             }
 
-            $rate = BaseRate::create($data);
+            // Use BaseRateService to create or update
+            $rate = $this->baseRateService->createOrUpdateRate($data);
 
             return response()->json([
                 'success' => true,

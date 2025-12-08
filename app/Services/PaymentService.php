@@ -78,6 +78,18 @@ class PaymentService
                 }
             }
 
+            // Calculate fee using BaseRateService
+            $baseRateService = app(\App\Services\BaseRateService::class);
+            $bank = $order->merchant->bank ?? null;
+            $feeCalculation = $baseRateService->calculateFee(
+                $order->merchant,
+                $order->amount,
+                $paymentData['payment_method'],
+                $bank,
+                \App\Models\BaseRate::SERVICE_TYPE_PAYMENT,
+                \App\Models\BaseRate::TRANSACTION_TYPE_DOMESTIC // TODO: Determine from payment details
+            );
+
             // Create transaction record
             $transaction = Transaction::create([
                 'order_id' => $order->id,
@@ -85,8 +97,9 @@ class PaymentService
                 'txn_id' => Transaction::generateTxnId(),
                 'payment_method' => $paymentData['payment_method'],
                 'amount' => $order->amount,
-                'fee_amount' => $order->merchant->calculateFee($order->amount),
-                'net_amount' => 0, // Will be calculated
+                'fee_amount' => $feeCalculation['fee_amount'],
+                'gst_amount' => $feeCalculation['gst_amount'] ?? 0,
+                'net_amount' => $order->amount - $feeCalculation['total_fee'],
                 'currency' => $order->currency,
                 'status' => 'initiated',
                 'payment_details' => $this->sanitizePaymentDetails($paymentData),
@@ -95,10 +108,6 @@ class PaymentService
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
             ]);
-
-            // Calculate net amount
-            $transaction->net_amount = $transaction->calculateNetAmount();
-            $transaction->save();
 
             // Process payment through bank provider
             try {

@@ -128,11 +128,13 @@
         <div class="row g-0">
             <div class="col-lg-4 auth-left d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle bg-primary bg-opacity-20 d-flex align-items-center justify-content-center" style="width:34px;height:34px;">
-                        <i class="bi bi-wallet2 text-primary"></i>
+                    <div class="rounded-circle bg-primary bg-opacity-20 d-flex align-items-center justify-content-center" style="width:0px;height:0px;">
+                        <!-- <i class="bi bi-wallet2 text-primary"></i> -->
                     </div>
                     <div class="ms-2">
-                        <div class="fw-semibold text-white">BadliCash</div>
+                        <!-- <div class="fw-semibold text-white">BadliCash</div> -->
+                        <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="BadiliCash" style="height: 42px; width: auto;">
+
                         <div class="small-muted">Merchant onboarding</div>
                     </div>
                 </div>
