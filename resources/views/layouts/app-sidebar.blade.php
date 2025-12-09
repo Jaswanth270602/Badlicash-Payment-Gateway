@@ -626,10 +626,12 @@
     </div>
     
     <nav class="sidebar-menu">
+        @if(auth()->user()->isMerchant())
         <a href="{{ route('dashboard') }}" class="sidebar-menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <i class="bi bi-grid-1x2"></i>
             <span>Dashboard</span>
         </a>
+        @endif
         
         @if(auth()->user()->isMerchant())
         <a href="{{ route('merchant.transactions.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.transactions.*') ? 'active' : '' }}">
@@ -800,6 +802,27 @@
             <i class="bi bi-shield-exclamation"></i>
             <span>Risk Management</span>
         </a>
+
+        <!-- Acquirer Details Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.acquirer.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-credit-card-2-front"></i>
+            <span>Acquirer Details</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.acquirer.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.acquirer.accounts.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.acquirer.accounts.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-bank"></i>
+                <span>Acquirer Accounts</span>
+            </a>
+            <a href="{{ route('admin.acquirer.detail-upload.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.acquirer.detail-upload.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-upload"></i>
+                <span>Acquirer Accounts Detail Upload</span>
+            </a>
+            <a href="{{ route('admin.acquirer.rates.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.acquirer.rates.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-percent"></i>
+                <span>Acquirer Rates</span>
+            </a>
+        </div>
         @endif
     </nav>
 

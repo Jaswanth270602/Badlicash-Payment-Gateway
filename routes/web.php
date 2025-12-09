@@ -35,6 +35,9 @@ use App\Http\Controllers\PaymentCheckoutController;
 use App\Http\Controllers\Admin\SubscriptionsController;
 use App\Http\Controllers\Admin\RiskManagementController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AcquirerAccountsController;
+use App\Http\Controllers\Admin\AcquirerAccountUploadController;
+use App\Http\Controllers\Admin\AcquirerRatesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -361,5 +364,59 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.base-rates.update');
         Route::delete('/base-rates/{id}', [\App\Http\Controllers\Admin\BaseRatesController::class, 'destroy'])
             ->name('admin.base-rates.destroy');
+
+        // Acquirer Details
+        Route::get('/acquirer-accounts', [AcquirerAccountsController::class, 'index'])
+            ->name('admin.acquirer.accounts.index');
+        Route::get('/acquirer-accounts/data', [AcquirerAccountsController::class, 'getData'])
+            ->name('admin.acquirer.accounts.data');
+        Route::get('/acquirer-accounts/acquirer-names', [AcquirerAccountsController::class, 'getAcquirerNames'])
+            ->name('admin.acquirer.accounts.acquirer-names');
+        Route::get('/acquirer-accounts/merchants', [AcquirerAccountsController::class, 'getMerchants'])
+            ->name('admin.acquirer.accounts.merchants');
+        Route::post('/acquirer-accounts', [AcquirerAccountsController::class, 'store'])
+            ->name('admin.acquirer.accounts.store');
+        Route::put('/acquirer-accounts/{id}', [AcquirerAccountsController::class, 'update'])
+            ->name('admin.acquirer.accounts.update');
+        Route::delete('/acquirer-accounts/{id}', [AcquirerAccountsController::class, 'destroy'])
+            ->name('admin.acquirer.accounts.destroy');
+        
+        // Acquirer Account Details Upload
+        Route::get('/acquirer-account-upload', [AcquirerAccountUploadController::class, 'index'])
+            ->name('admin.acquirer.detail-upload.index');
+        Route::get('/acquirer-account-upload/payment-modes', [AcquirerAccountUploadController::class, 'getPaymentModes'])
+            ->name('admin.acquirer.detail-upload.payment-modes');
+        Route::get('/acquirer-account-upload/banks', [AcquirerAccountUploadController::class, 'getBanksByPaymentMode'])
+            ->name('admin.acquirer.detail-upload.banks');
+        Route::post('/acquirer-account-upload/upload', [AcquirerAccountUploadController::class, 'upload'])
+            ->name('admin.acquirer.detail-upload.upload');
+        Route::get('/acquirer-account-upload/jobs', [AcquirerAccountUploadController::class, 'getJobs'])
+            ->name('admin.acquirer.detail-upload.jobs');
+        Route::get('/acquirer-account-upload/download-status/{id}', [AcquirerAccountUploadController::class, 'downloadStatusFile'])
+            ->name('admin.acquirer.detail-upload.download-status');
+        Route::get('/acquirer-account-upload/download-template', [AcquirerAccountUploadController::class, 'downloadTemplate'])
+            ->name('admin.acquirer.detail-upload.download-template');
+        
+        // Acquirer Rates
+        Route::get('/acquirer-rates', [AcquirerRatesController::class, 'index'])
+            ->name('admin.acquirer.rates.index');
+        Route::get('/acquirer-rates/data', [AcquirerRatesController::class, 'getData'])
+            ->name('admin.acquirer.rates.data');
+        Route::get('/acquirer-rates/acquirer-accounts', [AcquirerRatesController::class, 'getAcquirerAccounts'])
+            ->name('admin.acquirer.rates.acquirer-accounts');
+        Route::get('/acquirer-rates/acquirer-names', [AcquirerRatesController::class, 'getAcquirerNames'])
+            ->name('admin.acquirer.rates.acquirer-names');
+        Route::get('/acquirer-rates/payment-modes', [AcquirerRatesController::class, 'getPaymentModes'])
+            ->name('admin.acquirer.rates.payment-modes');
+        Route::get('/acquirer-rates/banks', [AcquirerRatesController::class, 'getBanks'])
+            ->name('admin.acquirer.rates.banks');
+        Route::post('/acquirer-rates', [AcquirerRatesController::class, 'store'])
+            ->name('admin.acquirer.rates.store');
+        Route::put('/acquirer-rates/{id}', [AcquirerRatesController::class, 'update'])
+            ->name('admin.acquirer.rates.update');
+        Route::delete('/acquirer-rates/{id}', [AcquirerRatesController::class, 'destroy'])
+            ->name('admin.acquirer.rates.destroy');
+        Route::post('/acquirer-rates/{id}/duplicate', [AcquirerRatesController::class, 'duplicate'])
+            ->name('admin.acquirer.rates.duplicate');
     });
 });
