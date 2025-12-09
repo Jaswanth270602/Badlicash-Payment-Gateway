@@ -264,12 +264,29 @@
                             <input type="text" class="form-control" ng-model="asdc.form.settlement_bank_branch">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Payment Mode</label>
-                            <input type="text" class="form-control" ng-model="asdc.form.payment_mode">
+                            <label class="form-label">Payment Source</label>
+                            <select class="form-select" ng-model="asdc.form.payment_mode">
+                                <option value="">Select Payment Source</option>
+                                <option value="card">Card</option>
+                                <option value="netbanking">Netbanking</option>
+                                <option value="upi">UPI</option>
+                                <option value="wallet">Wallet</option>
+                                <option value="emi">EMI</option>
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="bbps">BBPS</option>
+                                <option value="bharat_qr">Bharat QR</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Payment Channel</label>
-                            <input type="text" class="form-control" ng-model="asdc.form.payment_channel">
+                            <select class="form-select" ng-model="asdc.form.payment_channel">
+                                <option value="">Select Payment Channel</option>
+                                <option value="web">Web</option>
+                                <option value="mobile">Mobile</option>
+                                <option value="pos">POS</option>
+                                <option value="api">API</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">TDR Percentage</label>

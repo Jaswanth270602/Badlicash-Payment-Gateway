@@ -8,6 +8,7 @@ use App\Models\Refund;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RefundsController extends Controller
 {
@@ -138,6 +139,79 @@ class RefundsController extends Controller
                 'success' => false,
                 'message' => 'Failed to fetch refunds',
             ], 500);
+        }
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        try {
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
+            $query = Refund::with(['merchant', 'transaction'])
+                ->whereHas('transaction', function($q) use ($isTestMode) {
+                    $q->where('test_mode', $isTestMode);
+                });
+
+            // Apply same filters as getData
+            if ($request->has('date_range') && !empty($request->get('date_range'))) {
+                $dates = explode(' - ', $request->get('date_range'));
+                if (count($dates) === 2 && !empty(trim($dates[0])) && !empty(trim($dates[1]))) {
+                    $query->whereBetween('created_at', [trim($dates[0]), trim($dates[1])]);
+                }
+            }
+
+            if ($request->has('filter_refund_id') && $request->get('filter_refund_id')) {
+                $query->where('refund_id', 'like', "%{$request->get('filter_refund_id')}%");
+            }
+            if ($request->has('filter_refund_status') && $request->get('filter_refund_status') !== 'all') {
+                $query->where('status', $request->get('filter_refund_status'));
+            }
+
+            $refunds = $query->latest()->get();
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="refunds_' . now()->format('Y-m-d_His') . '.csv"',
+            ];
+
+            $callback = function() use ($refunds) {
+                $file = fopen('php://output', 'w');
+                
+                fputcsv($file, [
+                    'Refund ID', 'Merchant ID', 'Merchant Name', 'Payment ID', 'Transaction ID',
+                    'Order ID', 'Refund Status', 'Refund Amount', 'Transaction Amount',
+                    'Refund Request Date', 'Refund Initiated Date', 'Refund Reference No',
+                    'Is Refund Approved', 'Refund Description'
+                ]);
+
+                foreach ($refunds as $refund) {
+                    $transaction = $refund->transaction;
+                    fputcsv($file, [
+                        $refund->refund_id,
+                        $refund->merchant_id,
+                        $refund->merchant->name ?? '-',
+                        $transaction->txn_id ?? '-',
+                        $transaction->txn_id ?? '-',
+                        $transaction->order_id ?? '-',
+                        $refund->status,
+                        number_format($refund->amount, 2),
+                        $transaction ? number_format($transaction->amount, 2) : '0.00',
+                        $refund->created_at->format('Y-m-d H:i:s'),
+                        $refund->processed_at ? $refund->processed_at->format('Y-m-d H:i:s') : '-',
+                        $refund->gateway_refund_id ?? '-',
+                        $refund->status === 'completed' ? 'Yes' : 'No',
+                        $refund->reason ?? '-',
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            $this->logError('Error exporting refunds', ['error' => $e->getMessage()]);
+            abort(500, 'Failed to export refunds');
         }
     }
 }

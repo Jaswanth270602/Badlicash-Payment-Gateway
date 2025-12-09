@@ -10,6 +10,7 @@ use App\Http\Controllers\Merchant\OrdersController;
 use App\Http\Controllers\Merchant\RefundsController as MerchantRefundsController;
 use App\Http\Controllers\Merchant\SettlementsController;
 use App\Http\Controllers\Merchant\SettingsController;
+use App\Http\Controllers\Merchant\ProfileController;
 use App\Http\Controllers\Merchant\ApiKeysController;
 use App\Http\Controllers\Merchant\IntegrationController;
 use App\Http\Controllers\Merchant\SubscriptionsController as MerchantSubscriptionsController;
@@ -89,18 +90,24 @@ Route::middleware(['auth'])->group(function () {
             ->name('merchant.transactions.index');
         Route::get('/transactions/data', [MerchantTransactionsController::class, 'getData'])
             ->name('merchant.transactions.data');
+        Route::get('/transactions/export', [MerchantTransactionsController::class, 'export'])
+            ->name('merchant.transactions.export');
 
         // Orders
         Route::get('/orders', [OrdersController::class, 'index'])
             ->name('merchant.orders.index');
         Route::get('/orders/data', [OrdersController::class, 'getData'])
             ->name('merchant.orders.data');
+        Route::get('/orders/export', [OrdersController::class, 'export'])
+            ->name('merchant.orders.export');
 
         // Refunds
         Route::get('/refunds', [MerchantRefundsController::class, 'index'])
             ->name('merchant.refunds.index');
         Route::get('/refunds/data', [MerchantRefundsController::class, 'getData'])
             ->name('merchant.refunds.data');
+        Route::get('/refunds/export', [MerchantRefundsController::class, 'export'])
+            ->name('merchant.refunds.export');
         Route::post('/refunds', [MerchantRefundsController::class, 'store'])
             ->name('merchant.refunds.store');
 
@@ -109,6 +116,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('merchant.settlements.index');
         Route::get('/settlements/data', [SettlementsController::class, 'getData'])
             ->name('merchant.settlements.data');
+        Route::get('/settlements/export', [SettlementsController::class, 'export'])
+            ->name('merchant.settlements.export');
 
         // Reports
         Route::get('/reports', [ReportsController::class, 'index'])
@@ -164,6 +173,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings', [SettingsController::class, 'index'])->name('merchant.settings.index');
         Route::post('/settings/switch-mode', [SettingsController::class, 'switchMode'])->name('merchant.settings.switch-mode');
         Route::post('/settings/webhook', [SettingsController::class, 'updateWebhook'])->name('merchant.settings.update-webhook');
+        
+        // Profile
+        Route::get('/profile', [ProfileController::class, 'index'])->name('merchant.profile.index');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('merchant.profile.update');
     });
 
     // Admin routes
@@ -203,6 +216,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.payments.refunds');
         Route::get('/payments/refunds/data', [AdminRefundsController::class, 'getData'])
             ->name('admin.payments.refunds.data');
+        Route::get('/payments/refunds/export', [AdminRefundsController::class, 'export'])
+            ->name('admin.payments.refunds.export');
+        Route::get('/payments/transactions/export', [AdminTransactionsController::class, 'export'])
+            ->name('admin.payments.transactions.export');
         Route::get('/payments/bulk-refund-update', [BulkRefundUpdateController::class, 'index'])
             ->name('admin.payments.bulk-refund-update');
         Route::get('/payments/bulk-refund-update/jobs', [BulkRefundUpdateController::class, 'getJobs'])

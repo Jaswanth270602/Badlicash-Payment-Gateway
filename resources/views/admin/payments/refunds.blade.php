@@ -40,6 +40,9 @@
                 </select>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-success" ng-click="arc.exportCSV()">
+                    <i class="bi bi-download"></i> Download CSV
+                </button>
                 <button class="btn btn-sm btn-outline-secondary" ng-click="arc.clearFilters()">
                     <i class="bi bi-funnel"></i> Clear Filters
                 </button>
@@ -483,6 +486,24 @@
                     vm.selectedRefund = refund;
                     var modal = new bootstrap.Modal(document.getElementById('refundDetailsModal'));
                     modal.show();
+                };
+
+                vm.exportCSV = function() {
+                    var params = {
+                        date_range: vm.dateRange,
+                    };
+
+                    Object.keys(vm.filters).forEach(function(key) {
+                        if (vm.filters[key]) {
+                            params[key] = vm.filters[key];
+                        }
+                    });
+
+                    var queryString = Object.keys(params).map(function(key) {
+                        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+                    }).join('&');
+
+                    window.location.href = '/admin/payments/refunds/export?' + queryString;
                 };
 
                 vm.loadRefunds();

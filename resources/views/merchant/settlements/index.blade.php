@@ -38,9 +38,12 @@
                 <label class="form-label">Search</label>
                 <input class="form-control" placeholder="Search by settlement ID or reference number" ng-model="sc.filters.search" ng-change="sc.applyFilters()">
             </div>
-            <div class="col-md-6 col-lg-3 d-flex align-items-end">
-                <button class="btn btn-outline-secondary w-100" ng-click="sc.clearFilters()">
-                    <i class="bi bi-x-circle"></i> Clear Filters
+            <div class="col-md-6 col-lg-3 d-flex align-items-end gap-2">
+                <button class="btn btn-success" ng-click="sc.exportCSV()">
+                    <i class="bi bi-download"></i> Download CSV
+                </button>
+                <button class="btn btn-outline-secondary" ng-click="sc.clearFilters()">
+                    <i class="bi bi-x-circle"></i> Clear
                 </button>
             </div>
         </div>

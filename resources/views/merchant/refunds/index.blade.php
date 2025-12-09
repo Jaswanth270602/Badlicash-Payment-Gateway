@@ -46,9 +46,12 @@
                 <label class="form-label">Search</label>
                 <input class="form-control" placeholder="Search by refund ID or transaction ID" ng-model="rc.filters.search" ng-change="rc.applyFilters()">
             </div>
-            <div class="col-md-6 col-lg-3 d-flex align-items-end">
-                <button class="btn btn-outline-secondary w-100" ng-click="rc.clearFilters()">
-                    <i class="bi bi-x-circle"></i> Clear Filters
+            <div class="col-md-6 col-lg-3 d-flex align-items-end gap-2">
+                <button class="btn btn-success" ng-click="rc.exportCSV()">
+                    <i class="bi bi-download"></i> Download CSV
+                </button>
+                <button class="btn btn-outline-secondary" ng-click="rc.clearFilters()">
+                    <i class="bi bi-x-circle"></i> Clear
                 </button>
             </div>
         </div>

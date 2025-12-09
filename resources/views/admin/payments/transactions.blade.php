@@ -52,6 +52,9 @@
                 </select>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-success" ng-click="atc.exportCSV()">
+                    <i class="bi bi-download"></i> Download CSV
+                </button>
                 <button class="btn btn-sm btn-outline-secondary" ng-click="atc.clearFilters()">
                     <i class="bi bi-funnel"></i> Clear Filters
                 </button>
@@ -127,7 +130,7 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <span>Transaction DateTime</span>
                                 </div>
-                                <input type="text" class="form-control form-control-sm mt-1" placeholder="MM/DD/YYYY" ng-model="atc.filters.filter_transaction_datetime" ng-change="atc.applyFilters()">
+                                <input type="date" class="form-control form-control-sm mt-1" ng-model="atc.filters.filter_transaction_datetime" ng-change="atc.applyFilters()">
                             </th>
                             <th ng-show="atc.visibleColumns.transaction_id.visible">
                                 <div class="d-flex align-items-center gap-2">
@@ -139,7 +142,7 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <span>Amount Paid By Customer</span>
                                 </div>
-                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="atc.filters.filter_amount_paid" ng-change="atc.applyFilters()">
+                                <input type="number" step="0.01" class="form-control form-control-sm mt-1" placeholder="Amount..." ng-model="atc.filters.filter_amount_paid" ng-change="atc.applyFilters()">
                             </th>
                             <th ng-show="atc.visibleColumns.payment_status.visible">
                                 <div class="d-flex align-items-center gap-2">
@@ -156,7 +159,14 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <span>Payment Mode</span>
                                 </div>
-                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="atc.filters.filter_payment_mode" ng-change="atc.applyFilters()">
+                                <select class="form-select form-select-sm mt-1" ng-model="atc.filters.filter_payment_mode" ng-change="atc.applyFilters()">
+                                    <option value="">All</option>
+                                    <option value="card">Card</option>
+                                    <option value="netbanking">Netbanking</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="wallet">Wallet</option>
+                                    <option value="emi">EMI</option>
+                                </select>
                             </th>
                             <th ng-show="atc.visibleColumns.payment_channel.visible">
                                 <div class="d-flex align-items-center gap-2">
@@ -622,6 +632,24 @@
                     vm.selectedTransaction = transaction;
                     var modal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
                     modal.show();
+                };
+
+                vm.exportCSV = function() {
+                    var params = {
+                        status: vm.filters.status === 'all' ? '' : vm.filters.status,
+                    };
+
+                    Object.keys(vm.filters).forEach(function(key) {
+                        if (key.startsWith('filter_') && vm.filters[key]) {
+                            params[key] = vm.filters[key];
+                        }
+                    });
+
+                    var queryString = Object.keys(params).map(function(key) {
+                        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+                    }).join('&');
+
+                    window.location.href = '/admin/payments/transactions/export?' + queryString;
                 };
 
                 // Initialize - load data on page load

@@ -7,6 +7,7 @@ use App\Traits\LogsConditionally;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionsController extends Controller
 {
@@ -145,6 +146,86 @@ class TransactionsController extends Controller
                 'message' => 'Failed to fetch transactions',
             ], 500);
         }
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $merchant = $request->user()->merchant;
+
+        $query = $merchant->transactions()
+            ->where('test_mode', $merchant->test_mode)
+            ->with(['order.paymentLink']);
+
+        $status = $request->get('status');
+        $paymentMethod = $request->get('payment_method');
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+        $search = $request->get('search');
+
+        if ($status && $status !== 'all' && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        if ($paymentMethod && $paymentMethod !== 'all' && $paymentMethod !== '') {
+            $query->where('payment_method', $paymentMethod);
+        }
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('txn_id', 'like', "%{$search}%")
+                  ->orWhereHas('order', function ($oq) use ($search) {
+                      $oq->where('order_id', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $transactions = $query->latest()->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="transactions_' . now()->format('Y-m-d_His') . '.csv"',
+        ];
+
+        $callback = function() use ($transactions) {
+            $file = fopen('php://output', 'w');
+            
+            fputcsv($file, [
+                'Transaction ID', 'Order ID', 'Amount', 'Fee Amount', 'Net Amount',
+                'Currency', 'Payment Method', 'Status', 'Customer Email', 'Customer Phone',
+                'Created At', 'Failure Reason'
+            ]);
+
+            foreach ($transactions as $transaction) {
+                $paymentDetails = $transaction->payment_details ?? [];
+                fputcsv($file, [
+                    $transaction->txn_id,
+                    $transaction->order_id ?? '-',
+                    number_format($transaction->amount, 2),
+                    number_format($transaction->fee_amount ?? 0, 2),
+                    number_format($transaction->net_amount ?? $transaction->amount, 2),
+                    $transaction->currency ?? 'INR',
+                    $transaction->payment_method ?? '-',
+                    $transaction->status,
+                    $paymentDetails['customer_email'] ?? '-',
+                    $paymentDetails['customer_phone'] ?? '-',
+                    $transaction->created_at->format('Y-m-d H:i:s'),
+                    $transaction->failure_reason ?? '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
 

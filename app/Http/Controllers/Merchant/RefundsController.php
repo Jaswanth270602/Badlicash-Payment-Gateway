@@ -7,6 +7,7 @@ use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RefundsController extends Controller
 {
@@ -144,6 +145,79 @@ class RefundsController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $merchant = $request->user()->merchant;
+
+        $query = $merchant->refunds()
+            ->with('transaction')
+            ->whereHas('transaction', function ($q) use ($merchant) {
+                $q->where('test_mode', $merchant->test_mode);
+            });
+
+        $status = $request->get('status');
+        $search = $request->get('search');
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+
+        if ($status && $status !== 'all' && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('refund_id', 'like', "%{$search}%")
+                  ->orWhereHas('transaction', function ($tq) use ($search) {
+                      $tq->where('txn_id', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        $refunds = $query->latest()->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="refunds_' . now()->format('Y-m-d_His') . '.csv"',
+        ];
+
+        $callback = function() use ($refunds) {
+            $file = fopen('php://output', 'w');
+            
+            fputcsv($file, [
+                'Refund ID', 'Transaction ID', 'Order ID', 'Amount', 'Currency',
+                'Status', 'Reason', 'Is Partial', 'Created At', 'Processed At'
+            ]);
+
+            foreach ($refunds as $refund) {
+                $transaction = $refund->transaction;
+                fputcsv($file, [
+                    $refund->refund_id,
+                    $transaction->txn_id ?? '-',
+                    $transaction->order_id ?? '-',
+                    number_format($refund->amount, 2),
+                    $refund->currency,
+                    $refund->status,
+                    $refund->reason ?? '-',
+                    $refund->is_partial ? 'Yes' : 'No',
+                    $refund->created_at->format('Y-m-d H:i:s'),
+                    $refund->processed_at ? $refund->processed_at->format('Y-m-d H:i:s') : '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
 

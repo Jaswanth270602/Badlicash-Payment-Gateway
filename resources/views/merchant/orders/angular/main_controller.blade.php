@@ -77,6 +77,21 @@
             return pages;
         };
 
+        vm.exportCSV = function() {
+            var params = {
+                status: vm.filters.status || '',
+                from_date: vm.filters.from_date || '',
+                to_date: vm.filters.to_date || '',
+                search: vm.filters.search || ''
+            };
+
+            var queryString = Object.keys(params).map(function(key) {
+                return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+            }).join('&');
+
+            window.location.href = '/merchant/orders/export?' + queryString;
+        };
+
         vm.loadOrders();
             }]);
         } catch(e) {

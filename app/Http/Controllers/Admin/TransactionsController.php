@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionsController extends Controller
 {
@@ -74,6 +75,17 @@ class TransactionsController extends Controller
             }
             if ($request->has('filter_payment_status') && $request->get('filter_payment_status') !== 'all') {
                 $query->where('status', $request->get('filter_payment_status'));
+            }
+            if ($request->has('filter_amount_paid') && $request->get('filter_amount_paid')) {
+                $amount = floatval($request->get('filter_amount_paid'));
+                $query->where('amount', $amount);
+            }
+            if ($request->has('filter_payment_mode') && $request->get('filter_payment_mode')) {
+                $query->where('payment_method', 'like', "%{$request->get('filter_payment_mode')}%");
+            }
+            if ($request->has('filter_transaction_datetime') && $request->get('filter_transaction_datetime')) {
+                $date = $request->get('filter_transaction_datetime');
+                $query->whereDate('created_at', $date);
             }
 
             // Sorting
@@ -166,6 +178,124 @@ class TransactionsController extends Controller
                 'success' => false,
                 'message' => 'Failed to fetch transactions',
             ], 500);
+        }
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        try {
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
+            $query = Transaction::with(['merchant', 'order.paymentLink'])
+                ->where('test_mode', $isTestMode);
+
+            // Apply same filters as getData but without pagination
+            if ($request->has('date_range') && !empty($request->get('date_range'))) {
+                $dates = explode(' - ', $request->get('date_range'));
+                if (count($dates) === 2 && !empty(trim($dates[0])) && !empty(trim($dates[1]))) {
+                    $query->whereBetween('created_at', [trim($dates[0]), trim($dates[1])]);
+                }
+            }
+
+            $status = $request->get('status');
+            if (!empty($status) && $status !== 'all' && $status !== '') {
+                $query->where('status', $status);
+            }
+
+            if ($request->has('filter_merchant_id') && $request->get('filter_merchant_id')) {
+                $query->where('merchant_id', $request->get('filter_merchant_id'));
+            }
+            if ($request->has('filter_merchant_name') && $request->get('filter_merchant_name')) {
+                $query->whereHas('merchant', function($q) use ($request) {
+                    $q->where('name', 'like', "%{$request->get('filter_merchant_name')}%");
+                });
+            }
+            if ($request->has('filter_transaction_id') && $request->get('filter_transaction_id')) {
+                $query->where('txn_id', 'like', "%{$request->get('filter_transaction_id')}%");
+            }
+            if ($request->has('filter_payment_status') && $request->get('filter_payment_status') !== 'all') {
+                $query->where('status', $request->get('filter_payment_status'));
+            }
+            if ($request->has('filter_amount_paid') && $request->get('filter_amount_paid')) {
+                $amount = floatval($request->get('filter_amount_paid'));
+                $query->where('amount', $amount);
+            }
+            if ($request->has('filter_payment_mode') && $request->get('filter_payment_mode')) {
+                $query->where('payment_method', 'like', "%{$request->get('filter_payment_mode')}%");
+            }
+
+            $transactions = $query->latest()->get();
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="transactions_' . now()->format('Y-m-d_His') . '.csv"',
+            ];
+
+            $callback = function() use ($transactions) {
+                $file = fopen('php://output', 'w');
+                
+                // CSV Headers
+                fputcsv($file, [
+                    'Merchant ID', 'Transaction Initiation Time', 'Merchant Name', 'Transaction Sequence ID',
+                    'Transaction Order ID', 'Transaction DateTime', 'Transaction ID', 'Amount Paid By Customer',
+                    'Payment Status', 'Payment Mode', 'Payment Channel', 'Merc Approved', 'Currency Code',
+                    'Bank Reference Number', 'Acq Payment ID', 'Acq Transaction ID', 'Provider Name', 'Account ID',
+                    'TDR Amount', 'GST Amount', 'TDR Amount Paid By Merchant', 'TDR Amount Paid By Customer',
+                    'GST Paid By Merchant', 'GST Paid By Customer', 'Net Settlements Amount', 'Card Holder Name',
+                    'Card Number', 'Customer IP Address', 'UDF1', 'UDF2', 'UDF3', 'UDF4', 'UDF5', 'UPI ID', 'Failure Reason'
+                ]);
+
+                foreach ($transactions as $transaction) {
+                    $paymentDetails = $transaction->payment_details ?? [];
+                    $gatewayResponse = $transaction->gateway_response ?? [];
+                    
+                    fputcsv($file, [
+                        $transaction->merchant_id,
+                        $transaction->created_at->format('Y-m-d H:i:s'),
+                        $transaction->merchant->name ?? '-',
+                        $transaction->id,
+                        $transaction->order_id ?? '-',
+                        $transaction->created_at->format('Y-m-d H:i:s'),
+                        $transaction->txn_id,
+                        number_format($transaction->amount, 2),
+                        $transaction->status,
+                        $transaction->payment_method ?? '-',
+                        $gatewayResponse['channel'] ?? '-',
+                        $transaction->status === 'success' ? 'Yes' : 'No',
+                        $transaction->currency ?? 'INR',
+                        $gatewayResponse['bank_reference'] ?? '-',
+                        $gatewayResponse['acq_payment_id'] ?? '-',
+                        $gatewayResponse['acq_transaction_id'] ?? '-',
+                        $gatewayResponse['provider'] ?? '-',
+                        $gatewayResponse['account_id'] ?? '-',
+                        number_format($transaction->fee_amount ?? 0, 2),
+                        number_format(($transaction->fee_amount ?? 0) * 0.18, 2),
+                        number_format($transaction->fee_amount ?? 0, 2),
+                        '0.00',
+                        number_format(($transaction->fee_amount ?? 0) * 0.18, 2),
+                        '0.00',
+                        number_format($transaction->net_amount ?? $transaction->amount, 2),
+                        $paymentDetails['card_holder_name'] ?? '-',
+                        isset($paymentDetails['card_number']) ? '****' . substr($paymentDetails['card_number'], -4) : '-',
+                        $transaction->ip_address ?? '-',
+                        $paymentDetails['udf1'] ?? '-',
+                        $paymentDetails['udf2'] ?? '-',
+                        $paymentDetails['udf3'] ?? '-',
+                        $paymentDetails['udf4'] ?? '-',
+                        $paymentDetails['udf5'] ?? '-',
+                        $gatewayResponse['upi_id'] ?? '-',
+                        $transaction->failure_reason ?? '-',
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            $this->logError('Error exporting transactions', ['error' => $e->getMessage()]);
+            abort(500, 'Failed to export transactions');
         }
     }
 }

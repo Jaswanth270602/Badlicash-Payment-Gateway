@@ -576,6 +576,129 @@
             border-radius: 12px;
             box-shadow: var(--card-shadow-lg);
         }
+
+        /* Profile Dropdown Styles */
+        .profile-dropdown {
+            position: relative;
+        }
+
+        .profile-dropdown-toggle {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .profile-dropdown-toggle:hover {
+            background: #f9fafb;
+            border-color: var(--primary-violet-light);
+        }
+
+        .profile-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-violet) 0%, var(--primary-violet-dark) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .profile-name {
+            font-weight: 500;
+            font-size: 14px;
+            color: #1f2937;
+        }
+
+        .profile-dropdown-menu {
+            min-width: 280px;
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e7eb;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .profile-dropdown-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .profile-avatar-large {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-violet) 0%, var(--primary-violet-dark) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .merchant-id-badge {
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+        }
+
+        .merchant-id-badge i {
+            color: var(--primary-violet);
+            margin-right: 6px;
+        }
+
+        .merchant-id-badge strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .profile-menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #374151;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .profile-menu-item i {
+            width: 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .profile-menu-item:hover {
+            background: #f9fafb;
+            color: var(--primary-violet);
+        }
+
+        .profile-menu-item:hover i {
+            color: var(--primary-violet);
+        }
+
+        .logout-item {
+            color: #dc2626 !important;
+        }
+
+        .logout-item:hover {
+            background: #fef2f2 !important;
+            color: #dc2626 !important;
+        }
+
+        .logout-item i {
+            color: #dc2626 !important;
+        }
     </style>
     @stack('styles')
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
@@ -825,18 +948,6 @@
         </div>
         @endif
     </nav>
-
-    <div class="sidebar-header mt-auto" style="border-top: 1px solid rgba(255,255,255,0.1); border-bottom: none;">
-        <div class="d-flex align-items-center gap-2">
-            <div class="rounded-circle bg-light text-dark d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-            </div>
-            <div class="flex-grow-1">
-                <div class="small fw-bold">{{ auth()->user()->name }}</div>
-                <div class="small text-muted" style="opacity: 0.7;">{{ auth()->user()->email }}</div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div class="main-content">
@@ -867,12 +978,58 @@
                 </button>
             </div>
             @endif
+            
+            @if(auth()->user()->merchant)
+            <!-- Merchant Profile Dropdown -->
+            <div class="dropdown profile-dropdown">
+                <button class="btn btn-link text-decoration-none d-flex align-items-center gap-2 profile-dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="color: #1f2937; padding: 8px 12px;">
+                    <div class="profile-avatar">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    </div>
+                    <span class="profile-name">{{ auth()->user()->name }}</span>
+                    <i class="bi bi-chevron-down" style="font-size: 12px;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu" aria-labelledby="profileDropdown">
+                    <li class="profile-dropdown-header">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="profile-avatar-large">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ auth()->user()->name }}</div>
+                                <div class="small text-muted">{{ auth()->user()->email }}</div>
+                            </div>
+                        </div>
+                        <div class="merchant-id-badge">
+                            <i class="bi bi-building"></i> Merchant ID: <strong>{{ auth()->user()->merchant->id }}</strong>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item profile-menu-item" href="{{ route('merchant.profile.index') }}">
+                            <i class="bi bi-person"></i> Profile
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ route('logout') }}" method="POST" class="d-inline w-100">
+                            @csrf
+                            <button type="submit" class="dropdown-item profile-menu-item logout-item">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+            @else
+            <!-- Admin Logout -->
             <form action="{{ route('logout') }}" method="POST" class="d-inline">
                 @csrf
                 <button type="submit" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </button>
             </form>
+            @endif
         </div>
     </div>
 
@@ -1072,6 +1229,22 @@ window.addEventListener('resize', function() {
             }
         } else {
             sidebar.classList.remove('collapsed');
+        }
+    }
+});
+
+// Close profile dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const profileDropdown = document.getElementById('profileDropdown');
+    const dropdownMenu = document.querySelector('.profile-dropdown-menu');
+    
+    if (profileDropdown && dropdownMenu) {
+        const isClickInside = profileDropdown.contains(event.target) || dropdownMenu.contains(event.target);
+        if (!isClickInside && dropdownMenu.classList.contains('show')) {
+            const bsDropdown = bootstrap.Dropdown.getInstance(profileDropdown);
+            if (bsDropdown) {
+                bsDropdown.hide();
+            }
         }
     }
 });

@@ -47,9 +47,12 @@
                     <option value="100">100</option>
                 </select>
             </div>
-            <div class="col-md-6 col-lg-3 d-flex align-items-end">
-                <button class="btn btn-outline-secondary w-100" ng-click="tc.clearFilters()">
-                    <i class="bi bi-x-circle"></i> Clear Filters
+            <div class="col-md-6 col-lg-3 d-flex align-items-end gap-2">
+                <button class="btn btn-success" ng-click="tc.exportCSV()">
+                    <i class="bi bi-download"></i> Download CSV
+                </button>
+                <button class="btn btn-outline-secondary" ng-click="tc.clearFilters()">
+                    <i class="bi bi-x-circle"></i> Clear
                 </button>
             </div>
         </div>

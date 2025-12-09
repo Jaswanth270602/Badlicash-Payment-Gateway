@@ -123,15 +123,86 @@ class BulkRefundUpdateController extends Controller
 
         $callback = function() {
             $file = fopen('php://output', 'w');
-            // All columns that can be updated in bulk refund update
+            // CSV Headers matching the grid columns
             fputcsv($file, [
-                'Refund ID',      // Required: Unique identifier for the refund (e.g., RFD_XXXXXXXXXXXXXX)
-                'Status',         // Required: pending, processing, completed, failed, cancelled
-                'Notes',          // Optional: Additional notes about the refund
-                'Reason',         // Optional: Reason for the refund
-                'Amount',         // Optional: Refund amount (decimal, e.g., 100.50)
-                'Currency'        // Optional: Currency code (e.g., USD, EUR) - 3 characters
+                'Refund ID',
+                'Merchant ID',
+                'Merchant Name',
+                'Payment ID',
+                'Customer IP',
+                'Transaction Sequence ID',
+                'Transaction ID',
+                'Order ID',
+                'Payer Name',
+                'Payer Email',
+                'Payer Phone',
+                'Refund Status',
+                'Refund Description',
+                'Refund Amount',
+                'Refund Charges',
+                'Refund Tax On Charges',
+                'Transaction Amount',
+                'Refund Request Date',
+                'Refund Initiated Date',
+                'Refund Reference No',
+                'Is Refund Approved',
+                'Refund PG Completed',
+                'Latest API Response'
             ]);
+            
+            // Add sample entries
+            fputcsv($file, [
+                'RFD_123456789012',
+                '1',
+                'Sample Merchant',
+                'TXN_1234567890',
+                '192.168.1.1',
+                '1001',
+                'TXN_1234567890',
+                'ORD_1234567890',
+                'John Doe',
+                'john@example.com',
+                '9876543210',
+                'pending',
+                'Customer requested refund',
+                '100.00',
+                '0.00',
+                '0.00',
+                '100.00',
+                '2025-12-09 10:00:00',
+                '',
+                '',
+                'No',
+                'No',
+                '{}'
+            ]);
+            
+            fputcsv($file, [
+                'RFD_123456789013',
+                '2',
+                'Another Merchant',
+                'TXN_1234567891',
+                '192.168.1.2',
+                '1002',
+                'TXN_1234567891',
+                'ORD_1234567891',
+                'Jane Smith',
+                'jane@example.com',
+                '9876543211',
+                'completed',
+                'Product not delivered',
+                '250.50',
+                '2.50',
+                '0.45',
+                '250.50',
+                '2025-12-08 14:30:00',
+                '2025-12-08 15:00:00',
+                'REF_1234567890',
+                'Yes',
+                'Yes',
+                '{"status":"success","refund_id":"REF_1234567890"}'
+            ]);
+            
             fclose($file);
         };
 
