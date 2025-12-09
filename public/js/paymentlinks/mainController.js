@@ -247,10 +247,11 @@
                         expires_in_hours: 24
                     };
 
-                    // Reload list after a short delay to ensure modal is closed
-                    $timeout(function() {
-                        loadPaymentLinks();
-                    }, 300);
+                    // Reset to page 1 to show the newly created link (since links are ordered by latest)
+                    vm.pagination.current_page = 1;
+
+                    // Reload list immediately without delay
+                    loadPaymentLinks();
                 } else {
                     var errorMsg = 'Failed to create payment link';
                     if (response.data && response.data.message) {

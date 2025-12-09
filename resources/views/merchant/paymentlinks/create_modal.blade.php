@@ -7,7 +7,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" ng-disabled="plc.creating"></button>
             </div>
             <div class="modal-body">
-                <form id="createLinkForm" ng-submit="plc.createPaymentLink($event); return false;">
+                <form id="createLinkForm">
                     <div class="mb-3">
                         <label for="linkTitle" class="form-label">Title <span class="text-danger">*</span></label>
                         <input type="text" 
@@ -103,37 +103,16 @@
                 <button type="button" 
                         id="createLinkButton"
                         class="btn btn-primary" 
-                        onclick="
-                            var btn = this;
-                            var btnText = btn.querySelector('.btn-text');
-                            var btnSpinner = btn.querySelector('.btn-spinner');
-                            
-                            // Show loading state
-                            btnText.textContent = 'Creating...';
-                            btnSpinner.style.display = 'inline-block';
-                            btn.disabled = true;
-                            
-                            console.log('BUTTON CLICKED'); 
-                            var scope = angular.element(document.getElementById('paymentLinksApp')).scope();
-                            if (scope && scope.plc && scope.plc.createPaymentLink) {
-                                console.log('Calling createPaymentLink...');
-                                scope.plc.createPaymentLink(event).finally(function() {
-                                    // Reset button state
-                                    btnText.textContent = 'Create Link';
-                                    btnSpinner.style.display = 'none';
-                                    btn.disabled = false;
-                                });
-                            } else {
-                                console.error('createPaymentLink not found!');
-                                btnText.textContent = 'Create Link';
-                                btnSpinner.style.display = 'none';
-                                btn.disabled = false;
-                            }
-                            return false;
-                        ">
-                    <span class="spinner-border spinner-border-sm me-2 btn-spinner" role="status" aria-hidden="true" style="display: none;"></span>
-                    <i class="bi bi-plus-circle me-2"></i>
-                    <span class="btn-text">Create Link</span>
+                        ng-click="plc.createPaymentLink($event)"
+                        ng-disabled="plc.creating">
+                    <span ng-if="plc.creating">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Creating...
+                    </span>
+                    <span ng-if="!plc.creating">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Create Link
+                    </span>
                 </button>
             </div>
         </div>

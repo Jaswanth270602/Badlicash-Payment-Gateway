@@ -6,6 +6,7 @@
                         <th>#</th>
                         <th>Title</th>
                         <th>Amount</th>
+                        <th>Remaining Balance</th>
                         <th>Link Token</th>
                         <th>Status</th>
                         <th>Usage</th>
@@ -18,6 +19,19 @@
                         <td>@{{ (plc.pagination.current_page - 1) * plc.pagination.per_page + $index + 1 }}</td>
                         <td>@{{ link.title || 'Untitled' }}</td>
                         <td><strong>@{{ link.currency || 'INR' }} @{{ link.amount | number:2 }}</strong></td>
+                        <td>
+                            <span ng-if="link.allow_partial_payment || (link.amount_paid > 0 && link.remaining_balance > 0)">
+                                <strong ng-class="{'text-success': link.remaining_balance === 0, 'text-warning': link.remaining_balance > 0 && link.remaining_balance < link.amount}">
+                                    @{{ link.currency || 'INR' }} @{{ link.remaining_balance | number:2 }}
+                                </strong>
+                                <span ng-if="link.amount_paid > 0" class="text-muted small d-block">
+                                    (Paid: @{{ link.currency || 'INR' }} @{{ link.amount_paid | number:2 }})
+                                </span>
+                            </span>
+                            <span ng-if="!link.allow_partial_payment && link.amount_paid === 0" class="text-muted">
+                                -
+                            </span>
+                        </td>
                         <td>
                             <code class="small">@{{ link.link_token }}</code>
                         </td>
@@ -40,7 +54,7 @@
                         </td>
                     </tr>
                     <tr ng-if="plc.paymentLinks.length === 0">
-                        <td colspan="8" class="text-center text-muted py-4">
+                        <td colspan="9" class="text-center text-muted py-4">
                             <i class="bi bi-inbox" style="font-size: 48px;"></i>
                             <p class="mt-2">No payment links found</p>
                         </td>

@@ -1104,7 +1104,8 @@
                         
                         // Redirect after showing success
                         setTimeout(() => {
-                            window.location.href = result.redirect_url || `http://localhost:8080/success-simple.html?transaction_id=${result.transaction_id}`;
+                            const baseUrl = window.location.origin;
+                            window.location.href = result.redirect_url || `${baseUrl}/success-simple.html?transaction_id=${result.transaction_id}`;
                         }, 2000);
                     } else {
                         errorMessage.textContent = result.message || 'Simulation failed';
@@ -1113,7 +1114,8 @@
                         
                         // Redirect to failure page after showing error
                         setTimeout(() => {
-                            window.location.href = result.redirect_url || `http://localhost:8080/failure-simple.html?transaction_id=${result.transaction_id}`;
+                            const baseUrl = window.location.origin;
+                            window.location.href = result.redirect_url || `${baseUrl}/failure-simple.html?transaction_id=${result.transaction_id}`;
                         }, 2000);
                     }
                 } catch (error) {
@@ -1180,7 +1182,8 @@
                         
                         // Redirect to failure page
                         setTimeout(() => {
-                            window.location.href = result.redirect_url || `http://localhost:8080/failure-simple.html?transaction_id=${result.transaction_id || ''}`;
+                            const baseUrl = window.location.origin;
+                            window.location.href = result.redirect_url || `${baseUrl}/failure-simple.html?transaction_id=${result.transaction_id || ''}`;
                         }, 2000);
                     }
                     

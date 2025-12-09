@@ -18,6 +18,7 @@
         vm.pagination = { current_page: 1, last_page: 1, total: 0, from: 0, to: 0, per_page: 10 };
         vm.filters = { status: '', from_date: '', to_date: '', search: '' };
         vm.newRefund = { transaction_id: '', amount: '', reason: '' };
+        vm.selectedRefund = null;
 
         vm.loadRefunds = function() {
             vm.loading = true;
@@ -49,44 +50,97 @@
         };
 
         vm.createRefund = function() {
-            if (!vm.newRefund.transaction_id || !vm.newRefund.amount) {
-                alert('Please fill in all required fields');
+            // Prevent double submission
+            if (vm.creating) {
+                return;
+            }
+
+            // Validate required fields
+            if (!vm.newRefund.transaction_id || !vm.newRefund.transaction_id.trim()) {
+                alert('Please enter a Transaction ID');
+                return;
+            }
+
+            if (!vm.newRefund.amount || parseFloat(vm.newRefund.amount) <= 0) {
+                alert('Please enter a valid amount greater than 0');
                 return;
             }
 
             vm.creating = true;
-            var csrf = document.querySelector('meta[name="csrf-token"]').content;
-            $http.post('/merchant/refunds', {
-                transaction_id: vm.newRefund.transaction_id,
-                amount: parseFloat(vm.newRefund.amount),
-                reason: vm.newRefund.reason || ''
-            }, {
-                headers: { 'X-CSRF-TOKEN': csrf }
-            }).then(function(response) {
+            var csrf = document.querySelector('meta[name="csrf-token"]');
+            if (!csrf) {
                 vm.creating = false;
-                if (response.data.success) {
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            var requestData = {
+                transaction_id: vm.newRefund.transaction_id.trim(),
+                amount: parseFloat(vm.newRefund.amount),
+                reason: (vm.newRefund.reason || '').trim()
+            };
+
+            console.log('Creating refund with data:', requestData);
+
+            $http({
+                method: 'POST',
+                url: '/merchant/refunds',
+                data: requestData,
+                headers: {
+                    'X-CSRF-TOKEN': csrf.content,
+                    'Content-Type': 'application/json'
+                }
+            }).then(function(response) {
+                console.log('Refund creation response:', response);
+                vm.creating = false;
+                
+                if (response.data && response.data.success) {
+                    // Close modal
                     var modal = bootstrap.Modal.getInstance(document.getElementById('createRefundModal'));
-                    if (modal) modal.hide();
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Reset form
                     vm.newRefund = { transaction_id: '', amount: '', reason: '' };
+                    
+                    // Reload refunds list
                     vm.loadRefunds();
                     
+                    // Show success message
                     var refundData = response.data.data;
                     var alertMsg = 'Refund Created Successfully!\n\n';
                     alertMsg += 'Refund ID: ' + refundData.refund_id + '\n';
-                    alertMsg += 'Amount: ' + refundData.currency + ' ' + refundData.amount.toFixed(2) + '\n';
+                    alertMsg += 'Amount: ' + refundData.currency + ' ' + parseFloat(refundData.amount).toFixed(2) + '\n';
                     alertMsg += 'Status: ' + refundData.status.toUpperCase() + '\n';
                     alertMsg += (refundData.is_partial ? 'Type: Partial Refund' : 'Type: Full Refund');
                     alert(alertMsg);
+                } else {
+                    alert('Failed to create refund: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'));
                 }
             }, function(error) {
+                console.error('Refund creation error:', error);
                 vm.creating = false;
+                
                 var errorMsg = 'Failed to create refund.\n\n';
-                if (error.data && error.data.message) {
-                    errorMsg += error.data.message;
+                if (error.data) {
+                    if (error.data.message) {
+                        errorMsg += error.data.message;
+                    } else if (error.data.errors) {
+                        var errors = error.data.errors;
+                        var firstKey = Object.keys(errors)[0];
+                        if (firstKey && errors[firstKey]) {
+                            errorMsg += Array.isArray(errors[firstKey]) ? errors[firstKey][0] : String(errors[firstKey]);
+                        }
+                    }
                 } else if (error.status === 404) {
-                    errorMsg += 'Transaction not found. Please check the Transaction ID.';
+                    errorMsg += 'Transaction not found. Please check the Transaction ID and ensure you are in the correct mode (TEST/LIVE).';
                 } else if (error.status === 400) {
                     errorMsg += 'Invalid request. Please check your input.';
+                } else if (error.status === 403) {
+                    errorMsg += 'Live mode is not configured. Please configure your live API credentials.';
+                } else if (error.status === 0 || error.status === -1) {
+                    errorMsg += 'Network error. Please check your connection and try again.';
                 } else {
                     errorMsg += 'An unexpected error occurred. Please try again.';
                 }
@@ -123,6 +177,12 @@
                 pages.push(i);
             }
             return pages;
+        };
+
+        vm.viewRefund = function(refund) {
+            vm.selectedRefund = refund;
+            var modal = new bootstrap.Modal(document.getElementById('refundDetailsModal'));
+            modal.show();
         };
 
         vm.loadRefunds();

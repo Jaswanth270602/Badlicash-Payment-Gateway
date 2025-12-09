@@ -216,11 +216,29 @@ class PaymentCheckoutController extends Controller
                     ];
                 }
 
-                // Add redirect URLs for merchant test app
+                // Add redirect URLs - use full request URL with port
+                $baseUrl = $request->getSchemeAndHttpHost();
+                $port = $request->getPort();
+                
+                // Ensure port is included in URL
+                if ($port && $port != 80 && $port != 443) {
+                    // Check if port is already in URL
+                    if (strpos($baseUrl, ':') === false || (strpos($baseUrl, ':80') !== false && $port != 80) || (strpos($baseUrl, ':443') !== false && $port != 443)) {
+                        // Remove existing port if wrong, then add correct one
+                        $baseUrl = preg_replace('/:\d+$/', '', $baseUrl);
+                        $baseUrl .= ':' . $port;
+                    }
+                }
+                
+                // Fallback to config app.url if baseUrl is invalid
+                if (!$baseUrl || $baseUrl === 'http://' || $baseUrl === 'https://') {
+                    $baseUrl = config('app.url', 'http://127.0.0.1:8000');
+                }
+                
                 if ($result['success']) {
-                    $result['redirect_url'] = 'http://localhost:8080/success-simple.html?transaction_id=' . ($result['transaction_id'] ?? '');
+                    $result['redirect_url'] = rtrim($baseUrl, '/') . '/success-simple.html?transaction_id=' . ($result['transaction_id'] ?? '');
                 } else {
-                    $result['redirect_url'] = 'http://localhost:8080/failure-simple.html?transaction_id=' . ($result['transaction_id'] ?? '');
+                    $result['redirect_url'] = rtrim($baseUrl, '/') . '/failure-simple.html?transaction_id=' . ($result['transaction_id'] ?? '');
                 }
 
                 return response()->json($result, $result['success'] ? 200 : 402);

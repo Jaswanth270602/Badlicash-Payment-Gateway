@@ -73,13 +73,14 @@
                     <th>Status</th>
                     <th>Reason</th>
                     <th>Created At</th>
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr ng-repeat="refund in rc.refunds track by $index">
                     <td>@{{ (rc.pagination.current_page - 1) * rc.pagination.per_page + $index + 1 }}</td>
                     <td><code>@{{ refund.refund_id }}</code></td>
-                    <td><code>@{{ (refund.transaction && refund.transaction.txn_id) || 'N/A' }}</code></td>
+                    <td><code>@{{ (refund.transaction && refund.transaction.txn_id) || refund.transaction_id || 'N/A' }}</code></td>
                     <td><strong>@{{ refund.amount | number:2 }}</strong></td>
                     <td>@{{ refund.currency || 'INR' }}</td>
                     <td>
@@ -87,9 +88,14 @@
                     </td>
                     <td>@{{ refund.reason || 'N/A' }}</td>
                     <td>@{{ refund.created_at | date:'MMM d, y HH:mm' }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" ng-click="rc.viewRefund(refund)" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
                 </tr>
                 <tr ng-if="rc.refunds.length===0 && !rc.loading">
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="9" class="text-center text-muted py-4">
                         <i class="bi bi-inbox" style="font-size: 48px;"></i>
                         <p class="mt-2">No refunds found</p>
                     </td>
@@ -108,6 +114,73 @@
         </div>
     </div>
 
+    <!-- Refund Details Modal -->
+    <div class="modal fade" id="refundDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" ng-if="rc.selectedRefund">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-arrow-counterclockwise"></i> Refund Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Refund ID:</strong><br>
+                            <code>@{{ rc.selectedRefund.refund_id }}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Transaction ID:</strong><br>
+                            <code>@{{ (rc.selectedRefund.transaction && rc.selectedRefund.transaction.txn_id) || rc.selectedRefund.transaction_id || 'N/A' }}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Refund Amount:</strong><br>
+                            <span class="text-danger fw-bold">@{{ rc.selectedRefund.currency || 'INR' }} @{{ rc.selectedRefund.amount | number:2 }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong><br>
+                            <span class="badge" ng-class="{'bg-success': rc.selectedRefund.status==='completed', 'bg-danger': rc.selectedRefund.status==='failed', 'bg-warning': rc.selectedRefund.status==='pending', 'bg-info': rc.selectedRefund.status==='processing'}">
+                                @{{ rc.selectedRefund.status | uppercase }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Type:</strong><br>
+                            <span class="badge" ng-class="{'bg-info': rc.selectedRefund.is_partial, 'bg-success': !rc.selectedRefund.is_partial}">
+                                @{{ rc.selectedRefund.is_partial ? 'Partial Refund' : 'Full Refund' }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Currency:</strong><br>
+                            @{{ rc.selectedRefund.currency || 'INR' }}
+                        </div>
+                        <div class="col-md-12">
+                            <strong>Reason:</strong><br>
+                            <p class="mb-0">@{{ rc.selectedRefund.reason || 'No reason provided' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Created At:</strong><br>
+                            @{{ rc.selectedRefund.created_at | date:'MMM d, y HH:mm:ss' }}
+                        </div>
+                        <div class="col-md-6" ng-if="rc.selectedRefund.processed_at">
+                            <strong>Processed At:</strong><br>
+                            @{{ rc.selectedRefund.processed_at | date:'MMM d, y HH:mm:ss' }}
+                        </div>
+                        <div class="col-md-12" ng-if="rc.selectedRefund.gateway_refund_id">
+                            <strong>Gateway Refund ID:</strong><br>
+                            <code>@{{ rc.selectedRefund.gateway_refund_id }}</code>
+                        </div>
+                        <div class="col-md-12" ng-if="rc.selectedRefund.notes">
+                            <strong>Notes:</strong><br>
+                            <p class="mb-0">@{{ rc.selectedRefund.notes }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Refund Modal -->
     <div class="modal fade" id="createRefundModal" tabindex="-1">
         <div class="modal-dialog">
@@ -117,26 +190,27 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form ng-submit="rc.createRefund()">
+                    <form ng-submit="rc.createRefund(); $event.preventDefault();">
                         <div class="mb-3">
                             <label class="form-label">Transaction ID *</label>
-                            <input type="text" class="form-control" ng-model="rc.newRefund.transaction_id" required>
+                            <input type="text" class="form-control" ng-model="rc.newRefund.transaction_id" required id="refundTransactionId">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Amount *</label>
-                            <input type="number" class="form-control" ng-model="rc.newRefund.amount" step="0.01" min="0.01" required>
+                            <input type="number" class="form-control" ng-model="rc.newRefund.amount" step="0.01" min="0.01" required id="refundAmount">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Reason</label>
-                            <textarea class="form-control" rows="3" ng-model="rc.newRefund.reason"></textarea>
+                            <textarea class="form-control" rows="3" ng-model="rc.newRefund.reason" id="refundReason"></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ng-disabled="rc.creating">Cancel</button>
                     <button type="button" class="btn btn-primary" ng-click="rc.createRefund()" ng-disabled="rc.creating">
-                        <span ng-if="rc.creating" class="spinner-border spinner-border-sm me-2"></span>
-                        Create Refund
+                        <span ng-if="rc.creating" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span ng-if="!rc.creating">Create Refund</span>
+                        <span ng-if="rc.creating">Creating...</span>
                     </button>
                 </div>
             </div>

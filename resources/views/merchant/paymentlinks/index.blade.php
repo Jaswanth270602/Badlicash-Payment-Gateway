@@ -39,14 +39,19 @@
     <!-- Create Payment Link Modal -->
     @include('merchant.paymentlinks.create_modal')
 
-    <!-- Toast Notification -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header" ng-class="{'bg-success': plc.toastType === 'success', 'bg-danger': plc.toastType === 'error'}">
-                <strong class="me-auto text-white">@{{ plc.toastType === 'success' ? 'Success' : 'Error' }}</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    <!-- Toast Notification - Fixed at top right -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999; margin-top: 80px;">
+        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true" style="min-width: 350px; max-width: 450px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: none;">
+            <div class="toast-header d-flex align-items-center" 
+                 style="border-bottom: none; padding: 12px 16px; font-weight: 600; background-color: #10b981; color: white;">
+                <i class="bi bi-check-circle-fill me-2" style="font-size: 18px;"></i>
+                <strong class="me-auto" id="toastTitle">Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close" style="opacity: 0.9;"></button>
             </div>
-            <div class="toast-body">@{{ plc.toastMessage }}</div>
+            <div class="toast-body" 
+                 style="padding: 14px 16px; font-weight: 500; font-size: 15px;">
+                <!-- Content will be dynamically inserted by JavaScript -->
+            </div>
         </div>
     </div>
 </div>
