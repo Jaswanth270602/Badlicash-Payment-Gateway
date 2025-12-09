@@ -68,9 +68,25 @@ class TransactionsController extends Controller
 
         $transactions = $query->paginate($perPage);
 
+        // PCI-DSS: Sanitize transaction data before returning
+        $sanitizedData = $transactions->map(function($transaction) {
+            try {
+                $data = $transaction->toArray();
+                // Replace payment_details and gateway_response with sanitized versions
+                $data['payment_details'] = $transaction->getSanitizedPaymentDetails();
+                $data['gateway_response'] = $transaction->getSanitizedGatewayResponse();
+                return $data;
+            } catch (\Exception $e) {
+                // Fallback: if sanitization fails, return transaction without sensitive fields
+                $data = $transaction->toArray();
+                unset($data['payment_details'], $data['gateway_response']);
+                return $data;
+            }
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $transactions->items(),
+            'data' => $sanitizedData->values()->all(), // Ensure array is properly indexed
             'pagination' => [
                 'current_page' => $transactions->currentPage(),
                 'per_page' => $transactions->perPage(),
@@ -123,9 +139,25 @@ class TransactionsController extends Controller
                 'total' => $transactions->total()
             ]);
 
+            // PCI-DSS: Sanitize transaction data before returning
+            $sanitizedData = $transactions->map(function($transaction) {
+                try {
+                    $data = $transaction->toArray();
+                    // Replace payment_details and gateway_response with sanitized versions
+                    $data['payment_details'] = $transaction->getSanitizedPaymentDetails();
+                    $data['gateway_response'] = $transaction->getSanitizedGatewayResponse();
+                    return $data;
+                } catch (\Exception $e) {
+                    // Fallback: if sanitization fails, return transaction without sensitive fields
+                    $data = $transaction->toArray();
+                    unset($data['payment_details'], $data['gateway_response']);
+                    return $data;
+                }
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $transactions->items(),
+                'data' => $sanitizedData->all(),
                 'pagination' => [
                     'current_page' => $transactions->currentPage(),
                     'per_page' => $transactions->perPage(),
@@ -205,7 +237,8 @@ class TransactionsController extends Controller
             ]);
 
             foreach ($transactions as $transaction) {
-                $paymentDetails = $transaction->payment_details ?? [];
+                // PCI-DSS: Use sanitized payment details (no card data)
+                $paymentDetails = $transaction->getSanitizedPaymentDetails() ?? [];
                 fputcsv($file, [
                     $transaction->txn_id,
                     $transaction->order_id ?? '-',

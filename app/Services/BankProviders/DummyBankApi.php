@@ -63,9 +63,12 @@ class DummyBankApi implements BankProviderInterface
             ];
 
         } catch (\Exception $e) {
+            // PCI-DSS: Never log card data - exclude payment_data from logs
             Log::error('DummyBankApi: Payment processing failed', [
                 'error' => $e->getMessage(),
-                'payment_data' => $paymentData,
+                'amount' => $paymentData['amount'] ?? null,
+                'payment_method' => $paymentData['payment_method'] ?? null,
+                // payment_data intentionally excluded to prevent card data logging
             ]);
 
             return [

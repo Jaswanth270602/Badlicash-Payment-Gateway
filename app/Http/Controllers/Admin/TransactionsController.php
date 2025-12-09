@@ -114,11 +114,23 @@ class TransactionsController extends Controller
             }
 
             // Format data with all required columns
+            // PCI-DSS: Use sanitized payment details (no card data)
             $data = $transactions->map(function($transaction) {
-                $paymentDetails = $transaction->payment_details ?? [];
-                $gatewayResponse = $transaction->gateway_response ?? [];
+                try {
+                    $paymentDetails = $transaction->getSanitizedPaymentDetails() ?? [];
+                    $gatewayResponse = $transaction->getSanitizedGatewayResponse() ?? [];
+                } catch (\Exception $e) {
+                    // Fallback if sanitization fails - log but don't break
+                    \Log::warning('Transaction sanitization failed', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    $paymentDetails = [];
+                    $gatewayResponse = [];
+                }
                 
-                return [
+                try {
+                    return [
                     'id' => $transaction->id,
                     'merchant_id' => $transaction->merchant_id,
                     'transaction_initiation_time' => $transaction->created_at->format('Y-m-d H:i:s'),
@@ -147,8 +159,9 @@ class TransactionsController extends Controller
                     'gst_paid_by_merchant' => number_format(($transaction->fee_amount ?? 0) * 0.18, 2),
                     'gst_paid_by_customer' => '0.00',
                     'net_settlements_amount' => number_format($transaction->net_amount ?? $transaction->amount, 2),
-                    'card_holder_name' => $paymentDetails['card_holder_name'] ?? '-',
-                    'card_number' => isset($paymentDetails['card_number']) ? '****' . substr($paymentDetails['card_number'], -4) : '-',
+                    'card_holder_name' => $paymentDetails['card_holder_name'] ?? $paymentDetails['card_holder'] ?? '-',
+                    // PCI-DSS: Use last4 from sanitized data (card_number never stored)
+                    'card_number' => isset($paymentDetails['last4']) ? '****' . $paymentDetails['last4'] : '-',
                     'customer_ip_address' => $transaction->ip_address ?? '-',
                     'udf1' => $paymentDetails['udf1'] ?? '-',
                     'udf2' => $paymentDetails['udf2'] ?? '-',
@@ -156,12 +169,26 @@ class TransactionsController extends Controller
                     'udf4' => $paymentDetails['udf4'] ?? '-',
                     'udf5' => $paymentDetails['udf5'] ?? '-',
                     'upi_id' => $gatewayResponse['upi_id'] ?? '-',
-                ];
+                    ];
+                } catch (\Exception $e) {
+                    // If transaction data access fails, return minimal data
+                    \Log::error('Transaction data formatting failed', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return [
+                        'id' => $transaction->id ?? 0,
+                        'transaction_id' => $transaction->txn_id ?? '-',
+                        'amount_paid_by_customer' => number_format($transaction->amount ?? 0, 2),
+                        'payment_status' => $transaction->status ?? '-',
+                        'error' => 'Data formatting failed'
+                    ];
+                }
             });
 
             return response()->json([
                 'success' => true,
-                'data' => $data,
+                'data' => $data->values()->all(), // Ensure array is properly indexed
                 'pagination' => [
                     'current_page' => $transactions->currentPage(),
                     'per_page' => $transactions->perPage(),
@@ -247,8 +274,15 @@ class TransactionsController extends Controller
                 ]);
 
                 foreach ($transactions as $transaction) {
-                    $paymentDetails = $transaction->payment_details ?? [];
-                    $gatewayResponse = $transaction->gateway_response ?? [];
+                    // PCI-DSS: Use sanitized payment details (no card data)
+                    try {
+                        $paymentDetails = $transaction->getSanitizedPaymentDetails() ?? [];
+                        $gatewayResponse = $transaction->getSanitizedGatewayResponse() ?? [];
+                    } catch (\Exception $e) {
+                        // Fallback if sanitization fails
+                        $paymentDetails = [];
+                        $gatewayResponse = [];
+                    }
                     
                     fputcsv($file, [
                         $transaction->merchant_id,
@@ -277,7 +311,8 @@ class TransactionsController extends Controller
                         '0.00',
                         number_format($transaction->net_amount ?? $transaction->amount, 2),
                         $paymentDetails['card_holder_name'] ?? '-',
-                        isset($paymentDetails['card_number']) ? '****' . substr($paymentDetails['card_number'], -4) : '-',
+                        // PCI-DSS: Use last4 from sanitized data (card_number never stored)
+                        isset($paymentDetails['last4']) ? '****' . $paymentDetails['last4'] : '-',
                         $transaction->ip_address ?? '-',
                         $paymentDetails['udf1'] ?? '-',
                         $paymentDetails['udf2'] ?? '-',

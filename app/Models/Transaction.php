@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Encrypted;
 use Illuminate\Support\Str;
+use App\Traits\SanitizesCardData;
 
 class Transaction extends Model
 {
-    use HasFactory;
+    use HasFactory, SanitizesCardData;
 
     protected $fillable = [
         'order_id',
@@ -47,6 +49,9 @@ class Transaction extends Model
     ];
 
     protected $casts = [
+        // PCI-DSS: Encrypt sensitive payment data at rest
+        // Note: Using 'array' cast instead of Encrypted for now to avoid breaking existing data
+        // TODO: Migrate existing data to encrypted format, then enable encryption
         'gateway_response' => 'array',
         'payment_details' => 'array',
         'test_mode' => 'boolean',
@@ -57,6 +62,68 @@ class Transaction extends Model
         'authorized_at' => 'datetime',
         'captured_at' => 'datetime',
     ];
+
+    /**
+     * Get payment details with automatic sanitization for API responses.
+     * PCI-DSS: Ensures no card data is exposed in responses.
+     *
+     * @return array|null
+     */
+    public function getSanitizedPaymentDetails(): ?array
+    {
+        try {
+            $details = $this->payment_details;
+            if (!$details) {
+                return null;
+            }
+            // Handle both array and JSON string
+            if (is_string($details)) {
+                $details = json_decode($details, true);
+            }
+            if (!is_array($details)) {
+                return null;
+            }
+            return $this->sanitizePaymentDetails($details);
+        } catch (\Exception $e) {
+            // If sanitization fails, return empty array to prevent errors
+            \Log::warning('Failed to get sanitized payment details', [
+                'transaction_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Get gateway response with automatic sanitization for API responses.
+     * PCI-DSS: Ensures no card data is exposed in responses.
+     *
+     * @return array|null
+     */
+    public function getSanitizedGatewayResponse(): ?array
+    {
+        try {
+            $response = $this->gateway_response;
+            if (!$response) {
+                return null;
+            }
+            // Handle both array and JSON string
+            if (is_string($response)) {
+                $response = json_decode($response, true);
+            }
+            if (!is_array($response)) {
+                return null;
+            }
+            return $this->sanitizePaymentDetails($response);
+        } catch (\Exception $e) {
+            // If sanitization fails, return empty array to prevent errors
+            \Log::warning('Failed to get sanitized gateway response', [
+                'transaction_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
 
     /**
      * Get the order that owns the transaction.

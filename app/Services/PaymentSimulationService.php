@@ -7,11 +7,13 @@ use App\Models\Transaction;
 use App\Models\PaymentLink;
 use App\Events\PaymentSuccess;
 use App\Events\PaymentFailed;
+use App\Traits\SanitizesCardData;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PaymentSimulationService
 {
+    use SanitizesCardData;
     /**
      * Process payment (simulation for test mode or real for live mode).
      */
@@ -22,11 +24,14 @@ class PaymentSimulationService
                 // Create or find order
                 $order = $this->createOrder($paymentData);
 
-                // Create transaction
-                $transaction = $this->createTransaction($order, $paymentData);
+            // PCI-DSS: Sanitize payment data before storing
+            $sanitizedPaymentData = $this->sanitizePaymentDetails($paymentData);
+            
+            // Create transaction with sanitized data
+            $transaction = $this->createTransaction($order, $sanitizedPaymentData);
 
-                // Simulate payment processing
-                $paymentResult = $this->simulatePaymentGateway($paymentData);
+            // Simulate payment processing (needs full card data for simulation)
+            $paymentResult = $this->simulatePaymentGateway($paymentData);
 
                 // Update transaction and order based on result
                 if ($paymentResult['success']) {
@@ -75,9 +80,12 @@ class PaymentSimulationService
                         'redirect_url' => $this->getSuccessUrl($paymentData),
                     ];
                 } else {
+                    // PCI-DSS: Sanitize gateway response before storing
+                    $sanitizedGatewayResponse = $this->sanitizePaymentDetails($paymentResult);
+                    
                     $transaction->update([
                         'status' => 'failed',
-                        'gateway_response' => $paymentResult,
+                        'gateway_response' => $sanitizedGatewayResponse,
                     ]);
 
                     $order->update(['status' => 'failed']);
@@ -94,9 +102,10 @@ class PaymentSimulationService
                     ];
                 }
             } catch (\Exception $e) {
+                // PCI-DSS: Never log card data - exclude trace to prevent potential exposure
                 Log::error('Payment simulation error', [
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
+                    // trace excluded to prevent potential card data exposure
                 ]);
 
                 throw $e;
@@ -309,24 +318,7 @@ class PaymentSimulationService
         return round($feeAmount * 0.18, 2);
     }
 
-    /**
-     * Sanitize payment details to remove sensitive information.
-     */
-    protected function sanitizePaymentDetails(array $paymentDetails): array
-    {
-        $sanitized = $paymentDetails;
-
-        // Remove sensitive fields
-        unset($sanitized['card_number'], $sanitized['cvv'], $sanitized['pin']);
-
-        // Keep only last 4 digits if card number was provided
-        if (isset($paymentDetails['card_number'])) {
-            $cardNumber = str_replace(' ', '', $paymentDetails['card_number']);
-            $sanitized['last4'] = substr($cardNumber, -4);
-        }
-
-        return $sanitized;
-    }
+    // SanitizePaymentDetails method moved to SanitizesCardData trait
 
     /**
      * Get success redirect URL.

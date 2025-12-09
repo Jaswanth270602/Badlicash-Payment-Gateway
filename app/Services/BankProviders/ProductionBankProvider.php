@@ -44,10 +44,12 @@ class ProductionBankProvider implements BankProviderInterface
         // Example structure:
         // return $this->callBankApi('process_payment', $paymentData);
 
-        // Placeholder implementation
+        // PCI-DSS: Never log card data
         Log::info('Processing production payment', [
             'amount' => $paymentData['amount'] ?? null,
             'merchant_id' => $paymentData['merchant_id'] ?? null,
+            'payment_method' => $paymentData['payment_method'] ?? null,
+            // payment_details intentionally excluded to prevent card data logging
         ]);
 
         return [

@@ -9,11 +9,14 @@ use App\Services\BankProviders\BankProviderInterface;
 use App\Events\PaymentCreated;
 use App\Events\PaymentSuccess;
 use App\Events\PaymentFailed;
+use App\Traits\SanitizesCardData;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
+    use SanitizesCardData;
+
     protected BankProviderInterface $bankProvider;
 
     public function __construct(BankProviderInterface $bankProvider)
@@ -110,7 +113,22 @@ class PaymentService
             ]);
 
             // Process payment through bank provider
+            // PCI-DSS: Extract card data BEFORE sanitization for bank provider
+            // Bank provider needs full card data, but we sanitize before storing
+            $cardDataForProvider = [
+                'card_number' => $paymentData['card_number'] ?? null,
+                'cvv' => $paymentData['cvv'] ?? null,
+                'card_holder' => $paymentData['card_holder'] ?? null,
+                'expiry_month' => $paymentData['expiry_month'] ?? null,
+                'expiry_year' => $paymentData['expiry_year'] ?? null,
+            ];
+            
+            // Sanitize payment data for our records (PCI-DSS compliant)
+            $sanitizedPaymentData = $this->sanitizePaymentDetails($paymentData);
+            
             try {
+                // Pass full card data to bank provider (they handle PCI compliance)
+                // But sanitize immediately after for our records
                 $result = $bankProvider->processPayment([
                     'merchant_id' => $order->merchant_id,
                     'order_id' => $order->order_id,
@@ -118,17 +136,23 @@ class PaymentService
                     'amount' => $transaction->amount,
                     'currency' => $transaction->currency,
                     'payment_method' => $paymentData['payment_method'],
-                    'payment_details' => $paymentData,
+                    'payment_details' => $paymentData, // Bank provider needs full data
                 ]);
 
                 if ($result['success']) {
+                    // PCI-DSS: Sanitize gateway response before storing
+                    $sanitizedGatewayResponse = $this->sanitizePaymentDetails($result);
+                    $sanitizedResultPaymentDetails = isset($result['payment_details']) 
+                        ? $this->sanitizePaymentDetails($result['payment_details']) 
+                        : [];
+                    
                     $transaction->update([
                         'status' => 'success',
-                        'gateway_response' => $result,
+                        'gateway_response' => $sanitizedGatewayResponse,
                         'gateway_txn_id' => $result['gateway_txn_id'] ?? null,
                         'payment_details' => array_merge(
                             $transaction->payment_details ?? [],
-                            $result['payment_details'] ?? []
+                            $sanitizedResultPaymentDetails
                         ),
                         'captured_at' => now(),
                     ]);
@@ -146,9 +170,12 @@ class PaymentService
                         $failureReason = '(Test Mode) ' . $failureReason;
                     }
 
+                    // PCI-DSS: Sanitize gateway response before storing
+                    $sanitizedGatewayResponse = $this->sanitizePaymentDetails($result);
+                    
                     $transaction->update([
                         'status' => 'failed',
-                        'gateway_response' => $result,
+                        'gateway_response' => $sanitizedGatewayResponse,
                         'failure_reason' => $failureReason,
                     ]);
 
@@ -157,9 +184,11 @@ class PaymentService
                 }
 
             } catch (\Exception $e) {
+                // PCI-DSS: Never log card data
                 Log::error('Payment processing error', [
                     'transaction_id' => $transaction->txn_id,
                     'error' => $e->getMessage(),
+                    // Note: payment_data intentionally excluded to prevent card data logging
                 ]);
 
                 $failureReason = 'Processing error: ' . $e->getMessage();
@@ -167,12 +196,15 @@ class PaymentService
                     $failureReason = '(Test Mode) ' . $failureReason;
                 }
 
+                // PCI-DSS: Sanitize error response (no card data in trace)
+                $sanitizedErrorResponse = [
+                    'error' => $e->getMessage(),
+                    // Note: trace excluded to prevent potential card data exposure
+                ];
+                
                 $transaction->update([
                     'status' => 'failed',
-                    'gateway_response' => [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ],
+                    'gateway_response' => $sanitizedErrorResponse,
                     'failure_reason' => $failureReason,
                 ]);
 
@@ -184,24 +216,7 @@ class PaymentService
         });
     }
 
-    /**
-     * Sanitize payment details to remove sensitive information.
-     */
-    protected function sanitizePaymentDetails(array $paymentData): array
-    {
-        // Remove full card number, CVV, etc.
-        $sanitized = $paymentData;
-
-        // Remove sensitive fields
-        unset($sanitized['card_number'], $sanitized['cvv'], $sanitized['pin']);
-
-        // Keep only last 4 digits if card number was provided
-        if (isset($paymentData['card_number'])) {
-            $sanitized['last4'] = substr($paymentData['card_number'], -4);
-        }
-
-        return $sanitized;
-    }
+    // SanitizePaymentDetails method moved to SanitizesCardData trait
 
     /**
      * Get the appropriate bank provider for the merchant.
