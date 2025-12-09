@@ -42,7 +42,11 @@
                 vm.loading = false;
             }, function(error) {
                 vm.loading = false;
-                alert('Unable to load transactions. Please try again.');
+                if (typeof showToast === 'function') {
+                    showToast('Unable to load transactions. Please try again.', 'error');
+                } else {
+                    alert('Unable to load transactions. Please try again.');
+                }
                 console.error('Error loading transactions:', error);
             });
         };

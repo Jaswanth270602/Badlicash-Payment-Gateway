@@ -200,7 +200,11 @@
                 // Upload file
                 vm.uploadFile = function() {
                     if (!vm.uploadForm.file) {
-                        alert('Please select a file to upload');
+                        if (typeof showToast === 'function') {
+                            showToast('Please select a file to upload', 'error');
+                        } else {
+                            alert('Please select a file to upload');
+                        }
                         return;
                     }
 
@@ -223,7 +227,11 @@
                         transformRequest: angular.identity
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert(response.data.message);
+                            if (typeof showToast === 'function') {
+                                showToast(response.data.message, 'success');
+                            } else {
+                                alert(response.data.message);
+                            }
                             // Reset form
                             vm.uploadForm = {
                                 payment_mode: '',
@@ -238,7 +246,12 @@
                             // Reload jobs
                             vm.loadJobs();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to upload file'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to upload file');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                         vm.uploading = false;
                     }).catch(function(error) {
@@ -246,7 +259,11 @@
                         var errorMsg = error.data && error.data.message 
                             ? error.data.message 
                             : 'Failed to upload file';
-                        alert(errorMsg);
+                        if (typeof showToast === 'function') {
+                            showToast(errorMsg, 'error');
+                        } else {
+                            alert(errorMsg);
+                        }
                         vm.uploading = false;
                     });
                 };

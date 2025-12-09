@@ -41,7 +41,11 @@
                 vm.loading = false;
             }, function(error) {
                 vm.loading = false;
-                alert('Unable to load orders. Please try again.');
+                if (typeof showToast === 'function') {
+                    showToast('Unable to load orders. Please try again.', 'error');
+                } else {
+                    alert('Unable to load orders. Please try again.');
+                }
                 console.error('Error loading orders:', error);
             });
         };

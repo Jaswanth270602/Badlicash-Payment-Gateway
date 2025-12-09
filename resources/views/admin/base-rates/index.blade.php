@@ -441,7 +441,11 @@
 
                 vm.saveRate = function() {
                     if (!vm.rateForm.rate_type || !vm.rateForm.payment_method || !vm.rateForm.service_type) {
-                        alert('Please fill in all required fields');
+                        if (typeof showToast === 'function') {
+                            showToast('Please fill in all required fields', 'error');
+                        } else {
+                            alert('Please fill in all required fields');
+                        }
                         return;
                     }
 
@@ -459,7 +463,12 @@
                         if (response.data.success) {
                             var modal = bootstrap.Modal.getInstance(document.getElementById('baseRateModal'));
                             modal.hide();
-                            alert(vm.isEditing ? 'Base rate updated successfully' : 'Base rate created successfully');
+                            var successMsg = vm.isEditing ? 'Base rate updated successfully' : 'Base rate created successfully';
+                            if (typeof showToast === 'function') {
+                                showToast(successMsg, 'success');
+                            } else {
+                                alert(successMsg);
+                            }
                             vm.loadRates();
                         } else {
                             var errorMsg = response.data.message || 'Failed to save base rate';
@@ -467,7 +476,11 @@
                                 var errors = Object.values(response.data.errors).flat();
                                 errorMsg = errors.join(', ');
                             }
-                            alert(errorMsg);
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                     }, function(error) {
                         vm.saving = false;
@@ -478,7 +491,11 @@
                             var errors = Object.values(error.data.errors).flat();
                             errorMsg = errors.join(', ');
                         }
-                        alert(errorMsg);
+                        if (typeof showToast === 'function') {
+                            showToast(errorMsg, 'error');
+                        } else {
+                            alert(errorMsg);
+                        }
                     });
                 };
 
@@ -491,13 +508,26 @@
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert('Base rate deleted successfully');
+                            if (typeof showToast === 'function') {
+                                showToast('Base rate deleted successfully', 'success');
+                            } else {
+                                alert('Base rate deleted successfully');
+                            }
                             vm.loadRates();
                         } else {
-                            alert('Failed to delete base rate: ' + (response.data.message || 'Unknown error'));
+                            var errorMsg = 'Failed to delete base rate: ' + (response.data.message || 'Unknown error');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                     }, function(error) {
-                        alert('Failed to delete base rate');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to delete base rate', 'error');
+                        } else {
+                            alert('Failed to delete base rate');
+                        }
                         console.error('Error:', error);
                     });
                 };

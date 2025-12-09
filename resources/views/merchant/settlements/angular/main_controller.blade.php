@@ -41,7 +41,11 @@
                 vm.loading = false;
             }, function(error) {
                 vm.loading = false;
-                alert('Unable to load settlements. Please try again.');
+                if (typeof showToast === 'function') {
+                    showToast('Unable to load settlements. Please try again.', 'error');
+                } else {
+                    alert('Unable to load settlements. Please try again.');
+                }
                 console.error('Error loading settlements:', error);
             });
         };

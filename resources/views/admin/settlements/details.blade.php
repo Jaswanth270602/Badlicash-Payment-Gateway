@@ -393,15 +393,29 @@
                 vm.submitSettlementDetail = function() {
                     $http.post('/admin/settlements/details', vm.form).then(function(response) {
                         if (response.data.success) {
-                            alert('Settlement detail created successfully!');
+                            if (typeof showToast === 'function') {
+                                showToast('Settlement detail created successfully!', 'success');
+                            } else {
+                                alert('Settlement detail created successfully!');
+                            }
                             var modal = bootstrap.Modal.getInstance(document.getElementById('createSettlementDetailModal'));
                             modal.hide();
                             vm.loadDetails();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Unknown error'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Unknown error');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                     }, function(error) {
-                        alert('Error creating settlement detail: ' + (error.data?.message || 'Unknown error'));
+                        var errorMsg = 'Error creating settlement detail: ' + (error.data?.message || 'Unknown error');
+                        if (typeof showToast === 'function') {
+                            showToast(errorMsg, 'error');
+                        } else {
+                            alert(errorMsg);
+                        }
                     });
                 };
 

@@ -362,12 +362,21 @@
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert(response.data.message);
+                            if (typeof showToast === 'function') {
+                                showToast(response.data.message, 'success');
+                            } else {
+                                alert(response.data.message);
+                            }
                             var modal = bootstrap.Modal.getInstance(document.getElementById('acquirerRateModal'));
                             modal.hide();
                             vm.loadRates();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to save rate'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to save rate');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                         vm.submitting = false;
                     }).catch(function(error) {
@@ -379,7 +388,11 @@
                             var errors = Object.values(error.data.errors).flat().join(', ');
                             errorMsg += ': ' + errors;
                         }
-                        alert(errorMsg);
+                        if (typeof showToast === 'function') {
+                            showToast(errorMsg, 'error');
+                        } else {
+                            alert(errorMsg);
+                        }
                         vm.submitting = false;
                     });
                 };
@@ -393,15 +406,28 @@
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert(response.data.message);
+                            if (typeof showToast === 'function') {
+                                showToast(response.data.message, 'success');
+                            } else {
+                                alert(response.data.message);
+                            }
                             vm.selectedRate = null;
                             vm.loadRates();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to delete rate'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to delete rate');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                     }).catch(function(error) {
                         console.error('Error deleting rate:', error);
-                        alert('Failed to delete rate');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to delete rate', 'error');
+                        } else {
+                            alert('Failed to delete rate');
+                        }
                     });
                 };
 
@@ -413,14 +439,27 @@
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert(response.data.message);
+                            if (typeof showToast === 'function') {
+                                showToast(response.data.message, 'success');
+                            } else {
+                                alert(response.data.message);
+                            }
                             vm.loadRates();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to duplicate rate'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to duplicate rate');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                     }).catch(function(error) {
                         console.error('Error duplicating rate:', error);
-                        alert('Failed to duplicate rate');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to duplicate rate', 'error');
+                        } else {
+                            alert('Failed to duplicate rate');
+                        }
                     });
                 };
 

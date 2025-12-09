@@ -1088,12 +1088,24 @@ function switchMode(mode) {
         if (data.success) {
             location.reload();
         } else {
+            if (typeof showToast === 'function') {
+                showToast('Failed to switch mode', 'error');
+            } else {
+                if (typeof showToast === 'function') {
+            showToast('Failed to switch mode', 'error');
+        } else {
             alert('Failed to switch mode');
+        }
+            }
         }
     })
     .catch(error => {
         document.body.removeChild(overlay);
-        alert('Failed to switch mode');
+        if (typeof showToast === 'function') {
+            showToast('Failed to switch mode', 'error');
+        } else {
+            alert('Failed to switch mode');
+        }
         console.error('Error:', error);
     });
 }
@@ -1118,12 +1130,24 @@ function switchAdminMode(mode) {
         if (data.success) {
             location.reload();
         } else {
+            if (typeof showToast === 'function') {
+                showToast('Failed to switch admin viewing mode', 'error');
+            } else {
+                if (typeof showToast === 'function') {
+            showToast('Failed to switch admin viewing mode', 'error');
+        } else {
             alert('Failed to switch admin viewing mode');
+        }
+            }
         }
     })
     .catch(error => {
         document.body.removeChild(overlay);
-        alert('Failed to switch admin viewing mode');
+        if (typeof showToast === 'function') {
+            showToast('Failed to switch admin viewing mode', 'error');
+        } else {
+            alert('Failed to switch admin viewing mode');
+        }
         console.error('Error:', error);
     });
 }
@@ -1249,6 +1273,144 @@ document.addEventListener('click', function(event) {
     }
 });
 </script>
+
+<!-- Global Toast Notification Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999; margin-top: 80px;">
+    <div id="globalToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true" style="min-width: 350px; max-width: 450px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: none;">
+        <div class="toast-header d-flex align-items-center" 
+             style="border-bottom: none; padding: 12px 16px; font-weight: 600; background-color: #10b981; color: white;">
+            <i class="bi bi-check-circle-fill me-2" style="font-size: 18px;"></i>
+            <strong class="me-auto" id="globalToastTitle">Success</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close" style="opacity: 0.9;"></button>
+        </div>
+        <div class="toast-body" 
+             style="padding: 14px 16px; font-weight: 500; font-size: 15px;">
+            <!-- Content will be dynamically inserted by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Global Toast Service -->
+<script>
+/**
+ * Global Toast Notification Service
+ * Usage: showToast('Message here', 'success'|'error'|'warning'|'info')
+ */
+(function() {
+    'use strict';
+    
+    // Global toast function - accessible everywhere
+    window.showToast = function(message, type) {
+        type = type || 'success';
+        
+        var toastElement = document.getElementById('globalToast');
+        if (!toastElement || !message) {
+            // Fallback to alert if toast element doesn't exist
+            alert(message);
+            return;
+        }
+        
+        // Hide any existing toast first
+        var existingToast = bootstrap.Toast.getInstance(toastElement);
+        if (existingToast) {
+            existingToast.hide();
+        }
+        
+        // Update toast header
+        var toastHeader = toastElement.querySelector('.toast-header');
+        var toastTitle = document.getElementById('globalToastTitle');
+        var toastIcon = toastHeader ? toastHeader.querySelector('i') : null;
+        
+        if (toastHeader) {
+            var config = {
+                success: {
+                    bgColor: '#10b981',
+                    title: 'Success',
+                    icon: 'bi-check-circle-fill'
+                },
+                error: {
+                    bgColor: '#ef4444',
+                    title: 'Error',
+                    icon: 'bi-x-circle-fill'
+                },
+                warning: {
+                    bgColor: '#f59e0b',
+                    title: 'Warning',
+                    icon: 'bi-exclamation-triangle-fill'
+                },
+                info: {
+                    bgColor: '#3b82f6',
+                    title: 'Info',
+                    icon: 'bi-info-circle-fill'
+                }
+            };
+            
+            var toastConfig = config[type] || config.success;
+            
+            toastHeader.style.backgroundColor = toastConfig.bgColor;
+            toastHeader.style.color = 'white';
+            if (toastTitle) toastTitle.textContent = toastConfig.title;
+            if (toastIcon) {
+                toastIcon.className = 'bi ' + toastConfig.icon + ' me-2';
+            }
+        }
+        
+        // Update toast body
+        var toastBody = toastElement.querySelector('.toast-body');
+        if (toastBody) {
+            toastBody.innerHTML = '';
+            
+            // Create icon
+            var icon = document.createElement('i');
+            var bodyIconClass = {
+                success: 'bi-check-circle',
+                error: 'bi-x-circle',
+                warning: 'bi-exclamation-triangle',
+                info: 'bi-info-circle'
+            };
+            icon.className = 'bi ' + (bodyIconClass[type] || bodyIconClass.success) + ' me-2';
+            toastBody.appendChild(icon);
+            
+            // Add message
+            var messageSpan = document.createElement('span');
+            messageSpan.textContent = message;
+            toastBody.appendChild(messageSpan);
+            
+            // Update body colors
+            var bodyColors = {
+                success: { bg: '#d1fae5', text: '#065f46' },
+                error: { bg: '#fee2e2', text: '#991b1b' },
+                warning: { bg: '#fef3c7', text: '#92400e' },
+                info: { bg: '#dbeafe', text: '#1e40af' }
+            };
+            var bodyColor = bodyColors[type] || bodyColors.success;
+            toastBody.style.backgroundColor = bodyColor.bg;
+            toastBody.style.color = bodyColor.text;
+        }
+        
+        // Create and show toast instance
+        var toastInstance = bootstrap.Toast.getInstance(toastElement);
+        if (!toastInstance) {
+            toastInstance = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: type === 'error' ? 5000 : 4000
+            });
+        }
+        
+        toastInstance.show();
+    };
+    
+    // Also make it available as a global function for AngularJS
+    if (typeof angular !== 'undefined') {
+        angular.module('badlicashApp').service('ToastService', function() {
+            return {
+                show: window.showToast
+            };
+        });
+    }
+})();
+</script>
+
 @stack('scripts')
 </body>
 </html>

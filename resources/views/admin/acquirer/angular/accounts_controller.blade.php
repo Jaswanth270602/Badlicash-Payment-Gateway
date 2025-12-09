@@ -362,12 +362,21 @@
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert(response.data.message);
+                            if (typeof showToast === 'function') {
+                                showToast(response.data.message, 'success');
+                            } else {
+                                alert(response.data.message);
+                            }
                             var modal = bootstrap.Modal.getInstance(document.getElementById('acquirerAccountModal'));
                             modal.hide();
                             vm.loadAccounts();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to save account'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to save account');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                         vm.submitting = false;
                     }).catch(function(error) {
@@ -379,7 +388,11 @@
                             var errors = Object.values(error.data.errors).flat().join(', ');
                             errorMsg += ': ' + errors;
                         }
-                        alert(errorMsg);
+                        if (typeof showToast === 'function') {
+                            showToast(errorMsg, 'error');
+                        } else {
+                            alert(errorMsg);
+                        }
                         vm.submitting = false;
                     });
                 };
@@ -393,15 +406,28 @@
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         if (response.data.success) {
-                            alert(response.data.message);
+                            if (typeof showToast === 'function') {
+                                showToast(response.data.message, 'success');
+                            } else {
+                                alert(response.data.message);
+                            }
                             vm.selectedAccount = null;
                             vm.loadAccounts();
                         } else {
-                            alert('Error: ' + (response.data.message || 'Failed to delete account'));
+                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to delete account');
+                            if (typeof showToast === 'function') {
+                                showToast(errorMsg, 'error');
+                            } else {
+                                alert(errorMsg);
+                            }
                         }
                     }).catch(function(error) {
                         console.error('Error deleting account:', error);
-                        alert('Failed to delete account');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to delete account', 'error');
+                        } else {
+                            alert('Failed to delete account');
+                        }
                     });
                 };
 

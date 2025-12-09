@@ -44,7 +44,11 @@
                 vm.loading = false;
             }, function(error) {
                 vm.loading = false;
-                alert('Unable to load refunds. Please try again.');
+                if (typeof showToast === 'function') {
+                    showToast('Unable to load refunds. Please try again.', 'error');
+                } else {
+                    alert('Unable to load refunds. Please try again.');
+                }
                 console.error('Error loading refunds:', error);
             });
         };
@@ -57,12 +61,20 @@
 
             // Validate required fields
             if (!vm.newRefund.transaction_id || !vm.newRefund.transaction_id.trim()) {
-                alert('Please enter a Transaction ID');
+                if (typeof showToast === 'function') {
+                    showToast('Please enter a Transaction ID', 'error');
+                } else {
+                    alert('Please enter a Transaction ID');
+                }
                 return;
             }
 
             if (!vm.newRefund.amount || parseFloat(vm.newRefund.amount) <= 0) {
-                alert('Please enter a valid amount greater than 0');
+                if (typeof showToast === 'function') {
+                    showToast('Please enter a valid amount greater than 0', 'error');
+                } else {
+                    alert('Please enter a valid amount greater than 0');
+                }
                 return;
             }
 
@@ -70,7 +82,11 @@
             var csrf = document.querySelector('meta[name="csrf-token"]');
             if (!csrf) {
                 vm.creating = false;
-                alert('CSRF token not found. Please refresh the page.');
+                if (typeof showToast === 'function') {
+                    showToast('CSRF token not found. Please refresh the page.', 'error');
+                } else {
+                    alert('CSRF token not found. Please refresh the page.');
+                }
                 return;
             }
 
@@ -109,14 +125,24 @@
                     
                     // Show success message
                     var refundData = response.data.data;
-                    var alertMsg = 'Refund Created Successfully!\n\n';
-                    alertMsg += 'Refund ID: ' + refundData.refund_id + '\n';
-                    alertMsg += 'Amount: ' + refundData.currency + ' ' + parseFloat(refundData.amount).toFixed(2) + '\n';
-                    alertMsg += 'Status: ' + refundData.status.toUpperCase() + '\n';
-                    alertMsg += (refundData.is_partial ? 'Type: Partial Refund' : 'Type: Full Refund');
-                    alert(alertMsg);
+                    var successMsg = 'Refund Created Successfully! Refund ID: ' + refundData.refund_id + ', Amount: ' + refundData.currency + ' ' + parseFloat(refundData.amount).toFixed(2);
+                    if (typeof showToast === 'function') {
+                        showToast(successMsg, 'success');
+                    } else {
+                        var alertMsg = 'Refund Created Successfully!\n\n';
+                        alertMsg += 'Refund ID: ' + refundData.refund_id + '\n';
+                        alertMsg += 'Amount: ' + refundData.currency + ' ' + parseFloat(refundData.amount).toFixed(2) + '\n';
+                        alertMsg += 'Status: ' + refundData.status.toUpperCase() + '\n';
+                        alertMsg += (refundData.is_partial ? 'Type: Partial Refund' : 'Type: Full Refund');
+                        alert(alertMsg);
+                    }
                 } else {
-                    alert('Failed to create refund: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'));
+                    var errorMsg = 'Failed to create refund: ' + (response.data && response.data.message ? response.data.message : 'Unknown error');
+                    if (typeof showToast === 'function') {
+                        showToast(errorMsg, 'error');
+                    } else {
+                        alert(errorMsg);
+                    }
                 }
             }, function(error) {
                 console.error('Refund creation error:', error);
@@ -144,7 +170,11 @@
                 } else {
                     errorMsg += 'An unexpected error occurred. Please try again.';
                 }
-                alert(errorMsg);
+                if (typeof showToast === 'function') {
+                    showToast(errorMsg, 'error');
+                } else {
+                    alert(errorMsg);
+                }
             });
         };
 

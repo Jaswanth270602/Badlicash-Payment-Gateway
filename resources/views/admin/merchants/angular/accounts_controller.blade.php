@@ -131,7 +131,11 @@
                     }, function(error) {
                         vm.loading = false;
                         console.error('Error loading merchants:', error);
-                        alert('Failed to load merchants');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to load merchants', 'error');
+                        } else {
+                            alert('Failed to load merchants');
+                        }
                     });
                 };
 

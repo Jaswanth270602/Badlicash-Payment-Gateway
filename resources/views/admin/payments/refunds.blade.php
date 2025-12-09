@@ -435,7 +435,11 @@
                     }, function(error) {
                         vm.loading = false;
                         console.error('Error loading refunds:', error);
-                        alert('Error loading refunds: ' + (error.data?.message || error.statusText));
+                        if (typeof showToast === 'function') {
+                            showToast('Error loading refunds: ' + (error.data?.message || error.statusText), 'error');
+                        } else {
+                            alert('Error loading refunds: ' + (error.data?.message || error.statusText));
+                        }
                     });
                 };
 

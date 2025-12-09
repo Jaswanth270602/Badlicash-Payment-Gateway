@@ -565,7 +565,11 @@
                         console.log('Transactions loaded:', vm.transactions.length, 'Total:', vm.pagination.total);
                     }, function(error) {
                         console.error('Error loading admin transactions:', error);
-                        alert('Error loading transactions: ' + (error.data?.message || error.statusText));
+                        if (typeof showToast === 'function') {
+                            showToast('Error loading transactions: ' + (error.data?.message || error.statusText), 'error');
+                        } else {
+                            alert('Error loading transactions: ' + (error.data?.message || error.statusText));
+                        }
                         vm.loading = false;
                         console.error('Error loading transactions:', error);
                     });
