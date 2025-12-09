@@ -3,7 +3,7 @@
         'name' => 'badlicash/payment-gateway',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'b8e980e8f5b749c26c138309ac5e109ef7984135',
+        'reference' => 'b7452998ccd933cafa82626c8487d839295c92b1',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'badlicash/payment-gateway' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'b8e980e8f5b749c26c138309ac5e109ef7984135',
+            'reference' => 'b7452998ccd933cafa82626c8487d839295c92b1',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
