@@ -757,10 +757,43 @@
         @endif
         
         @if(auth()->user()->isMerchant())
-        <a href="{{ route('merchant.transactions.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.transactions.*') ? 'active' : '' }}">
-            <i class="bi bi-credit-card-2-front"></i>
-            <span>Transactions</span>
-        </a>
+        <!-- Payments Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('merchant.payments.*') || request()->routeIs('merchant.transactions.*') || request()->routeIs('merchant.refunds.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-wallet2"></i>
+            <span>Payments</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('merchant.payments.*') || request()->routeIs('merchant.transactions.*') || request()->routeIs('merchant.refunds.*') ? 'block' : 'none' }};">
+            <a href="{{ route('merchant.transactions.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.transactions.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-credit-card"></i>
+                <span>Transactions</span>
+            </a>
+            <a href="{{ route('merchant.refunds.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.refunds.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <span>Refunds</span>
+            </a>
+            <a href="{{ route('merchant.payments.bulk-refund-update') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.payments.bulk-refund-update*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-upload"></i>
+                <span>Bulk Update Refund Status</span>
+            </a>
+            <a href="{{ route('merchant.payments.chargebacks') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.payments.chargebacks*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Chargebacks Upload</span>
+            </a>
+            <a href="{{ route('merchant.payments.bulk-chargebacks') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.payments.bulk-chargebacks*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-cloud-upload"></i>
+                <span>Bulk Chargebacks Upload</span>
+            </a>
+            <a href="{{ route('merchant.payments.split-transactions') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.payments.split-transactions*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-diagram-3"></i>
+                <span>Split Transactions</span>
+            </a>
+            <a href="{{ route('merchant.payments.federal-vpa') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.payments.federal-vpa*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-bank"></i>
+                <span>Federal Direct VPA Payments</span>
+            </a>
+        </div>
+        
         <a href="{{ route('merchant.orders.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.orders.*') ? 'active' : '' }}">
             <i class="bi bi-receipt-cutoff"></i>
             <span>Orders</span>
@@ -772,10 +805,6 @@
         <a href="{{ route('merchant.subscriptions.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.subscriptions.*') || request()->routeIs('merchant.plans.*') ? 'active' : '' }}">
             <i class="bi bi-receipt"></i>
             <span>Subscriptions</span>
-        </a>
-        <a href="{{ route('merchant.refunds.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.refunds.*') ? 'active' : '' }}">
-            <i class="bi bi-arrow-counterclockwise"></i>
-            <span>Refunds</span>
         </a>
         <a href="{{ route('merchant.settlements.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.settlements.*') ? 'active' : '' }}">
             <i class="bi bi-wallet2"></i>

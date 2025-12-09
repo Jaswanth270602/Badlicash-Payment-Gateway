@@ -1,370 +1,450 @@
 @extends('layouts.app-sidebar')
 
-@section('title','Transactions - BadliCash')
-@section('page-title','Transactions')
+@section('title', 'Transactions Details - BadliCash')
+@section('page-title', 'Transactions Details')
 
 @section('content')
-<div ng-app="badlicashApp" ng-controller="TransactionsController as tc">
+<div ng-app="badlicashApp" ng-controller="MerchantTransactionsController as mtc">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Transactions Details</h2>
+            <p class="text-muted">List of Transactions</p>
+        </div>
+    </div>
+
+    <!-- Advanced Filter and Status -->
     <div class="stat-card mb-3">
-        <div class="row g-3">
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Status</label>
-                <select class="form-select" ng-model="tc.filters.status" ng-change="tc.applyFilters()">
-                    <option value="">All</option>
-                    <option value="success">Success</option>
-                    <option value="failed">Failed</option>
-                    <option value="pending">Pending</option>
-                    <option value="initiated">Initiated</option>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100">Advanced Filter</button>
+            </div>
+            <div class="col-md-6">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm" 
+                            ng-class="{'btn-primary': mtc.filters.status === 'all', 'btn-outline-primary': mtc.filters.status !== 'all'}"
+                            ng-click="mtc.setStatus('all')">All</button>
+                    <button type="button" class="btn btn-sm" 
+                            ng-class="{'btn-primary': mtc.filters.status === 'success', 'btn-outline-primary': mtc.filters.status !== 'success'}"
+                            ng-click="mtc.setStatus('success')">Successful</button>
+                    <button type="button" class="btn btn-sm" 
+                            ng-class="{'btn-primary': mtc.filters.status === 'failed', 'btn-outline-primary': mtc.filters.status !== 'failed'}"
+                            ng-click="mtc.setStatus('failed')">Failed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="stat-card mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <label class="form-label me-2">Show</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: auto;" ng-model="mtc.pagination.per_page" ng-change="mtc.loadTransactions()">
+                    <option value="5">5 entries</option>
+                    <option value="10">10 entries</option>
+                    <option value="25">25 entries</option>
+                    <option value="50">50 entries</option>
                 </select>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Payment Method</label>
-                <select class="form-select" ng-model="tc.filters.payment_method" ng-change="tc.applyFilters()">
-                    <option value="">All</option>
-                    <option value="card">Card</option>
-                    <option value="upi">UPI</option>
-                    <option value="netbanking">Net Banking</option>
-                </select>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">From Date</label>
-                <input type="date" class="form-control" ng-model="tc.filters.from_date" ng-change="tc.applyFilters()">
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">To Date</label>
-                <input type="date" class="form-control" ng-model="tc.filters.to_date" ng-change="tc.applyFilters()">
-            </div>
-            <div class="col-md-12 col-lg-6">
-                <label class="form-label">Search</label>
-                <input class="form-control" placeholder="Search by transaction ID, order ID, or description" ng-model="tc.filters.search" ng-change="tc.applyFilters()">
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Per Page</label>
-                <select class="form-select" ng-model="tc.perPage" ng-change="tc.applyFilters()">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-            </div>
-            <div class="col-md-6 col-lg-3 d-flex align-items-end gap-2">
-                <button class="btn btn-success" ng-click="tc.exportCSV()">
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-success" ng-click="mtc.exportCSV()">
                     <i class="bi bi-download"></i> Download CSV
                 </button>
-                <button class="btn btn-outline-secondary" ng-click="tc.clearFilters()">
-                    <i class="bi bi-x-circle"></i> Clear
+                <button class="btn btn-sm btn-outline-secondary" ng-click="mtc.clearFilters()">
+                    <i class="bi bi-funnel"></i> Clear Filters
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" ng-click="mtc.loadTransactions()">
+                    <i class="bi bi-arrow-clockwise"></i> Reload
+                </button>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-eye"></i> Columns
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li ng-repeat="(key, col) in mtc.visibleColumns">
+                            <a class="dropdown-item" href="#" ng-click="mtc.toggleColumn(key)">
+                                <i class="bi" ng-class="col.visible ? 'bi-check-square' : 'bi-square'"></i> @{{ col.label }}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" ng-click="mtc.resetView()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Main Table -->
     <div class="stat-card">
-        <div ng-show="tc.loading" class="loader-overlay position-relative" style="min-height: 400px;">
+        <div ng-show="mtc.loading" class="loader-overlay position-relative" style="min-height: 400px;">
             <div class="position-absolute top-50 start-50 translate-middle">
                 <div class="spinner-violet"></div>
                 <p class="mt-2 text-muted text-center">Loading transactions...</p>
             </div>
         </div>
-        <div ng-hide="tc.loading" class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Txn ID</th>
-                    <th>Order ID</th>
-                    <th>Source</th>
-                    <th>Customer</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr ng-repeat="t in tc.transactions track by $index">
-                    <td>@{{ (tc.pagination.current_page - 1) * tc.pagination.per_page + $index + 1 }}</td>
-                    <td>
-                        <code class="text-primary" style="font-size: 12px;">@{{ t.transaction_id || t.txn_id }}</code>
-                    </td>
-                    <td>
-                        <code class="text-info" style="font-size: 12px;">@{{ (t.order && t.order.order_id) || 'N/A' }}</code>
-                    </td>
-                    <td>
-                        <span ng-if="t.order && t.order.payment_link_id" class="badge bg-primary">
-                            <i class="bi bi-link-45deg"></i> Payment Link
-                        </span>
-                        <span ng-if="!t.order || !t.order.payment_link_id" class="badge bg-secondary">
-                            <i class="bi bi-cart"></i> Direct
-                        </span>
-                    </td>
-                    <td>
-                        <div ng-if="t.customer_email || (t.order && t.order.customer_details)">
-                            <div class="fw-semibold" style="font-size: 13px;">@{{ t.customer_email || (t.order && t.order.customer_details.name) || 'N/A' }}</div>
-                            <small class="text-muted">@{{ t.customer_phone || (t.order && t.order.customer_details.phone) || '' }}</small>
-                        </div>
-                        <span ng-if="!t.customer_email && (!t.order || !t.order.customer_details)" class="text-muted">N/A</span>
-                    </td>
-                    <td>
-                        <strong class="text-success">@{{ t.currency || 'INR' }} @{{ t.amount | number:2 }}</strong>
-                        <div ng-if="t.fee_amount" style="font-size: 11px; color: #94a3b8;">Fee: @{{ t.currency }} @{{ t.fee_amount | number:2 }}</div>
-                    </td>
-                    <td>
-                        <span class="badge" style="background: #6366f1;">@{{ t.payment_method | uppercase }}</span>
-                        <div ng-if="t.payment_details && t.payment_details.card_number" style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                            **** @{{ t.payment_details.card_number }}
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge" ng-class="{
-                            'bg-success': t.status==='success' || t.status==='completed',
-                            'bg-danger': t.status==='failed',
-                            'bg-warning text-dark': t.status==='pending',
-                            'bg-info': t.status==='processing',
-                            'bg-secondary': t.status==='initiated'
-                        }">
-                            @{{ t.status | uppercase }}
-                        </span>
-                        <div ng-if="t.status==='failed' && t.failure_reason" class="mt-1" style="font-size: 11px; color: #dc3545; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ t.failure_reason }}">
-                            <i class="bi bi-exclamation-circle"></i> @{{ t.failure_reason }}
-                        </div>
-                    </td>
-                    <td style="white-space: nowrap;">
-                        <div style="font-size: 13px;">@{{ t.created_at | date:'MMM d, y' }}</div>
-                        <small class="text-muted">@{{ t.created_at | date:'HH:mm:ss' }}</small>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" ng-click="tc.viewDetails(t)" title="View Details">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-                <tr ng-if="tc.transactions.length===0 && !tc.loading">
-                    <td colspan="8" class="text-center text-muted py-4">
-                        <i class="bi bi-inbox" style="font-size: 48px;"></i>
-                        <p class="mt-2">No transactions found</p>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
 
-        <x-pagination />
+        <div ng-hide="mtc.loading">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th ng-show="mtc.visibleColumns.transaction_initiation_time.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Transaction Initiation Time</span>
+                                    <i class="bi bi-arrow-up-down" style="cursor: pointer;" ng-click="mtc.sortBy('created_at')"></i>
+                                </div>
+                                <input type="date" class="form-control form-control-sm mt-1" ng-model="mtc.filters.filter_transaction_initiation_time" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.transaction_sequence_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Transaction Sequence Id</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_transaction_sequence_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.transaction_order_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Transaction Order Id</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_order_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.transaction_datetime.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Transaction DateTime</span>
+                                </div>
+                                <input type="date" class="form-control form-control-sm mt-1" ng-model="mtc.filters.filter_transaction_datetime" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.transaction_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Transaction Id</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_transaction_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.amount_paid_by_customer.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Amount Paid By Customer</span>
+                                </div>
+                                <input type="number" step="0.01" class="form-control form-control-sm mt-1" placeholder="Amount..." ng-model="mtc.filters.filter_amount_paid" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.payment_status.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Payment Status</span>
+                                </div>
+                                <select class="form-select form-select-sm mt-1" ng-model="mtc.filters.filter_payment_status" ng-change="mtc.applyFilters()">
+                                    <option value="all">All</option>
+                                    <option value="success">Success</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="pending">Pending</option>
+                                </select>
+                            </th>
+                            <th ng-show="mtc.visibleColumns.payment_mode.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Payment Mode</span>
+                                </div>
+                                <select class="form-select form-select-sm mt-1" ng-model="mtc.filters.filter_payment_mode" ng-change="mtc.applyFilters()">
+                                    <option value="">All</option>
+                                    <option value="card">Card</option>
+                                    <option value="netbanking">Netbanking</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="wallet">Wallet</option>
+                                    <option value="emi">EMI</option>
+                                </select>
+                            </th>
+                            <th ng-show="mtc.visibleColumns.payment_channel.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Payment Channel</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_payment_channel" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.merc_approved.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Merc Approved</span>
+                                </div>
+                                <select class="form-select form-select-sm mt-1" ng-model="mtc.filters.filter_merc_approved" ng-change="mtc.applyFilters()">
+                                    <option value="all">All</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </th>
+                            <th ng-show="mtc.visibleColumns.currency_code.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Currency Code</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_currency_code" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.bank_reference_number.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Bank Reference Number</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_bank_reference_number" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.acq_payment_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Acq Payment Id</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_acq_payment_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.acq_transaction_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Acq Transaction Id</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_acq_transaction_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.provider_name.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Provider Name</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_provider_name" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.account_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Account ID</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_account_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.tdr_amount.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>TDR Amount</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_tdr_amount" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.gst_amount.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>GST Amount</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_gst_amount" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.is_updated_by_recon.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Is Updated By Recon</span>
+                                </div>
+                                <select class="form-select form-select-sm mt-1" ng-model="mtc.filters.filter_is_updated_by_recon" ng-change="mtc.applyFilters()">
+                                    <option value="all">All</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </th>
+                            <th ng-show="mtc.visibleColumns.tdr_amount_paid_by_merchant.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>TDR Amount Paid by Merchant</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_tdr_amount_paid_by_merchant" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.tdr_amount_paid_by_customer.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>TDR Amount Paid by Customer</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_tdr_amount_paid_by_customer" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.gst_paid_by_merchant.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>GST Paid By Merchant</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_gst_paid_by_merchant" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.gst_paid_by_customer.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>GST Paid By Customer</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_gst_paid_by_customer" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.net_settlements_amount.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Net Settlements Amount</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_net_settlements_amount" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.card_holder_name.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Card Holder Name</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_card_holder_name" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.card_number.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Card Number</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_card_number" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.customer_ip_address.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Customer IP Address</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_customer_ip_address" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.udf1.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>UDF1</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_udf1" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.udf2.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>UDF2</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_udf2" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.udf3.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>UDF3</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_udf3" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.udf4.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>UDF4</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_udf4" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.udf5.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>UDF5</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_udf5" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th ng-show="mtc.visibleColumns.upi_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>UPI ID</span>
+                                </div>
+                                <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="mtc.filters.filter_upi_id" ng-change="mtc.applyFilters()">
+                            </th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-if="mtc.transactions.length === 0">
+                            <td colspan="35" class="text-center text-danger py-4">No matching records found</td>
+                        </tr>
+                        <tr ng-repeat="transaction in mtc.transactions track by $index">
+                            <td ng-show="mtc.visibleColumns.transaction_initiation_time.visible">@{{ transaction.transaction_initiation_time }}</td>
+                            <td ng-show="mtc.visibleColumns.transaction_sequence_id.visible">@{{ transaction.transaction_sequence_id }}</td>
+                            <td ng-show="mtc.visibleColumns.transaction_order_id.visible">@{{ transaction.transaction_order_id }}</td>
+                            <td ng-show="mtc.visibleColumns.transaction_datetime.visible">@{{ transaction.transaction_datetime }}</td>
+                            <td ng-show="mtc.visibleColumns.transaction_id.visible">@{{ transaction.transaction_id }}</td>
+                            <td ng-show="mtc.visibleColumns.amount_paid_by_customer.visible">@{{ transaction.amount_paid_by_customer }}</td>
+                            <td ng-show="mtc.visibleColumns.payment_status.visible">
+                                <span class="badge" ng-class="{
+                                    'bg-success': transaction.payment_status === 'success',
+                                    'bg-danger': transaction.payment_status === 'failed',
+                                    'bg-warning': transaction.payment_status === 'pending'
+                                }">
+                                    @{{ transaction.payment_status | uppercase }}
+                                </span>
+                                <div ng-if="transaction.payment_status === 'failed' && transaction.failure_reason" class="mt-1" style="font-size: 11px; color: #dc3545; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ transaction.failure_reason }}">
+                                    <i class="bi bi-exclamation-circle"></i> @{{ transaction.failure_reason }}
+                                </div>
+                            </td>
+                            <td ng-show="mtc.visibleColumns.payment_mode.visible">@{{ transaction.payment_mode }}</td>
+                            <td ng-show="mtc.visibleColumns.payment_channel.visible">@{{ transaction.payment_channel }}</td>
+                            <td ng-show="mtc.visibleColumns.merc_approved.visible">@{{ transaction.merc_approved }}</td>
+                            <td ng-show="mtc.visibleColumns.currency_code.visible">@{{ transaction.currency_code }}</td>
+                            <td ng-show="mtc.visibleColumns.bank_reference_number.visible">@{{ transaction.bank_reference_number }}</td>
+                            <td ng-show="mtc.visibleColumns.acq_payment_id.visible">@{{ transaction.acq_payment_id }}</td>
+                            <td ng-show="mtc.visibleColumns.acq_transaction_id.visible">@{{ transaction.acq_transaction_id }}</td>
+                            <td ng-show="mtc.visibleColumns.provider_name.visible">@{{ transaction.provider_name }}</td>
+                            <td ng-show="mtc.visibleColumns.account_id.visible">@{{ transaction.account_id }}</td>
+                            <td ng-show="mtc.visibleColumns.tdr_amount.visible">@{{ transaction.tdr_amount }}</td>
+                            <td ng-show="mtc.visibleColumns.gst_amount.visible">@{{ transaction.gst_amount }}</td>
+                            <td ng-show="mtc.visibleColumns.is_updated_by_recon.visible">@{{ transaction.is_updated_by_recon }}</td>
+                            <td ng-show="mtc.visibleColumns.tdr_amount_paid_by_merchant.visible">@{{ transaction.tdr_amount_paid_by_merchant }}</td>
+                            <td ng-show="mtc.visibleColumns.tdr_amount_paid_by_customer.visible">@{{ transaction.tdr_amount_paid_by_customer }}</td>
+                            <td ng-show="mtc.visibleColumns.gst_paid_by_merchant.visible">@{{ transaction.gst_paid_by_merchant }}</td>
+                            <td ng-show="mtc.visibleColumns.gst_paid_by_customer.visible">@{{ transaction.gst_paid_by_customer }}</td>
+                            <td ng-show="mtc.visibleColumns.net_settlements_amount.visible">@{{ transaction.net_settlements_amount }}</td>
+                            <td ng-show="mtc.visibleColumns.card_holder_name.visible">@{{ transaction.card_holder_name }}</td>
+                            <td ng-show="mtc.visibleColumns.card_number.visible">@{{ transaction.card_number }}</td>
+                            <td ng-show="mtc.visibleColumns.customer_ip_address.visible">@{{ transaction.customer_ip_address }}</td>
+                            <td ng-show="mtc.visibleColumns.udf1.visible">@{{ transaction.udf1 }}</td>
+                            <td ng-show="mtc.visibleColumns.udf2.visible">@{{ transaction.udf2 }}</td>
+                            <td ng-show="mtc.visibleColumns.udf3.visible">@{{ transaction.udf3 }}</td>
+                            <td ng-show="mtc.visibleColumns.udf4.visible">@{{ transaction.udf4 }}</td>
+                            <td ng-show="mtc.visibleColumns.udf5.visible">@{{ transaction.udf5 }}</td>
+                            <td ng-show="mtc.visibleColumns.upi_id.visible">@{{ transaction.upi_id }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" ng-click="mtc.viewTransaction(transaction)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    Showing @{{ (mtc.pagination.current_page - 1) * mtc.pagination.per_page + 1 }} to @{{ Math.min(mtc.pagination.current_page * mtc.pagination.per_page, mtc.pagination.total) }} of @{{ mtc.pagination.total }} entries
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" 
+                            ng-click="mtc.changePage(mtc.pagination.current_page - 1)" 
+                            ng-disabled="mtc.pagination.current_page === 1">
+                        Previous
+                    </button>
+                    <span class="mx-2">...</span>
+                    <button class="btn btn-sm btn-outline-secondary" 
+                            ng-click="mtc.changePage(mtc.pagination.current_page + 1)" 
+                            ng-disabled="mtc.pagination.current_page === mtc.pagination.last_page">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Transaction Details Modal -->
-    <div class="modal fade" id="transactionDetailsModal" tabindex="-1" aria-labelledby="transactionDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white;">
-                    <h5 class="modal-title" id="transactionDetailsModalLabel">
-                        <i class="bi bi-receipt"></i> Transaction Details
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="transactionDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" ng-if="mtc.selectedTransaction">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-receipt"></i> Transaction Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" ng-if="tc.selectedTransaction">
+                <div class="modal-body">
                     <div class="row g-3">
-                        <!-- Transaction Status Card -->
-                        <div class="col-12">
-                            <div class="alert" ng-class="{
-                                'alert-success': tc.selectedTransaction.status==='success' || tc.selectedTransaction.status==='completed',
-                                'alert-danger': tc.selectedTransaction.status==='failed',
-                                'alert-warning': tc.selectedTransaction.status==='pending',
-                                'alert-info': tc.selectedTransaction.status==='processing' || tc.selectedTransaction.status==='initiated'
-                            }" role="alert">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h6 class="mb-1">
-                                            <i class="bi" ng-class="{
-                                                'bi-check-circle-fill': tc.selectedTransaction.status==='success' || tc.selectedTransaction.status==='completed',
-                                                'bi-x-circle-fill': tc.selectedTransaction.status==='failed',
-                                                'bi-clock-fill': tc.selectedTransaction.status==='pending' || tc.selectedTransaction.status==='initiated',
-                                                'bi-arrow-repeat': tc.selectedTransaction.status==='processing'
-                                            }"></i>
-                                            Transaction @{{ tc.selectedTransaction.status | uppercase }}
-                                        </h6>
-                                        <small>@{{ tc.selectedTransaction.created_at | date:'MMM d, y - HH:mm:ss' }}</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <h4 class="mb-0">@{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.amount | number:2 }}</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Transaction Information -->
                         <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Transaction Info</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless mb-0">
-                                        <tr>
-                                            <td class="text-muted" style="width: 40%;">Transaction ID:</td>
-                                            <td><code class="text-primary">@{{ tc.selectedTransaction.txn_id || tc.selectedTransaction.transaction_id }}</code></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted">Order ID:</td>
-                                            <td><code class="text-info">@{{ (tc.selectedTransaction.order && tc.selectedTransaction.order.order_id) || 'N/A' }}</code></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted">Payment Method:</td>
-                                            <td><span class="badge" style="background: #6366f1;">@{{ tc.selectedTransaction.payment_method | uppercase }}</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted">Source:</td>
-                                            <td>
-                                                <span ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.payment_link_id" class="badge bg-primary">
-                                                    <i class="bi bi-link-45deg"></i> Payment Link
-                                                </span>
-                                                <span ng-if="!tc.selectedTransaction.order || !tc.selectedTransaction.order.payment_link_id" class="badge bg-secondary">
-                                                    <i class="bi bi-cart"></i> Direct Order
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.test_mode">
-                                            <td class="text-muted">Mode:</td>
-                                            <td><span class="badge bg-warning text-dark">TEST MODE</span></td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+                            <strong>Transaction ID:</strong><br>
+                            <code>@{{mtc.selectedTransaction.transaction_id}}</code>
                         </div>
-
-                        <!-- Customer Information -->
                         <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="bi bi-person"></i> Customer Info</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless mb-0">
-                                        <tr ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.customer_details && tc.selectedTransaction.order.customer_details.name">
-                                            <td class="text-muted" style="width: 40%;">Name:</td>
-                                            <td>@{{ tc.selectedTransaction.order.customer_details.name }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.customer_details && tc.selectedTransaction.order.customer_details.email">
-                                            <td class="text-muted">Email:</td>
-                                            <td>@{{ tc.selectedTransaction.order.customer_details.email }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.customer_details && tc.selectedTransaction.order.customer_details.phone">
-                                            <td class="text-muted">Phone:</td>
-                                            <td>@{{ tc.selectedTransaction.order.customer_details.phone }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.ip_address">
-                                            <td class="text-muted">IP Address:</td>
-                                            <td><code>@{{ tc.selectedTransaction.ip_address }}</code></td>
-                                        </tr>
-                                        <tr ng-if="!tc.selectedTransaction.order || !tc.selectedTransaction.order.customer_details">
-                                            <td colspan="2" class="text-muted">No customer information available</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+                            <strong>Amount:</strong><br>
+                            <span class="text-success">@{{mtc.selectedTransaction.currency_code}} @{{mtc.selectedTransaction.amount_paid_by_customer}}</span>
                         </div>
-
-                        <!-- Amount Breakdown -->
                         <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="bi bi-cash-stack"></i> Amount Breakdown</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm mb-0">
-                                        <tr>
-                                            <td class="text-muted">Transaction Amount:</td>
-                                            <td class="text-end"><strong class="text-success">@{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.amount | number:2 }}</strong></td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.fee_amount">
-                                            <td class="text-muted">Processing Fee:</td>
-                                            <td class="text-end text-danger">- @{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.fee_amount | number:2 }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.net_amount" class="border-top">
-                                            <td class="text-muted"><strong>Net Amount:</strong></td>
-                                            <td class="text-end"><strong class="text-primary">@{{ tc.selectedTransaction.currency }} @{{ tc.selectedTransaction.net_amount | number:2 }}</strong></td>
-                                        </tr>
-                                    </table>
-                                </div>
+                            <strong>Status:</strong><br>
+                            <span class="badge" ng-class="{'bg-success': mtc.selectedTransaction.payment_status==='success', 'bg-danger': mtc.selectedTransaction.payment_status==='failed'}">
+                                @{{mtc.selectedTransaction.payment_status | uppercase}}
+                            </span>
+                        </div>
+                        <div class="col-12" ng-if="mtc.selectedTransaction.payment_status === 'failed' && mtc.selectedTransaction.failure_reason">
+                            <div class="alert alert-danger py-2">
+                                <strong><i class="bi bi-exclamation-triangle"></i> Failure Reason:</strong><br>
+                                @{{ mtc.selectedTransaction.failure_reason }}
                             </div>
                         </div>
-
-                        <!-- Payment Details -->
                         <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="bi bi-credit-card"></i> Payment Details</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless mb-0">
-                                        <tr ng-if="tc.selectedTransaction.payment_details && tc.selectedTransaction.payment_details.last4">
-                                            <td class="text-muted" style="width: 40%;">Card:</td>
-                                            <td>**** **** **** @{{ tc.selectedTransaction.payment_details.last4 }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.payment_details && tc.selectedTransaction.payment_details.card_type">
-                                            <td class="text-muted">Card Type:</td>
-                                            <td>@{{ tc.selectedTransaction.payment_details.card_type | uppercase }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.payment_details && tc.selectedTransaction.payment_details.upi_id">
-                                            <td class="text-muted">UPI ID:</td>
-                                            <td>@{{ tc.selectedTransaction.payment_details.upi_id }}</td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.gateway_txn_id">
-                                            <td class="text-muted">Gateway Txn ID:</td>
-                                            <td><code>@{{ tc.selectedTransaction.gateway_txn_id }}</code></td>
-                                        </tr>
-                                        <tr ng-if="tc.selectedTransaction.captured_at">
-                                            <td class="text-muted">Captured At:</td>
-                                            <td>@{{ tc.selectedTransaction.captured_at | date:'MMM d, y HH:mm:ss' }}</td>
-                                        </tr>
-                                        <tr ng-if="!tc.selectedTransaction.payment_details || Object.keys(tc.selectedTransaction.payment_details).length === 0">
-                                            <td colspan="2" class="text-muted">No payment details available</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+                            <strong>Payment Mode:</strong><br>
+                            @{{mtc.selectedTransaction.payment_mode}}
                         </div>
-
-                        <!-- Order Description -->
-                        <div class="col-12" ng-if="tc.selectedTransaction.order && tc.selectedTransaction.order.description">
-                            <div class="card">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="bi bi-file-text"></i> Description</h6>
-                                </div>
-                                <div class="card-body">
-                                    <p class="mb-0">@{{ tc.selectedTransaction.order.description }}</p>
-                                </div>
-                            </div>
+                        <div class="col-md-6">
+                            <strong>Date:</strong><br>
+                            @{{mtc.selectedTransaction.transaction_datetime}}
                         </div>
-
-                        <!-- Gateway Response (if failed) -->
-                        <div class="col-12" ng-if="tc.selectedTransaction.status === 'failed'">
-                            <div class="card border-danger">
-                                <div class="card-header bg-danger text-white">
-                                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Failure Details</h6>
-                                </div>
-                                <div class="card-body">
-                                    <p class="mb-2 text-danger fw-semibold" ng-if="tc.selectedTransaction.failure_reason">
-                                        @{{ tc.selectedTransaction.failure_reason }}
-                                    </p>
-                                    <p class="mb-0 text-danger" ng-if="!tc.selectedTransaction.failure_reason && tc.selectedTransaction.gateway_response && tc.selectedTransaction.gateway_response.message">
-                                        @{{ tc.selectedTransaction.gateway_response.message }}
-                                    </p>
-                                    <p class="mb-0 text-danger" ng-if="!tc.selectedTransaction.failure_reason && (!tc.selectedTransaction.gateway_response || !tc.selectedTransaction.gateway_response.message)">
-                                        Payment failed
-                                    </p>
-                                    <small class="text-muted d-block mt-2" ng-if="tc.selectedTransaction.gateway_response && tc.selectedTransaction.gateway_response.error_code">
-                                        Error Code: @{{ tc.selectedTransaction.gateway_response.error_code }}
-                                    </small>
-                                </div>
-                            </div>
+                        <div class="col-md-6">
+                            <strong>TDR Amount:</strong><br>
+                            @{{mtc.selectedTransaction.tdr_amount}}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Net Settlement:</strong><br>
+                            @{{mtc.selectedTransaction.net_settlements_amount}}
+                        </div>
+                        <div class="col-12" ng-if="mtc.selectedTransaction.card_number !== '-'">
+                            <strong>Card:</strong> @{{mtc.selectedTransaction.card_number}}
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x"></i> Close
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -372,4 +452,196 @@
 </div>
 @endsection
 
-@include('merchant.transactions.angular.main_controller')
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+    function registerController() {
+        if (typeof angular === 'undefined') {
+            setTimeout(registerController, 50);
+            return;
+        }
+        try {
+            var app = angular.module('badlicashApp');
+            app.controller('MerchantTransactionsController', ['$http', function($http) {
+                var vm = this;
+                vm.transactions = [];
+                vm.pagination = { current_page: 1, per_page: 10, total: 0, last_page: 1 };
+                vm.filters = { status: '' }; // Empty = no filter, show all
+                vm.loading = false;
+                vm.sortColumn = 'id';
+                vm.sortDirection = 'desc';
+                
+                vm.visibleColumns = {
+                    transaction_initiation_time: { visible: true, label: 'Transaction Initiation Time' },
+                    transaction_sequence_id: { visible: true, label: 'Transaction Sequence Id' },
+                    transaction_order_id: { visible: true, label: 'Transaction Order Id' },
+                    transaction_datetime: { visible: true, label: 'Transaction DateTime' },
+                    transaction_id: { visible: true, label: 'Transaction Id' },
+                    amount_paid_by_customer: { visible: true, label: 'Amount Paid By Customer' },
+                    payment_status: { visible: true, label: 'Payment Status' },
+                    payment_mode: { visible: true, label: 'Payment Mode' },
+                    payment_channel: { visible: true, label: 'Payment Channel' },
+                    merc_approved: { visible: true, label: 'Merc Approved' },
+                    currency_code: { visible: true, label: 'Currency Code' },
+                    bank_reference_number: { visible: true, label: 'Bank Reference Number' },
+                    acq_payment_id: { visible: true, label: 'Acq Payment Id' },
+                    acq_transaction_id: { visible: true, label: 'Acq Transaction Id' },
+                    provider_name: { visible: true, label: 'Provider Name' },
+                    account_id: { visible: true, label: 'Account ID' },
+                    tdr_amount: { visible: true, label: 'TDR Amount' },
+                    gst_amount: { visible: true, label: 'GST Amount' },
+                    is_updated_by_recon: { visible: true, label: 'Is Updated By Recon' },
+                    tdr_amount_paid_by_merchant: { visible: true, label: 'TDR Amount Paid by Merchant' },
+                    tdr_amount_paid_by_customer: { visible: true, label: 'TDR Amount Paid by Customer' },
+                    gst_paid_by_merchant: { visible: true, label: 'GST Paid By Merchant' },
+                    gst_paid_by_customer: { visible: true, label: 'GST Paid By Customer' },
+                    net_settlements_amount: { visible: true, label: 'Net Settlements Amount' },
+                    card_holder_name: { visible: true, label: 'Card Holder Name' },
+                    card_number: { visible: true, label: 'Card Number' },
+                    customer_ip_address: { visible: true, label: 'Customer IP Address' },
+                    udf1: { visible: true, label: 'UDF1' },
+                    udf2: { visible: true, label: 'UDF2' },
+                    udf3: { visible: true, label: 'UDF3' },
+                    udf4: { visible: true, label: 'UDF4' },
+                    udf5: { visible: true, label: 'UDF5' },
+                    upi_id: { visible: true, label: 'UPI ID' }
+                };
+
+                vm.loadTransactions = function() {
+                    vm.loading = true;
+                    var params = {
+                        page: vm.pagination.current_page,
+                        per_page: vm.pagination.per_page,
+                        status: vm.filters.status === 'all' ? '' : vm.filters.status,
+                        sort_by: vm.sortColumn,
+                        sort_direction: vm.sortDirection
+                    };
+
+                    Object.keys(vm.filters).forEach(function(key) {
+                        if (key.startsWith('filter_') && vm.filters[key]) {
+                            params[key] = vm.filters[key];
+                        }
+                    });
+                    
+                    console.log('Making API call with params:', params);
+                    $http.get('/merchant/transactions/data', { params: params }).then(function(response) {
+                        console.log('Merchant Transactions API Response:', response.data);
+                        console.log('Response pagination:', response.data.pagination);
+                        vm.transactions = response.data.data || [];
+                        vm.pagination = {
+                            current_page: response.data.pagination.current_page,
+                            last_page: response.data.pagination.last_page,
+                            total: response.data.pagination.total,
+                            per_page: response.data.pagination.per_page
+                        };
+                        vm.loading = false;
+                        console.log('Transactions loaded:', vm.transactions.length, 'Total:', vm.pagination.total);
+                    }, function(error) {
+                        console.error('Error loading merchant transactions:', error);
+                        alert('Error loading transactions: ' + (error.data?.message || error.statusText));
+                        vm.loading = false;
+                    });
+                };
+
+                vm.changePage = function(page) {
+                    if (page >= 1 && page <= vm.pagination.last_page) {
+                        vm.pagination.current_page = page;
+                        vm.loadTransactions();
+                    }
+                };
+
+                vm.applyFilters = function() {
+                    vm.pagination.current_page = 1;
+                    vm.loadTransactions();
+                };
+
+                vm.setStatus = function(status) {
+                    console.log('Setting status filter to:', status);
+                    vm.filters.status = status;
+                    vm.applyFilters();
+                };
+
+                vm.sortBy = function(column) {
+                    if (vm.sortColumn === column) {
+                        vm.sortDirection = vm.sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        vm.sortColumn = column;
+                        vm.sortDirection = 'asc';
+                    }
+                    vm.loadTransactions();
+                };
+
+                vm.toggleColumn = function(key) {
+                    if (vm.visibleColumns.hasOwnProperty(key)) {
+                        vm.visibleColumns[key].visible = !vm.visibleColumns[key].visible;
+                    }
+                };
+
+                vm.resetView = function() {
+                    Object.keys(vm.visibleColumns).forEach(function(key) {
+                        vm.visibleColumns[key].visible = true;
+                    });
+                    vm.filters = { status: '' };
+                    vm.applyFilters();
+                };
+
+                vm.clearFilters = function() {
+                    console.log('Clearing all transaction filters');
+                    vm.filters = {};
+                    Object.keys(vm.filters).forEach(function(key) {
+                        if (key.startsWith('filter_')) {
+                            vm.filters[key] = '';
+                        }
+                    });
+                    vm.filters.status = '';
+                    vm.pagination.current_page = 1;
+                    vm.loadTransactions();
+                };
+
+                vm.selectedTransaction = null;
+                
+                vm.viewTransaction = function(transaction) {
+                    vm.selectedTransaction = transaction;
+                    var modal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
+                    modal.show();
+                };
+
+                vm.exportCSV = function() {
+                    var params = {
+                        status: vm.filters.status === 'all' ? '' : vm.filters.status,
+                    };
+
+                    Object.keys(vm.filters).forEach(function(key) {
+                        if (key.startsWith('filter_') && vm.filters[key]) {
+                            params[key] = vm.filters[key];
+                        }
+                    });
+
+                    var queryString = Object.keys(params).map(function(key) {
+                        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+                    }).join('&');
+
+                    window.location.href = '/merchant/transactions/export?' + queryString;
+                };
+
+                // Initialize - load data on page load
+                console.log('MerchantTransactionsController initialized');
+                vm.loadTransactions();
+            }]);
+        } catch(e) {
+            setTimeout(registerController, 50);
+        }
+    }
+    if (typeof angular !== 'undefined') {
+        registerController();
+    } else {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', registerController);
+        } else {
+            registerController();
+        }
+    }
+})();
+</script>
+@endpush

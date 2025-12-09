@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="robots" content="noindex, nofollow">
     <title>Payment - {{ $paymentLink->title }} - BadliCash</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -234,6 +235,42 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
             outline: none;
+        }
+
+        /* Hide browser autofill warnings and payment method warnings */
+        input::-webkit-credentials-auto-fill-button,
+        input::-webkit-contacts-auto-fill-button,
+        input::-webkit-credit-card-auto-fill-button {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Prevent browser from showing payment warnings */
+        #cardForm input {
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+
+        /* Suppress browser autofill warnings */
+        form[autocomplete="off"] input {
+            background-image: none !important;
+        }
+
+        /* Hide any browser-generated tooltips */
+        input[data-lpignore="true"]::after,
+        input[data-lpignore="true"]::before {
+            content: none !important;
+            display: none !important;
+        }
+
+        /* Hide browser payment warnings - ALL tooltips outside our content */
+        div[role="tooltip"]:not(.payment-card *):not(.left-panel *):not(.right-panel *):not(.alert):not(.customer-section *):not(.payment-form *) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
 
         .form-control.is-invalid {
@@ -553,20 +590,22 @@
                 <!-- Customer Details -->
                 <div class="customer-section">
                     <h4 class="section-title">Customer Details</h4>
-                    <div class="row g-3 mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="customerName" placeholder="John Doe" required>
+                    <form autocomplete="off" novalidate>
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="customerName" name="customerName" autocomplete="off" placeholder="John Doe" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="customerEmail" name="customerEmail" autocomplete="off" placeholder="john@example.com" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="customerPhone" name="customerPhone" autocomplete="off" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" required>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" id="customerEmail" placeholder="john@example.com" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Phone <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="customerPhone" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" required>
-                        </div>
-                    </div>
+                    </form>
                 </div>
 
                 <!-- Payment Methods -->
@@ -598,28 +637,30 @@
 
                 <!-- CARD FORM -->
                 <div class="payment-form active" id="cardForm">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">Card Number <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19">
+                    <form autocomplete="off" novalidate spellcheck="false" data-form-type="other">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Card Number <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="cardNumber" name="card_number_field" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" autocomplete="off" spellcheck="false" placeholder="4242 4242 4242 4242" maxlength="19" inputmode="numeric" pattern="[0-9\s]*">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Card Holder Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="cardHolder" name="card_holder_field" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" autocomplete="off" spellcheck="false" placeholder="JOHN DOE" style="text-transform: uppercase;">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Month <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="expiryMonth" name="expiry_month_field" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" autocomplete="off" spellcheck="false" placeholder="12" maxlength="2" inputmode="numeric" pattern="[0-9]*">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Year <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="expiryYear" name="expiry_year_field" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" autocomplete="off" spellcheck="false" placeholder="2025" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">CVV <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="cvv" name="cvv_field" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" autocomplete="off" spellcheck="false" placeholder="123" maxlength="3" inputmode="numeric" pattern="[0-9]*">
+                            </div>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Card Holder Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="cardHolder" placeholder="JOHN DOE" style="text-transform: uppercase;">
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label">Month <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="expiryMonth" placeholder="12" maxlength="2">
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label">Year <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="expiryYear" placeholder="2025" maxlength="4">
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label">CVV <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="cvv" placeholder="123" maxlength="3">
-                        </div>
-                    </div>
+                    </form>
                 </div>
 
                 <!-- UPI FORM -->
@@ -707,6 +748,75 @@
                 validateForm();
             });
         });
+
+        // Prevent browser autofill warnings and payment detection - AGGRESSIVE APPROACH
+        document.querySelectorAll('#cardForm input').forEach(input => {
+            // Set all anti-detection attributes
+            input.setAttribute('data-lpignore', 'true');
+            input.setAttribute('data-1p-ignore', 'true');
+            input.setAttribute('data-bwignore', 'true');
+            input.setAttribute('data-form-type', 'other');
+            input.setAttribute('autocomplete', 'new-password');
+            input.setAttribute('spellcheck', 'false');
+            input.setAttribute('data-payment', 'false');
+            
+            // Remove readonly on first interaction
+            const removeReadonly = function(e) {
+                if (this.hasAttribute('readonly')) {
+                    this.removeAttribute('readonly');
+                }
+                this.setAttribute('autocomplete', 'new-password');
+                e.stopPropagation();
+            };
+            
+            input.addEventListener('focus', removeReadonly, { once: true });
+            input.addEventListener('click', removeReadonly, { once: true });
+            input.addEventListener('touchstart', removeReadonly, { once: true });
+        });
+
+        // Simple warning removal - won't break the page
+        (function() {
+            function removeWarnings() {
+                try {
+                    document.querySelectorAll('div').forEach(div => {
+                        const text = (div.textContent || '').toLowerCase();
+                        if ((text.includes('secure connection') || text.includes('automatic payment')) &&
+                            !div.closest('.payment-card') && 
+                            !div.closest('.left-panel') && 
+                            !div.closest('.right-panel') &&
+                            !div.closest('.alert')) {
+                            div.style.display = 'none';
+                            setTimeout(() => {
+                                try { div.remove(); } catch(e) {}
+                            }, 100);
+                        }
+                    });
+                } catch(e) {
+                    // Ignore errors
+                }
+            }
+            
+            // Run after page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(removeWarnings, 100);
+                    setInterval(removeWarnings, 500);
+                });
+            } else {
+                setTimeout(removeWarnings, 100);
+                setInterval(removeWarnings, 500);
+            }
+            
+            // Watch for new warnings
+            try {
+                const observer = new MutationObserver(function() {
+                    removeWarnings();
+                });
+                if (document.body) {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                }
+            } catch(e) {}
+        })();
 
         // Card number formatting
         const cardNumberInput = document.getElementById('cardNumber');

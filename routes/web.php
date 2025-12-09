@@ -111,6 +111,38 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/refunds', [MerchantRefundsController::class, 'store'])
             ->name('merchant.refunds.store');
 
+        // Payments Module (matching admin structure)
+        Route::get('/payments/bulk-refund-update', [\App\Http\Controllers\Merchant\BulkRefundUpdateController::class, 'index'])
+            ->name('merchant.payments.bulk-refund-update');
+        Route::get('/payments/bulk-refund-update/jobs', [\App\Http\Controllers\Merchant\BulkRefundUpdateController::class, 'getJobs'])
+            ->name('merchant.payments.bulk-refund-update.jobs');
+        Route::post('/payments/bulk-refund-update/upload', [\App\Http\Controllers\Merchant\BulkRefundUpdateController::class, 'upload'])
+            ->name('merchant.payments.bulk-refund-update.upload');
+        Route::get('/payments/bulk-refund-update/template', [\App\Http\Controllers\Merchant\BulkRefundUpdateController::class, 'downloadTemplate'])
+            ->name('merchant.payments.bulk-refund-update.template');
+        Route::get('/payments/bulk-refund-update/download/{id}', [\App\Http\Controllers\Merchant\BulkRefundUpdateController::class, 'downloadStatusFile'])
+            ->name('merchant.payments.bulk-refund-update.download');
+        Route::get('/payments/chargebacks', [\App\Http\Controllers\Merchant\ChargebacksController::class, 'index'])
+            ->name('merchant.payments.chargebacks');
+        Route::get('/payments/chargebacks/data', [\App\Http\Controllers\Merchant\ChargebacksController::class, 'getData'])
+            ->name('merchant.payments.chargebacks.data');
+        Route::get('/payments/bulk-chargebacks', [\App\Http\Controllers\Merchant\BulkChargebacksController::class, 'index'])
+            ->name('merchant.payments.bulk-chargebacks');
+        Route::get('/payments/bulk-chargebacks/jobs', [\App\Http\Controllers\Merchant\BulkChargebacksController::class, 'getJobs'])
+            ->name('merchant.payments.bulk-chargebacks.jobs');
+        Route::post('/payments/bulk-chargebacks/upload', [\App\Http\Controllers\Merchant\BulkChargebacksController::class, 'upload'])
+            ->name('merchant.payments.bulk-chargebacks.upload');
+        Route::get('/payments/bulk-chargebacks/template', [\App\Http\Controllers\Merchant\BulkChargebacksController::class, 'downloadTemplate'])
+            ->name('merchant.payments.bulk-chargebacks.template');
+        Route::get('/payments/split-transactions', [\App\Http\Controllers\Merchant\SplitTransactionsController::class, 'index'])
+            ->name('merchant.payments.split-transactions');
+        Route::get('/payments/split-transactions/data', [\App\Http\Controllers\Merchant\SplitTransactionsController::class, 'getData'])
+            ->name('merchant.payments.split-transactions.data');
+        Route::get('/payments/federal-vpa', [\App\Http\Controllers\Merchant\FederalVPAController::class, 'index'])
+            ->name('merchant.payments.federal-vpa');
+        Route::get('/payments/federal-vpa/data', [\App\Http\Controllers\Merchant\FederalVPAController::class, 'getData'])
+            ->name('merchant.payments.federal-vpa.data');
+
         // Settlements
         Route::get('/settlements', [SettlementsController::class, 'index'])
             ->name('merchant.settlements.index');
