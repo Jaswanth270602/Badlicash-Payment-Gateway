@@ -483,3 +483,5 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.acquirer.rates.duplicate');
     });
 });
+
+// TBD : also configure routes for ICICI bank apis - usha handle it 
