@@ -150,6 +150,20 @@ Route::middleware(['auth'])->group(function () {
             ->name('merchant.settlements.data');
         Route::get('/settlements/export', [SettlementsController::class, 'export'])
             ->name('merchant.settlements.export');
+        
+        // Settlement Summary
+        Route::get('/settlements/summary', [\App\Http\Controllers\Merchant\SettlementSummaryController::class, 'index'])
+            ->name('merchant.settlements.summary');
+        Route::get('/settlements/summary/data', [\App\Http\Controllers\Merchant\SettlementSummaryController::class, 'getData'])
+            ->name('merchant.settlements.summary.data');
+        Route::post('/settlements/summary/mark-settled', [\App\Http\Controllers\Merchant\SettlementSummaryController::class, 'markAsSettled'])
+            ->name('merchant.settlements.summary.mark-settled');
+        
+        // Settlement Details
+        Route::get('/settlements/details', [\App\Http\Controllers\Merchant\SettlementDetailsController::class, 'index'])
+            ->name('merchant.settlements.details');
+        Route::get('/settlements/details/data', [\App\Http\Controllers\Merchant\SettlementDetailsController::class, 'getData'])
+            ->name('merchant.settlements.details.data');
 
         // Reports
         Route::get('/reports', [ReportsController::class, 'index'])

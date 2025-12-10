@@ -806,10 +806,22 @@
             <i class="bi bi-receipt"></i>
             <span>Subscriptions</span>
         </a>
-        <a href="{{ route('merchant.settlements.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.settlements.*') ? 'active' : '' }}">
-            <i class="bi bi-wallet2"></i>
+        <!-- Settlements Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('merchant.settlements.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-file-earmark-text"></i>
             <span>Settlements</span>
-        </a>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('merchant.settlements.*') ? 'block' : 'none' }};">
+            <a href="{{ route('merchant.settlements.summary') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.settlements.summary*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list-ul"></i>
+                <span>Settlement Summary</span>
+            </a>
+            <a href="{{ route('merchant.settlements.details') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('merchant.settlements.details*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list-check"></i>
+                <span>Settlement Details</span>
+            </a>
+        </div>
         <div class="sidebar-divider"></div>
         <a href="{{ route('merchant.api_keys.index') }}" class="sidebar-menu-item {{ request()->routeIs('merchant.api_keys.*') ? 'active' : '' }}">
             <i class="bi bi-key"></i>
