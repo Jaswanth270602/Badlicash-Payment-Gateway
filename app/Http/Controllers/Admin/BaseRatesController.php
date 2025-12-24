@@ -36,9 +36,30 @@ class BaseRatesController extends Controller
     public function getData(Request $request): JsonResponse
     {
         try {
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
             $perPage = min($request->get('per_page', 15), 100);
             
             $query = BaseRate::query();
+
+            // Filter by merchant's test_mode based on admin view mode
+            // When in live mode, only show rates for merchants with test_mode = false
+            // When in test mode, only show rates for merchants with test_mode = true
+            // This applies only to merchant rates (rate_type = 'merchant' and entity_type = 'merchant')
+            // For non-merchant rates (bank, receiver, pricer), show them in both modes
+            $query->where(function ($q) use ($isTestMode) {
+                // Merchant rates: filter by merchant's test_mode
+                $q->where(function ($subQ) use ($isTestMode) {
+                    $subQ->where('rate_type', 'merchant')
+                         ->where('entity_type', 'merchant')
+                         ->whereHas('merchant', function ($merchantQ) use ($isTestMode) {
+                             $merchantQ->where('test_mode', $isTestMode);
+                         });
+                })
+                // Non-merchant rates: show all (bank, receiver, pricer)
+                ->orWhere('rate_type', '!=', 'merchant');
+            });
 
             // Filters
             if ($request->has('rate_type') && $request->get('rate_type') !== 'all') {
@@ -51,6 +72,18 @@ class BaseRatesController extends Controller
 
             if ($request->has('service_type') && $request->get('service_type') !== 'all') {
                 $query->where('service_type', $request->get('service_type'));
+            }
+
+            if ($request->filled('payment_mode') && $request->get('payment_mode') !== 'all') {
+                $query->where('payment_mode', $request->get('payment_mode'));
+            }
+
+            if ($request->filled('sector') && $request->get('sector') !== 'all') {
+                $query->where('sector', $request->get('sector'));
+            }
+
+            if ($request->filled('currency') && $request->get('currency') !== 'all') {
+                $query->where('currency', $request->get('currency'));
             }
 
             if ($request->has('is_active')) {
@@ -100,13 +133,24 @@ class BaseRatesController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'rate_type' => 'required|in:bank,merchant,receiver,pricer',
-                'entity_type' => 'required|string',
+                'entity_type' => 'nullable|string',
                 'entity_id' => 'nullable|integer',
+                'team_id' => 'nullable|integer',
+                'team_name' => 'nullable|string|max:255',
+                'bank_code' => 'nullable|string|max:255',
+                'bank_description' => 'nullable|string|max:255',
                 'payment_method' => 'required|in:card,upi,netbanking,wallet',
+                'payment_mode' => 'nullable|string|max:255',
                 'service_type' => 'required|string',
+                'sector' => 'nullable|string|max:255',
                 'transaction_type' => 'required|in:domestic,international',
+                'currency' => 'nullable|string|max:10',
                 'percentage_fee' => 'required|numeric|min:0|max:100',
                 'flat_fee' => 'required|numeric|min:0',
+                'min_amount' => 'nullable|numeric|min:0',
+                'max_amount' => 'nullable|numeric|min:0',
+                'min_share' => 'nullable|numeric|min:0|max:100',
+                'max_share' => 'nullable|numeric|min:0|max:100',
                 'gst_percentage' => 'nullable|numeric|min:0|max:100',
                 'is_active' => 'boolean',
                 'effective_from' => 'nullable|date',
@@ -156,13 +200,24 @@ class BaseRatesController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'rate_type' => 'sometimes|in:bank,merchant,receiver,pricer',
-                'entity_type' => 'sometimes|string',
+                'entity_type' => 'sometimes|string|nullable',
                 'entity_id' => 'nullable|integer',
+                'team_id' => 'nullable|integer',
+                'team_name' => 'nullable|string|max:255',
+                'bank_code' => 'nullable|string|max:255',
+                'bank_description' => 'nullable|string|max:255',
                 'payment_method' => 'sometimes|in:card,upi,netbanking,wallet',
+                'payment_mode' => 'nullable|string|max:255',
                 'service_type' => 'sometimes|string',
+                'sector' => 'nullable|string|max:255',
                 'transaction_type' => 'sometimes|in:domestic,international',
+                'currency' => 'nullable|string|max:10',
                 'percentage_fee' => 'sometimes|numeric|min:0|max:100',
                 'flat_fee' => 'sometimes|numeric|min:0',
+                'min_amount' => 'nullable|numeric|min:0',
+                'max_amount' => 'nullable|numeric|min:0',
+                'min_share' => 'nullable|numeric|min:0|max:100',
+                'max_share' => 'nullable|numeric|min:0|max:100',
                 'gst_percentage' => 'nullable|numeric|min:0|max:100',
                 'is_active' => 'boolean',
                 'effective_from' => 'nullable|date',
@@ -223,8 +278,13 @@ class BaseRatesController extends Controller
             $type = $request->get('type');
 
             if ($type === 'merchant') {
+                $adminViewMode = session('admin_view_mode', 'test');
+                $isTestMode = $adminViewMode === 'test';
+
+                // Filter merchants based on admin view mode
                 $entities = Merchant::select('id', 'name', 'email')
                     ->where('status', 'active')
+                    ->where('test_mode', $isTestMode)
                     ->get()
                     ->map(function($m) {
                         return ['id' => $m->id, 'name' => $m->name . ' (' . $m->email . ')'];

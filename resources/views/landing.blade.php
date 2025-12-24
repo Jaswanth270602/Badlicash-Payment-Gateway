@@ -395,12 +395,28 @@
         border: 1px solid rgba(55, 65, 81, 0.9);
     }
 
+    .payment-illustration-wrapper {
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-20px);
+        }
+    }
+
     @media (max-width: 992px) {
         .hero-card {
             margin-top: 32px;
         }
         .section-divider {
             margin: 60px 0;
+        }
+        .payment-illustration-wrapper {
+            margin-top: 40px;
         }
     }
 </style>
@@ -482,78 +498,97 @@
                 </div>
             </div>
 
-            <div class="col-lg-6 position-relative">
-                <div class="hero-card">
-                    <div class="floating-badge">
-                        Designed for India-first SaaS
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <div style="font-size:13px;color:#9ca3af;">Sandbox Checkout Preview</div>
-                            <div style="font-size:16px;font-weight:600;color:#e5e7eb;">{{ config('app.name') }} Widget</div>
-                        </div>
-                        <span class="landing-badge">
-                            SANDBOX PREVIEW
-                        </span>
-                    </div>
-                    <div class="mt-2 p-3 rounded-4" style="background:rgba(15,23,42,0.85);border:1px solid rgba(55,65,81,0.9);">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <div class="text-muted" style="font-size:11px;">LIVE DEMO</div>
-                                <div style="font-size:14px;">Payment for <span class="fw-semibold">Acme Pro Plan</span></div>
-                            </div>
-                            <div class="text-end">
-                                <div style="font-size:11px;color:#9ca3af;">Amount</div>
-                                <div style="font-size:17px;font-weight:700;">₹4,999</div>
-                            </div>
-                        </div>
-                        <div class="mt-2 mb-2 d-flex gap-2 flex-wrap">
-                            <span class="badge rounded-pill text-bg-dark border border-secondary">
-                                <i class="bi bi-credit-card me-1"></i> Cards
-                            </span>
-                            <span class="badge rounded-pill text-bg-dark border border-secondary">
-                                <i class="bi bi-phone me-1"></i> UPI
-                            </span>
-                            <span class="badge rounded-pill text-bg-dark border border-secondary">
-                                <i class="bi bi-bank me-1"></i> Netbanking
-                            </span>
-                        </div>
-                        <button class="btn btn-primary w-100 mt-2" style="border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;">
-                            Try a sandbox payment
-                        </button>
-                        <div class="mt-2" style="font-size:11px;color:#9ca3af;">
-                            The sandbox mirrors live webhooks and flows, so your QA environment behaves like production from day one.
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">Trusted by product teams building:</div>
-                        <div class="hero-logos">
-                            <span class="logo-pill"><i class="bi bi-bag-check me-1"></i> SaaS & Subscriptions</span>
-                            <span class="logo-pill"><i class="bi bi-cash-coin me-1"></i> Marketplaces</span>
-                            <span class="logo-pill"><i class="bi bi-motherboard me-1"></i> Fintech MVPs</span>
-                            <span class="logo-pill"><i class="bi bi-building me-1"></i> Enterprise Portals</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testimonials-strip">
-                    <div class="testimonial-avatar">
-                        <span>A</span>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="testimonial-quote">
-                            "We wired {{ config('app.name') }} into our sandbox in a weekend. The webhook observability and realistic test flows
-                            beat every other provider we tried."
-                        </div>
-                        <div style="font-size:11px;color:#9ca3af;">Arjun · Dummy CTO, NeoStack Labs</div>
-                    </div>
-                    <div style="font-size:12px;color:#6ee7b7;">
-                        ★★★★★
-                        <span class="text-muted ms-1">Dummy rating</span>
-                    </div>
+            <div class="col-lg-6 position-relative d-flex align-items-center justify-content-center">
+                <div class="payment-illustration-wrapper" style="width: 100%; max-width: 600px; position: relative;">
+                    <!-- Payment Gateway Illustration -->
+                    <svg viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; filter: drop-shadow(0 20px 40px rgba(99, 102, 241, 0.3));">
+                        <!-- Background gradient circles -->
+                        <circle cx="300" cy="250" r="200" fill="url(#gradient1)" opacity="0.3"/>
+                        <circle cx="300" cy="250" r="150" fill="url(#gradient2)" opacity="0.2"/>
+                        
+                        <!-- Gradient Definitions -->
+                        <defs>
+                            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="cardGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.9" />
+                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.9" />
+                            </linearGradient>
+                            <linearGradient id="cardGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.9" />
+                                <stop offset="100%" style="stop-color:#16a34a;stop-opacity:0.9" />
+                            </linearGradient>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <polygon points="0 0, 10 3, 0 6" fill="rgba(34, 197, 94, 0.8)" />
+                            </marker>
+                        </defs>
+                        
+                        <!-- Credit Card 1 -->
+                        <g transform="translate(100, 150) rotate(-10)">
+                            <rect x="0" y="0" width="180" height="110" rx="12" fill="url(#cardGradient1)"/>
+                            <rect x="0" y="0" width="180" height="110" rx="12" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                            <rect x="20" y="20" width="60" height="40" rx="6" fill="rgba(255,255,255,0.2)"/>
+                            <rect x="20" y="70" width="140" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+                            <rect x="20" y="80" width="100" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+                            <circle cx="150" cy="30" r="8" fill="rgba(255,255,255,0.3)"/>
+                            <circle cx="165" cy="30" r="8" fill="rgba(255,255,255,0.3)"/>
+                        </g>
+                        
+                        <!-- Credit Card 2 -->
+                        <g transform="translate(320, 180) rotate(10)">
+                            <rect x="0" y="0" width="180" height="110" rx="12" fill="url(#cardGradient2)"/>
+                            <rect x="0" y="0" width="180" height="110" rx="12" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                            <rect x="20" y="20" width="60" height="40" rx="6" fill="rgba(255,255,255,0.2)"/>
+                            <rect x="20" y="70" width="140" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+                            <rect x="20" y="80" width="100" height="3" rx="1.5" fill="rgba(255,255,255,0.4)"/>
+                            <circle cx="150" cy="30" r="8" fill="rgba(255,255,255,0.3)"/>
+                            <circle cx="165" cy="30" r="8" fill="rgba(255,255,255,0.3)"/>
+                        </g>
+                        
+                        <!-- Payment Processing Center -->
+                        <g transform="translate(240, 200)">
+                            <circle cx="60" cy="60" r="50" fill="rgba(99, 102, 241, 0.2)" stroke="rgba(99, 102, 241, 0.6)" stroke-width="3"/>
+                            <circle cx="60" cy="60" r="35" fill="rgba(99, 102, 241, 0.3)"/>
+                            <path d="M 45 60 L 55 70 L 75 50" stroke="#6366f1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </g>
+                        
+                        <!-- Payment Flow Arrows -->
+                        <path d="M 190 205 Q 240 180, 260 230" stroke="rgba(34, 197, 94, 0.6)" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+                        <path d="M 410 235 Q 360 210, 340 260" stroke="rgba(34, 197, 94, 0.6)" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- UPI/Phone Icon -->
+                        <g transform="translate(80, 320)">
+                            <rect x="0" y="0" width="80" height="120" rx="20" fill="rgba(168, 85, 247, 0.2)" stroke="rgba(168, 85, 247, 0.6)" stroke-width="2"/>
+                            <rect x="15" y="20" width="50" height="70" rx="8" fill="rgba(168, 85, 247, 0.3)"/>
+                            <circle cx="40" cy="100" r="8" fill="rgba(168, 85, 247, 0.5)"/>
+                        </g>
+                        
+                        <!-- Bank/Netbanking Icon -->
+                        <g transform="translate(440, 320)">
+                            <rect x="0" y="0" width="100" height="80" rx="12" fill="rgba(251, 146, 60, 0.2)" stroke="rgba(251, 146, 60, 0.6)" stroke-width="2"/>
+                            <rect x="20" y="20" width="60" height="40" rx="6" fill="rgba(251, 146, 60, 0.3)"/>
+                            <rect x="25" y="25" width="15" height="10" rx="2" fill="rgba(251, 146, 60, 0.5)"/>
+                            <rect x="45" y="25" width="30" height="10" rx="2" fill="rgba(251, 146, 60, 0.5)"/>
+                            <rect x="25" y="40" width="50" height="10" rx="2" fill="rgba(251, 146, 60, 0.5)"/>
+                        </g>
+                        
+                        <!-- Payment Methods Icons (small) -->
+                        <circle cx="150" cy="380" r="30" fill="rgba(99, 102, 241, 0.15)" stroke="rgba(99, 102, 241, 0.5)" stroke-width="2"/>
+                        <path d="M 135 380 L 145 390 L 165 370" stroke="#6366f1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        
+                        <circle cx="450" cy="380" r="30" fill="rgba(34, 197, 94, 0.15)" stroke="rgba(34, 197, 94, 0.5)" stroke-width="2"/>
+                        <path d="M 435 380 L 445 390 L 465 370" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        
+                    </svg>
                 </div>
             </div>
+            
         </div>
 
         <div id="features" class="features-grid mt-5">

@@ -18,6 +18,8 @@ use App\Http\Controllers\Merchant\WebhooksController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\MerchantsController;
 use App\Http\Controllers\Admin\MerchantAccountsController;
+use App\Http\Controllers\Admin\MerchantRegistrationKeysController;
+use App\Http\Controllers\Admin\MerchantVendorsController;
 use App\Http\Controllers\Admin\SettlementSummaryController;
 use App\Http\Controllers\Admin\RefundsController as AdminRefundsController;
 use App\Http\Controllers\Admin\TransactionsController as AdminTransactionsController;
@@ -252,6 +254,34 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.merchant-accounts.update-settings');
         Route::post('/merchant-accounts/{id}/duplicate', [MerchantAccountsController::class, 'duplicate'])
             ->name('admin.merchant-accounts.duplicate');
+
+        // Merchant Registration Keys
+        Route::get('/merchant-registration-keys', [MerchantRegistrationKeysController::class, 'index'])
+            ->name('admin.merchant-registration-keys.index');
+        Route::get('/merchant-registration-keys/data', [MerchantRegistrationKeysController::class, 'getData'])
+            ->name('admin.merchant-registration-keys.data');
+        Route::get('/merchant-registration-keys/merchants', [MerchantRegistrationKeysController::class, 'getMerchants'])
+            ->name('admin.merchant-registration-keys.merchants');
+        Route::post('/merchant-registration-keys', [MerchantRegistrationKeysController::class, 'store'])
+            ->name('admin.merchant-registration-keys.store');
+        Route::post('/merchant-registration-keys/{id}', [MerchantRegistrationKeysController::class, 'update'])
+            ->name('admin.merchant-registration-keys.update');
+
+        // Merchant Vendors
+        Route::get('/merchant-vendors', [MerchantVendorsController::class, 'index'])
+            ->name('admin.merchant-vendors.index');
+        Route::get('/merchant-vendors/data', [MerchantVendorsController::class, 'getData'])
+            ->name('admin.merchant-vendors.data');
+        Route::get('/merchant-vendors/merchants', [MerchantVendorsController::class, 'getMerchants'])
+            ->name('admin.merchant-vendors.merchants');
+        Route::post('/merchant-vendors/bulk-status', [MerchantVendorsController::class, 'bulkStatus'])
+            ->name('admin.merchant-vendors.bulk-status');
+        Route::post('/merchant-vendors', [MerchantVendorsController::class, 'store'])
+            ->name('admin.merchant-vendors.store');
+        Route::post('/merchant-vendors/{id}', [MerchantVendorsController::class, 'update'])
+            ->name('admin.merchant-vendors.update');
+        Route::delete('/merchant-vendors/{id}', [MerchantVendorsController::class, 'destroy'])
+            ->name('admin.merchant-vendors.destroy');
 
         // Payments Module
         Route::get('/payments/transactions', [AdminTransactionsController::class, 'index'])

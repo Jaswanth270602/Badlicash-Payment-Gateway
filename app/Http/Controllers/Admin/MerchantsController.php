@@ -22,8 +22,12 @@ class MerchantsController extends Controller
     public function getData(Request $request): JsonResponse
     {
         try {
+            $adminViewMode = session('admin_view_mode', 'test');
+            $isTestMode = $adminViewMode === 'test';
+
             $this->logInfo('Admin merchants data requested', [
                 'user_id' => auth()->id(),
+                'admin_view_mode' => $adminViewMode,
                 'filters' => $request->only(['status', 'search', 'per_page'])
             ]);
 
@@ -32,6 +36,11 @@ class MerchantsController extends Controller
             $search = $request->get('search');
 
             $query = Merchant::latest();
+
+            // Filter by test_mode based on admin view mode
+            // When in live mode, only show merchants with test_mode = false
+            // When in test mode, only show merchants with test_mode = true
+            $query->where('test_mode', $isTestMode);
 
             if ($status && $status !== 'all') {
                 $query->where('status', $status);

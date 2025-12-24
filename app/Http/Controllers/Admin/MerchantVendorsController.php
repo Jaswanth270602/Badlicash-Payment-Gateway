@@ -25,9 +25,19 @@ class MerchantVendorsController extends Controller
      */
     public function getData(Request $request): JsonResponse
     {
+        $adminViewMode = session('admin_view_mode', 'test');
+        $isTestMode = $adminViewMode === 'test';
+
         $perPage = min($request->integer('per_page', 5), 50);
 
         $query = MerchantVendor::query()->with('merchant');
+
+        // Filter by merchant's test_mode based on admin view mode
+        // When in live mode, only show vendors for merchants with test_mode = false
+        // When in test mode, only show vendors for merchants with test_mode = true
+        $query->whereHas('merchant', function ($q) use ($isTestMode) {
+            $q->where('test_mode', $isTestMode);
+        });
 
         if ($request->filled('vendor_id')) {
             $query->where('id', $request->get('vendor_id'));
@@ -235,7 +245,14 @@ class MerchantVendorsController extends Controller
      */
     public function getMerchants(): JsonResponse
     {
-        $merchants = Merchant::select('id', 'name')->orderBy('name')->get();
+        $adminViewMode = session('admin_view_mode', 'test');
+        $isTestMode = $adminViewMode === 'test';
+
+        // Filter merchants based on admin view mode
+        $merchants = Merchant::select('id', 'name')
+            ->where('test_mode', $isTestMode)
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'success' => true,

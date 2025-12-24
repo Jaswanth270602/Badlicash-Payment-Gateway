@@ -15,11 +15,22 @@ class BaseRate extends Model
         'rate_type',
         'entity_type',
         'entity_id',
+        'team_id',
+        'team_name',
+        'bank_code',
+        'bank_description',
         'payment_method',
+        'payment_mode',
         'service_type',
+        'sector',
         'transaction_type',
+        'currency',
         'percentage_fee',
         'flat_fee',
+        'min_amount',
+        'max_amount',
+        'min_share',
+        'max_share',
         'gst_percentage',
         'is_active',
         'effective_from',
@@ -30,6 +41,10 @@ class BaseRate extends Model
     protected $casts = [
         'percentage_fee' => 'decimal:3',
         'flat_fee' => 'decimal:2',
+        'min_amount' => 'decimal:2',
+        'max_amount' => 'decimal:2',
+        'min_share' => 'decimal:4',
+        'max_share' => 'decimal:4',
         'gst_percentage' => 'decimal:2',
         'is_active' => 'boolean',
         'effective_from' => 'date',
@@ -70,8 +85,9 @@ class BaseRate extends Model
      */
     public function merchant(): BelongsTo
     {
-        return $this->belongsTo(Merchant::class, 'entity_id')
-            ->where('entity_type', 'merchant');
+        // We only need a simple belongsTo here; the entity_type column
+        // lives on the base_rates table, not on merchants.
+        return $this->belongsTo(Merchant::class, 'entity_id');
     }
 
     /**
@@ -79,8 +95,8 @@ class BaseRate extends Model
      */
     public function bank(): BelongsTo
     {
-        return $this->belongsTo(Bank::class, 'entity_id')
-            ->where('entity_type', 'bank');
+        // Same here: just link by entity_id; entity_type is on base_rates.
+        return $this->belongsTo(Bank::class, 'entity_id');
     }
 
     /**

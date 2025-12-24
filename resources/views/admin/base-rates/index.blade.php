@@ -19,54 +19,28 @@
 
     <!-- Filters and Actions -->
     <div class="stat-card mb-3">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Rate Type</label>
-                <select class="form-select" ng-model="brc.filters.rate_type" ng-change="brc.applyFilters()">
-                    <option value="all">All Types</option>
-                    <option value="bank">Bank</option>
-                    <option value="merchant">Merchant</option>
-                    <option value="receiver">Receiver</option>
-                    <option value="pricer">Pricer</option>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <label class="form-label me-2">Show</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: auto;" ng-model="brc.pagination.per_page" ng-change="brc.loadRates()">
+                    <option value="5">5 entries</option>
+                    <option value="10">10 entries</option>
+                    <option value="25">25 entries</option>
+                    <option value="50">50 entries</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Payment Method</label>
-                <select class="form-select" ng-model="brc.filters.payment_method" ng-change="brc.applyFilters()">
-                    <option value="all">All Methods</option>
-                    <option value="card">Card</option>
-                    <option value="upi">UPI</option>
-                    <option value="netbanking">Net Banking</option>
-                    <option value="wallet">Wallet</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Service Type</label>
-                <select class="form-select" ng-model="brc.filters.service_type" ng-change="brc.applyFilters()">
-                    <option value="all">All Services</option>
-                    <option value="payment">Payment</option>
-                    <option value="refund">Refund</option>
-                    <option value="chargeback">Chargeback</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select class="form-select" ng-model="brc.filters.is_active" ng-change="brc.applyFilters()">
-                    <option value="">All</option>
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Search</label>
-                <input type="text" class="form-control" ng-model="brc.filters.search" ng-change="brc.applyFilters()" placeholder="Search by rate type, payment method...">
-            </div>
-            <div class="col-md-6 d-flex align-items-end gap-2">
-                <button class="btn btn-outline-secondary" ng-click="brc.clearFilters()">
-                    <i class="bi bi-x-circle"></i> Clear
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-secondary" ng-click="brc.clearFilters()">
+                    <i class="bi bi-funnel"></i> Clear Filters
                 </button>
-                <button class="btn btn-primary" ng-click="brc.openNewModal()">
-                    <i class="bi bi-plus-lg"></i> New Base Rate
+                <button class="btn btn-sm btn-outline-secondary" ng-click="brc.loadRates()">
+                    <i class="bi bi-arrow-clockwise"></i> Reload
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" ng-click="brc.resetView()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </button>
+                <button class="btn btn-sm btn-primary" ng-click="brc.openNewModal()">
+                    <i class="bi bi-plus-lg"></i> + New
                 </button>
             </div>
         </div>
@@ -83,64 +57,165 @@
 
         <div ng-hide="brc.loading">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Rate Type</th>
-                            <th>Entity</th>
-                            <th>Payment Method</th>
-                            <th>Service Type</th>
-                            <th>Transaction Type</th>
-                            <th>Percentage Fee</th>
-                            <th>Flat Fee</th>
+                            <th>Id</th>
+                            <th>Team Id</th>
+                            <th>Team Name</th>
+                            <th>Payment Mode</th>
+                            <th>Bank Code</th>
+                            <th>Bank Description</th>
+                            <th>Sector</th>
+                            <th>Currency</th>
+                            <th>Fixed Fee</th>
+                            <th>Percent Fee</th>
+                            <th>Min Amount</th>
+                            <th>Max Amount</th>
+                            <th>Min Share</th>
+                            <th>Max Share</th>
                             <th>Status</th>
-                            <th>Effective Period</th>
                             <th>Actions</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.team_id" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.team_name" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th>
+                                <select class="form-select form-select-sm" ng-model="brc.filters.payment_mode" ng-change="brc.applyFilters()">
+                                    <option value="all">All</option>
+                                    <!-- Cards -->
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Commercial Credit Card">Commercial Credit Card</option>
+                                    <option value="International Credit Card">International Credit Card</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                    <option value="International Debit Card">International Debit Card</option>
+                                    <option value="Prepaid Card">Prepaid Card</option>
+                                    <option value="Corporate Card">Corporate Card</option>
+                                    <option value="EMI">EMI (on Credit Card)</option>
+                                    <option value="Cardless EMI">Cardless EMI</option>
+                                    <!-- UPI / QR -->
+                                    <option value="UPI">UPI</option>
+                                    <option value="UPI Intent">UPI Intent</option>
+                                    <option value="UPI AutoPay">UPI AutoPay</option>
+                                    <option value="Bharat QR">Bharat QR</option>
+                                    <option value="Bharat QR(Static)">Bharat QR (Static)</option>
+                                    <option value="Bharat QR(Dynamic)">Bharat QR (Dynamic)</option>
+                                    <!-- Netbanking / Bank -->
+                                    <option value="Netbanking">Netbanking</option>
+                                    <option value="Direct Netbanking">Direct Netbanking</option>
+                                    <option value="ATM Card">ATM Card</option>
+                                    <option value="Bank Transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                                    <!-- Wallets & Others -->
+                                    <option value="Wallet">Wallet</option>
+                                    <option value="Cash Card">Cash Card</option>
+                                    <option value="PayLater">PayLater / BNPL</option>
+                                    <option value="NACH">NACH / eMandate</option>
+                                </select>
+                            </th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.bank_code" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.bank_description" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th>
+                                <select class="form-select form-select-sm" ng-model="brc.filters.sector" ng-change="brc.applyFilters()">
+                                    <option value="all">All</option>
+                                    <!-- Generic / Cross-industry -->
+                                    <option value="B2B">B2B</option>
+                                    <option value="B2C">B2C</option>
+                                    <option value="E-commerce">E-commerce</option>
+                                    <option value="Marketplaces">Marketplaces</option>
+                                    <option value="Aggregator / PSP">Aggregator / PSP</option>
+                                    <option value="Others">Others</option>
+                                    <!-- Financial / Risk -->
+                                    <option value="Financial Services">Financial Services</option>
+                                    <option value="NBFC">NBFC</option>
+                                    <option value="Stock Broking">Stock Broking</option>
+                                    <option value="Mutual Funds / Investments">Mutual Funds / Investments</option>
+                                    <option value="Forex">Forex</option>
+                                    <option value="High Risk">High Risk</option>
+                                    <!-- Government / Public -->
+                                    <option value="Government">Government</option>
+                                    <option value="Govt E-Tendering">Govt E-Tendering</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="Housing Society">Housing Society</option>
+                                    <option value="Housing Board">Housing Board</option>
+                                    <option value="Municipal Taxes / Property Tax">Municipal Taxes / Property Tax</option>
+                                    <!-- Education / Healthcare -->
+                                    <option value="Education">Education</option>
+                                    <option value="EdTech">EdTech</option>
+                                    <option value="Healthcare / Hospitals">Healthcare / Hospitals</option>
+                                    <option value="Pharmacies">Pharmacies</option>
+                                    <!-- Travel / Lifestyle -->
+                                    <option value="Travel &amp; Hospitality">Travel &amp; Hospitality</option>
+                                    <option value="Airlines">Airlines</option>
+                                    <option value="Hotels / Accommodation">Hotels / Accommodation</option>
+                                    <option value="Tours &amp; Activities">Tours &amp; Activities</option>
+                                    <option value="Online Travel Agency (OTA)">Online Travel Agency (OTA)</option>
+                                    <!-- Retail & Services -->
+                                    <option value="Grocery / Supermarket">Grocery / Supermarket</option>
+                                    <option value="Food &amp; Beverages / Restaurants">Food &amp; Beverages / Restaurants</option>
+                                    <option value="Retail">Retail (Apparel, Electronics, etc.)</option>
+                                    <option value="Real Estate">Real Estate</option>
+                                    <option value="Logistics / Courier">Logistics / Courier</option>
+                                    <option value="Auto / Fuel">Auto / Fuel</option>
+                                    <!-- Digital / Tech -->
+                                    <option value="Telecom">Telecom</option>
+                                    <option value="IT Services / SaaS">IT Services / SaaS</option>
+                                    <option value="Gaming">Gaming</option>
+                                    <option value="OTT / Digital Content">OTT / Digital Content</option>
+                                </select>
+                            </th>
+                            <th>
+                                <select class="form-select form-select-sm" ng-model="brc.filters.currency" ng-change="brc.applyFilters()">
+                                    <option value="all">All</option>
+                                    <option value="INR">INR</option>
+                                    <option value="AED">AED</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="USD">USD</option>
+                                    <option value="MUR">MUR</option>
+                                    <option value="RWF">RWF</option>
+                                    <option value="LKR">LKR</option>
+                                    <option value="XOF">XOF</option>
+                                    <option value="CDF">CDF</option>
+                                    <option value="ZMW">ZMW</option>
+                                </select>
+                            </th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.flat_fee" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.percentage_fee" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.min_amount" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.max_amount" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.min_share" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th><input type="text" class="form-control form-control-sm" ng-model="brc.filters.max_share" ng-change="brc.applyFilters()" placeholder=""></th>
+                            <th>
+                                <select class="form-select form-select-sm" ng-model="brc.filters.is_active" ng-change="brc.applyFilters()">
+                                    <option value="">All</option>
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </select>
+                            </th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="rate in brc.rates">
-                            <td>
-                                <span class="badge" ng-class="{
-                                    'bg-primary': rate.rate_type === 'bank',
-                                    'bg-success': rate.rate_type === 'merchant',
-                                    'bg-info': rate.rate_type === 'receiver',
-                                    'bg-warning': rate.rate_type === 'pricer'
-                                }">
-                                    @{{ rate.rate_type | uppercase }}
-                                </span>
-                            </td>
-                            <td>
-                                <div ng-if="rate.merchant">
-                                    <strong>@{{ rate.merchant.name }}</strong>
-                                    <small class="text-muted d-block">@{{ rate.merchant.email }}</small>
-                                </div>
-                                <div ng-if="rate.bank">
-                                    <strong>@{{ rate.bank.name }}</strong>
-                                    <small class="text-muted d-block">@{{ rate.bank.code }}</small>
-                                </div>
-                                <span ng-if="!rate.merchant && !rate.bank" class="text-muted">-</span>
-                            </td>
-                            <td><span class="badge bg-secondary">@{{ rate.payment_method | uppercase }}</span></td>
-                            <td>@{{ rate.service_type }}</td>
-                            <td>
-                                <span class="badge" ng-class="rate.transaction_type === 'domestic' ? 'bg-success' : 'bg-warning'">
-                                    @{{ rate.transaction_type | uppercase }}
-                                </span>
-                            </td>
-                            <td><strong>@{{ rate.percentage_fee }}%</strong></td>
-                            <td><strong>₹@{{ rate.flat_fee }}</strong></td>
+                        <tr ng-repeat="rate in brc.rates track by rate.id">
+                            <td>@{{ rate.id }}</td>
+                            <td>@{{ rate.team_id || '-' }}</td>
+                            <td>@{{ rate.team_name || '-' }}</td>
+                            <td>@{{ rate.payment_mode || '-' }}</td>
+                            <td>@{{ rate.bank_code || '-' }}</td>
+                            <td>@{{ rate.bank_description || '-' }}</td>
+                            <td>@{{ rate.sector || '-' }}</td>
+                            <td>@{{ rate.currency || '-' }}</td>
+                            <td>@{{ rate.flat_fee }}</td>
+                            <td>@{{ rate.percentage_fee }}</td>
+                            <td>@{{ rate.min_amount || '-' }}</td>
+                            <td>@{{ rate.max_amount || '-' }}</td>
+                            <td>@{{ rate.min_share || '-' }}</td>
+                            <td>@{{ rate.max_share || '-' }}</td>
                             <td>
                                 <span class="badge" ng-class="rate.is_active ? 'bg-success' : 'bg-secondary'">
                                     @{{ rate.is_active ? 'Active' : 'Inactive' }}
                                 </span>
-                            </td>
-                            <td>
-                                <small>
-                                    <div ng-if="rate.effective_from">From: @{{ rate.effective_from | date:'MMM d, y' }}</div>
-                                    <div ng-if="rate.effective_to">To: @{{ rate.effective_to | date:'MMM d, y' }}</div>
-                                    <span ng-if="!rate.effective_from && !rate.effective_to" class="text-muted">Always active</span>
-                                </small>
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" ng-click="brc.editRate(rate)" title="Edit">
@@ -152,7 +227,7 @@
                             </td>
                         </tr>
                         <tr ng-if="brc.rates.length === 0 && !brc.loading">
-                            <td colspan="10" class="text-center text-muted py-4">
+                            <td colspan="16" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox" style="font-size: 48px;"></i>
                                 <p class="mt-2">No base rates found</p>
                             </td>
@@ -225,6 +300,36 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label">Payment Mode</label>
+                                <select class="form-select" ng-model="brc.rateForm.payment_mode">
+                                    <option value="">Select Payment Mode</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Commercial Credit Card">Commercial Credit Card</option>
+                                    <option value="International Credit Card">International Credit Card</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                    <option value="International Debit Card">International Debit Card</option>
+                                    <option value="Prepaid Card">Prepaid Card</option>
+                                    <option value="Corporate Card">Corporate Card</option>
+                                    <option value="EMI">EMI (on Credit Card)</option>
+                                    <option value="Cardless EMI">Cardless EMI</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="UPI Intent">UPI Intent</option>
+                                    <option value="UPI AutoPay">UPI AutoPay</option>
+                                    <option value="Bharat QR">Bharat QR</option>
+                                    <option value="Bharat QR(Static)">Bharat QR (Static)</option>
+                                    <option value="Bharat QR(Dynamic)">Bharat QR (Dynamic)</option>
+                                    <option value="Netbanking">Netbanking</option>
+                                    <option value="Direct Netbanking">Direct Netbanking</option>
+                                    <option value="ATM Card">ATM Card</option>
+                                    <option value="Bank Transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                                    <option value="Wallet">Wallet</option>
+                                    <option value="Cash Card">Cash Card</option>
+                                    <option value="PayLater">PayLater / BNPL</option>
+                                    <option value="NACH">NACH / eMandate</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
                                 <label class="form-label">Service Type <span class="text-danger">*</span></label>
                                 <select class="form-select" ng-model="brc.rateForm.service_type" required>
                                     <option value="payment">Payment</option>
@@ -240,12 +345,107 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label">Team Id</label>
+                                <input type="number" class="form-control" ng-model="brc.rateForm.team_id" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Team Name</label>
+                                <input type="text" class="form-control" ng-model="brc.rateForm.team_name">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Bank Code</label>
+                                <input type="text" class="form-control" ng-model="brc.rateForm.bank_code">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bank Description</label>
+                                <input type="text" class="form-control" ng-model="brc.rateForm.bank_description">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Sector</label>
+                                <select class="form-select" ng-model="brc.rateForm.sector">
+                                    <option value="">Select Sector</option>
+                                    <option value="B2B">B2B</option>
+                                    <option value="B2C">B2C</option>
+                                    <option value="E-commerce">E-commerce</option>
+                                    <option value="Marketplaces">Marketplaces</option>
+                                    <option value="Aggregator / PSP">Aggregator / PSP</option>
+                                    <option value="Financial Services">Financial Services</option>
+                                    <option value="NBFC">NBFC</option>
+                                    <option value="Stock Broking">Stock Broking</option>
+                                    <option value="Mutual Funds / Investments">Mutual Funds / Investments</option>
+                                    <option value="Forex">Forex</option>
+                                    <option value="High Risk">High Risk</option>
+                                    <option value="Government">Government</option>
+                                    <option value="Govt E-Tendering">Govt E-Tendering</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="Housing Society">Housing Society</option>
+                                    <option value="Housing Board">Housing Board</option>
+                                    <option value="Municipal Taxes / Property Tax">Municipal Taxes / Property Tax</option>
+                                    <option value="Education">Education</option>
+                                    <option value="EdTech">EdTech</option>
+                                    <option value="Healthcare / Hospitals">Healthcare / Hospitals</option>
+                                    <option value="Pharmacies">Pharmacies</option>
+                                    <option value="Travel &amp; Hospitality">Travel &amp; Hospitality</option>
+                                    <option value="Airlines">Airlines</option>
+                                    <option value="Hotels / Accommodation">Hotels / Accommodation</option>
+                                    <option value="Tours &amp; Activities">Tours &amp; Activities</option>
+                                    <option value="Online Travel Agency (OTA)">Online Travel Agency (OTA)</option>
+                                    <option value="Grocery / Supermarket">Grocery / Supermarket</option>
+                                    <option value="Food &amp; Beverages / Restaurants">Food &amp; Beverages / Restaurants</option>
+                                    <option value="Retail">Retail (Apparel, Electronics, etc.)</option>
+                                    <option value="Real Estate">Real Estate</option>
+                                    <option value="Logistics / Courier">Logistics / Courier</option>
+                                    <option value="Auto / Fuel">Auto / Fuel</option>
+                                    <option value="Telecom">Telecom</option>
+                                    <option value="IT Services / SaaS">IT Services / SaaS</option>
+                                    <option value="Gaming">Gaming</option>
+                                    <option value="OTT / Digital Content">OTT / Digital Content</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Currency</label>
+                                <select class="form-select" ng-model="brc.rateForm.currency">
+                                    <option value="">Select Currency</option>
+                                    <option value="INR">INR</option>
+                                    <option value="AED">AED</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="USD">USD</option>
+                                    <option value="MUR">MUR</option>
+                                    <option value="RWF">RWF</option>
+                                    <option value="LKR">LKR</option>
+                                    <option value="XOF">XOF</option>
+                                    <option value="CDF">CDF</option>
+                                    <option value="ZMW">ZMW</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
                                 <label class="form-label">Percentage Fee (%) <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" ng-model="brc.rateForm.percentage_fee" step="0.001" min="0" max="100" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Flat Fee (INR) <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" ng-model="brc.rateForm.flat_fee" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Min Amount</label>
+                                <input type="number" class="form-control" ng-model="brc.rateForm.min_amount" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max Amount</label>
+                                <input type="number" class="form-control" ng-model="brc.rateForm.max_amount" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Min Share (%)</label>
+                                <input type="number" class="form-control" ng-model="brc.rateForm.min_share" step="0.0001" min="0" max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max Share (%)</label>
+                                <input type="number" class="form-control" ng-model="brc.rateForm.max_share" step="0.0001" min="0" max="100">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">GST Percentage (%)</label>
@@ -301,17 +501,26 @@
                 var vm = this;
                 var csrf = document.querySelector('meta[name="csrf-token"]').content;
                 vm.rates = [];
-                vm.pagination = { current_page: 1, per_page: 15, total: 0, last_page: 1 };
+                vm.pagination = { current_page: 1, per_page: 5, total: 0, last_page: 1 };
                 vm.loading = false;
                 vm.saving = false;
                 vm.isEditing = false;
                 vm.entities = [];
                 vm.filters = {
-                    rate_type: 'all',
-                    payment_method: 'all',
-                    service_type: 'all',
-                    is_active: '',
-                    search: ''
+                    team_id: '',
+                    team_name: '',
+                    payment_mode: 'all',
+                    bank_code: '',
+                    bank_description: '',
+                    sector: 'all',
+                    currency: 'all',
+                    flat_fee: '',
+                    percentage_fee: '',
+                    min_amount: '',
+                    max_amount: '',
+                    min_share: '',
+                    max_share: '',
+                    is_active: ''
                 };
 
                 vm.rateForm = {
@@ -319,10 +528,21 @@
                     entity_type: '',
                     entity_id: null,
                     payment_method: 'card',
+                    payment_mode: '',
                     service_type: 'payment',
                     transaction_type: 'domestic',
                     percentage_fee: 0,
                     flat_fee: 0,
+                    team_id: null,
+                    team_name: '',
+                    bank_code: '',
+                    bank_description: '',
+                    sector: '',
+                    currency: '',
+                    min_amount: null,
+                    max_amount: null,
+                    min_share: null,
+                    max_share: null,
                     gst_percentage: 18,
                     is_active: true,
                     effective_from: null,
@@ -338,7 +558,7 @@
                     };
 
                     Object.keys(vm.filters).forEach(function(key) {
-                        if (vm.filters[key] && vm.filters[key] !== 'all') {
+                        if (vm.filters[key] !== undefined && vm.filters[key] !== null && vm.filters[key] !== '') {
                             params[key] = vm.filters[key];
                         }
                     });
@@ -373,13 +593,27 @@
 
                 vm.clearFilters = function() {
                     vm.filters = {
-                        rate_type: 'all',
-                        payment_method: 'all',
-                        service_type: 'all',
-                        is_active: '',
-                        search: ''
+                        team_id: '',
+                        team_name: '',
+                        payment_mode: 'all',
+                        bank_code: '',
+                        bank_description: '',
+                        sector: 'all',
+                        currency: 'all',
+                        flat_fee: '',
+                        percentage_fee: '',
+                        min_amount: '',
+                        max_amount: '',
+                        min_share: '',
+                        max_share: '',
+                        is_active: ''
                     };
                     vm.applyFilters();
+                };
+
+                vm.resetView = function() {
+                    vm.clearFilters();
+                    vm.pagination.current_page = 1;
                 };
 
                 vm.onRateTypeChange = function() {
@@ -401,10 +635,21 @@
                         entity_type: '',
                         entity_id: null,
                         payment_method: 'card',
+                        payment_mode: '',
                         service_type: 'payment',
                         transaction_type: 'domestic',
                         percentage_fee: 0,
                         flat_fee: 0,
+                        team_id: null,
+                        team_name: '',
+                        bank_code: '',
+                        bank_description: '',
+                        sector: '',
+                        currency: '',
+                        min_amount: null,
+                        max_amount: null,
+                        min_share: null,
+                        max_share: null,
                         gst_percentage: 18,
                         is_active: true,
                         effective_from: null,
@@ -424,10 +669,21 @@
                         entity_type: rate.entity_type,
                         entity_id: rate.entity_id,
                         payment_method: rate.payment_method,
+                         payment_mode: rate.payment_mode,
                         service_type: rate.service_type,
                         transaction_type: rate.transaction_type,
                         percentage_fee: parseFloat(rate.percentage_fee),
                         flat_fee: parseFloat(rate.flat_fee),
+                        team_id: rate.team_id,
+                        team_name: rate.team_name,
+                        bank_code: rate.bank_code,
+                        bank_description: rate.bank_description,
+                        sector: rate.sector,
+                        currency: rate.currency,
+                        min_amount: rate.min_amount,
+                        max_amount: rate.max_amount,
+                        min_share: rate.min_share,
+                        max_share: rate.max_share,
                         gst_percentage: parseFloat(rate.gst_percentage || 18),
                         is_active: rate.is_active,
                         effective_from: rate.effective_from,

@@ -26,9 +26,19 @@ class MerchantRegistrationKeysController extends Controller
      */
     public function getData(Request $request): JsonResponse
     {
+        $adminViewMode = session('admin_view_mode', 'test');
+        $isTestMode = $adminViewMode === 'test';
+
         $perPage = min($request->integer('per_page', 5), 50);
 
         $query = MerchantRegistrationKey::query()->with('merchant');
+
+        // Filter by merchant's test_mode based on admin view mode
+        // When in live mode, only show keys for merchants with test_mode = false
+        // When in test mode, only show keys for merchants with test_mode = true
+        $query->whereHas('merchant', function ($q) use ($isTestMode) {
+            $q->where('test_mode', $isTestMode);
+        });
 
         if ($request->filled('id')) {
             $query->where('id', $request->get('id'));
@@ -141,7 +151,12 @@ class MerchantRegistrationKeysController extends Controller
      */
     public function getMerchants(): JsonResponse
     {
+        $adminViewMode = session('admin_view_mode', 'test');
+        $isTestMode = $adminViewMode === 'test';
+
+        // Filter merchants based on admin view mode
         $merchants = Merchant::select('id', 'name')
+            ->where('test_mode', $isTestMode)
             ->orderBy('name')
             ->get();
 
