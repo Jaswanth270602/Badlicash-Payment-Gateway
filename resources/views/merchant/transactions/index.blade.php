@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Transactions Details - BadliCash')
+@section('title', 'Transactions Details - ' . config('app.name'))
 @section('page-title', 'Transactions Details')
 
 @section('content')

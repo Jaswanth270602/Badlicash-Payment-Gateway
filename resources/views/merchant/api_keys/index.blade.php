@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'API Keys - BadliCash')
+@section('title', 'API Keys - ' . config('app.name'))
 @section('page-title', 'API Keys')
 
 @section('content')

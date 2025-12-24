@@ -3,10 +3,22 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | BadliCash Mode
+    | Company/Brand Name
     |--------------------------------------------------------------------------
     |
-    | This value determines the mode of operation for BadliCash.
+    | The company or brand name used throughout the application.
+    | This can be changed via APP_NAME in .env file for easy rebranding.
+    | Use config('app.name') or brand_name() helper for easy access.
+    |
+    */
+    'company_name' => env('APP_NAME', 'Payment Gateway'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Gateway Mode
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the mode of operation.
     | Options: 'test' or 'live'
     |
     */
@@ -17,7 +29,7 @@ return [
     | API Version
     |--------------------------------------------------------------------------
     |
-    | The current API version for BadliCash.
+    | The current API version.
     |
     */
     'api_version' => env('BADLICASH_API_VERSION', 'v1'),

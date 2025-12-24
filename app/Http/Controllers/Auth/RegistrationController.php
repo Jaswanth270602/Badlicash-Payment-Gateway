@@ -152,7 +152,7 @@ class RegistrationController extends Controller
 
             return redirect()
                 ->route('login')
-                ->with('success', 'Your BadliCash merchant account has been created. You can log in now and use the full sandbox environment while our team reviews and enables live payments.');
+                ->with('success', 'Your ' . config('app.name') . ' merchant account has been created. You can log in now and use the full sandbox environment while our team reviews and enables live payments.');
         } catch (\Exception $e) {
             DB::rollBack();
 

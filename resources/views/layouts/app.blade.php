@@ -19,7 +19,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ route('dashboard') }}">
-            <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="BadiliCash" style="height: 42px; width: auto;">
+            <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="{{ config('app.name') }}" style="height: 42px; width: auto;">
 
                 <!-- <strong>BadiliCash</strong> -->
             </a>

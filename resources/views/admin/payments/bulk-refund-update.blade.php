@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Bulk Update Refund Status - Admin - BadliCash')
+@section('title', 'Bulk Update Refund Status - Admin - ' . config('app.name'))
 @section('page-title', 'Bulk Update Refund Status')
 
 @section('content')

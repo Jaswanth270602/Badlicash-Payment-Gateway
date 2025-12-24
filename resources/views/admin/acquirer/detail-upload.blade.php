@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Acquirer Accounts Detail Upload - Admin - BadliCash')
+@section('title', 'Acquirer Accounts Detail Upload - Admin - ' . config('app.name'))
 @section('page-title', 'Acquirer Accounts Detail Upload')
 
 @section('content')

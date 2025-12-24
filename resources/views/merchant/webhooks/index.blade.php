@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Webhooks - BadliCash')
+@section('title', 'Webhooks - ' . config('app.name'))
 @section('page-title', 'Webhooks')
 
 @section('content')

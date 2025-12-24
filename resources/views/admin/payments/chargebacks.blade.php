@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Chargebacks Upload - Admin - BadliCash')
+@section('title', 'Chargebacks Upload - Admin - ' . config('app.name'))
 @section('page-title', 'Chargebacks Upload')
 
 @section('content')

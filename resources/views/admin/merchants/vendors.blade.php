@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Merchant Vendors - Admin - BadliCash')
+@section('title', 'Merchant Vendors - Admin - ' . config('app.name'))
 @section('page-title', 'Merchant Vendors')
 
 @section('content')

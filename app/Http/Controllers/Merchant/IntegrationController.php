@@ -52,8 +52,9 @@ class IntegrationController extends Controller
 
     private function getWidgetCode($apiKey, $baseUrl)
     {
+        $companyName = config('app.name');
         return <<<HTML
-<!-- BadliCash Payment Widget -->
+<!-- {$companyName} Payment Widget -->
 <script src="{$baseUrl}/sdk/badlicash.js"></script>
 <script>
     const badlicash = new BadliCash({
@@ -108,11 +109,13 @@ PHP;
 
     private function getWebhookCode($baseUrl)
     {
+        $companyName = config('app.name');
+        $headerName = 'X-' . str_replace(' ', '-', $companyName) . '-Signature';
         return <<<PHP
 // Webhook endpoint
 Route::post('/webhook/badlicash', function (Request \$request) {
     \$payload = \$request->all();
-    \$signature = \$request->header('X-BadliCash-Signature');
+    \$signature = \$request->header('{$headerName}');
     
     // Verify signature
     \$expectedSignature = hash_hmac('sha256', json_encode(\$payload), config('badlicash.webhook_secret'));

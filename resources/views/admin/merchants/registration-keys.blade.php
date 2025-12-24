@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Merchant Registration Keys - Admin - BadliCash')
+@section('title', 'Merchant Registration Keys - Admin - ' . config('app.name'))
 @section('page-title', 'Merchant Registration Keys')
 
 @section('content')

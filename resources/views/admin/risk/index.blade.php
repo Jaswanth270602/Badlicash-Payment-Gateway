@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title','Risk Management - BadliCash')
+@section('title', 'Risk Management - ' . config('app.name'))
 @section('page-title','Risk Management')
 
 @section('content')

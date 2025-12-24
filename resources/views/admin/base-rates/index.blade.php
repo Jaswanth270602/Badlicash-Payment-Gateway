@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Base Rates Management - Admin - BadliCash')
+@section('title', 'Base Rates Management - Admin - ' . config('app.name'))
 @section('page-title', 'Base Rates Configuration')
 
 @section('content')

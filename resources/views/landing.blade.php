@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'BadiliCash – The Safer, Smarter Payment Gateway for Modern Businesses')
+@section('title', config('app.name') . ' – The Safer, Smarter Payment Gateway for Modern Businesses')
 
 @section('content')
 <style>
@@ -414,7 +414,7 @@
                 </div>
                 <div>
                     <!-- <div class="fw-bold text-white">BadiliCash</div> -->
-                    <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="BadiliCash" style="height: 72px; width: auto;">
+                    <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="{{ config('app.name') }}" style="height: 72px; width: auto;">
 
                     <div style="font-size:11px;color:#9ca3af;">Safer payments for ambitious teams</div>
                 </div>
@@ -447,7 +447,7 @@
                     <span class="hero-gradient-text">teams actually love</span>.
                 </h1>
                 <p class="hero-subtitle mb-3">
-                    BadiliCash is a developer-first, bank-grade payment gateway designed to feel as smooth as Razorpay,
+                    {{ config('app.name') }} is a developer-first, bank-grade payment gateway designed to feel as smooth as Razorpay,
                     but with obsessive focus on observability, sandbox–production parity, and merchant UX.
                 </p>
                 <ul class="list-unstyled mb-4" style="font-size:13px;color:#9ca3af;">
@@ -490,7 +490,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
                             <div style="font-size:13px;color:#9ca3af;">Sandbox Checkout Preview</div>
-                            <div style="font-size:16px;font-weight:600;color:#e5e7eb;">BadiliCash Widget</div>
+                            <div style="font-size:16px;font-weight:600;color:#e5e7eb;">{{ config('app.name') }} Widget</div>
                         </div>
                         <span class="landing-badge">
                             SANDBOX PREVIEW
@@ -543,8 +543,8 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="testimonial-quote">
-                            “We wired BadiliCash into our sandbox in a weekend. The webhook observability and realistic test flows
-                            beat every other provider we tried.”
+                            "We wired {{ config('app.name') }} into our sandbox in a weekend. The webhook observability and realistic test flows
+                            beat every other provider we tried."
                         </div>
                         <div style="font-size:11px;color:#9ca3af;">Arjun · Dummy CTO, NeoStack Labs</div>
                     </div>
@@ -602,7 +602,7 @@
         <!-- How It Works Section -->
         <div class="text-center mb-5">
             <div class="landing-badge mb-3">Simple integration</div>
-            <h2 class="section-title">How BadiliCash works</h2>
+            <h2 class="section-title">How {{ config('app.name') }} works</h2>
             <p class="section-subtitle">Get up and running in minutes. Our streamlined process makes payment integration effortless.</p>
         </div>
 
@@ -697,7 +697,7 @@
         <!-- Boost Your Business Section -->
         <div class="text-center mb-5">
             <div class="landing-badge mb-3">Growth tools</div>
-            <h2 class="section-title">Boost your business with BadiliCash</h2>
+            <h2 class="section-title">Boost your business with {{ config('app.name') }}</h2>
             <p class="section-subtitle">Everything you need to grow your revenue and delight your customers.</p>
         </div>
 
@@ -787,7 +787,7 @@
                 </div>
                 <div class="flex-grow-1">
                     <h5 class="fw-semibold mb-2" style="color:#e5e7eb;">Students & developers</h5>
-                    <p style="font-size:13px;color:#9ca3af;margin-bottom:8px;">BadiliCash's intuitive APIs and comprehensive documentation let students integrate payments into college projects in hours. Perfect for hackathons, portfolio projects, and learning payment systems.</p>
+                    <p style="font-size:13px;color:#9ca3af;margin-bottom:8px;">{{ config('app.name') }}'s intuitive APIs and comprehensive documentation let students integrate payments into college projects in hours. Perfect for hackathons, portfolio projects, and learning payment systems.</p>
                     <div style="font-size:12px;color:#818cf8;">
                         <i class="bi bi-lightning-charge-fill me-1"></i> 2-3 hours to first payment
                     </div>
@@ -848,7 +848,7 @@
                     <div class="ms-auto" style="color:#fbbf24;">★★★★★</div>
                 </div>
                 <p style="font-size:13px;color:#9ca3af;line-height:1.6;">
-                    "Used BadiliCash for my final year project. The documentation is so clear that I had payments working in my e-commerce app within a day. My professor was impressed!"
+                    "Used {{ config('app.name') }} for my final year project. The documentation is so clear that I had payments working in my e-commerce app within a day. My professor was impressed!"
                 </p>
             </div>
             <div class="testimonial-card">
@@ -861,7 +861,7 @@
                     <div class="ms-auto" style="color:#fbbf24;">★★★★★</div>
                 </div>
                 <p style="font-size:13px;color:#9ca3af;line-height:1.6;">
-                    "We switched from Razorpay to BadiliCash because the webhook system is so much more reliable. Zero missed webhooks in 6 months. Highly recommended!"
+                    "We switched from Razorpay to {{ config('app.name') }} because the webhook system is so much more reliable. Zero missed webhooks in 6 months. Highly recommended!"
                 </p>
             </div>
             <div class="testimonial-card">
@@ -884,9 +884,9 @@
         <!-- Final CTA -->
         <div class="text-center">
             <div class="landing-badge mb-2">Get started in minutes</div>
-            <h2 style="font-size:22px;font-weight:700;color:#e5e7eb;">Open your BadiliCash merchant account today</h2>
+            <h2 style="font-size:22px;font-weight:700;color:#e5e7eb;">Open your {{ config('app.name') }} merchant account today</h2>
             <p style="font-size:13px;color:#9ca3af;max-width:480px;margin:6px auto 16px;">
-                No calls. No PDFs. Fill a modern, guided signup and start integrating with BadiliCash's sandbox and live-ready APIs.
+                No calls. No PDFs. Fill a modern, guided signup and start integrating with {{ config('app.name') }}'s sandbox and live-ready APIs.
             </p>
             <a href="{{ route('signup') }}" class="btn btn-primary-hero">
                 Sign up – free developer account

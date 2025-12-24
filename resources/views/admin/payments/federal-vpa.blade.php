@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Federal Direct VPA Payments - Admin - BadliCash')
+@section('title', 'Federal Direct VPA Payments - Admin - ' . config('app.name'))
 @section('page-title', 'Federal Direct VPA Payments')
 
 @section('content')

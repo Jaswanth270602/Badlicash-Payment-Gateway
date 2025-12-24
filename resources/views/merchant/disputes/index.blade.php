@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title','Disputes - BadliCash')
+@section('title', 'Disputes - ' . config('app.name'))
 @section('page-title','Disputes')
 
 @section('content')

@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Payment-Gateway Dashboard - BadliCash')
+@section('title', 'Payment-Gateway Dashboard - ' . config('app.name'))
 @section('page-title', 'Payment-Gateway Dashboard')
 
 @push('styles')

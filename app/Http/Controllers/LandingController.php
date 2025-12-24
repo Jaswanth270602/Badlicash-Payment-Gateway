@@ -7,7 +7,7 @@ use Illuminate\View\View;
 class LandingController extends Controller
 {
     /**
-     * Public marketing landing page for BadliCash.
+     * Public marketing landing page.
      */
     public function index(): View
     {

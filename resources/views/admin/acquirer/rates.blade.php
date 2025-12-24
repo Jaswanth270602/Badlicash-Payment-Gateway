@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Acquirer Rates - Admin - BadliCash')
+@section('title', 'Acquirer Rates - Admin - ' . config('app.name'))
 @section('page-title', 'Acquirer Rates')
 
 @push('styles')

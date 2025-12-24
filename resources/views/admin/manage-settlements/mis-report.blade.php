@@ -1,6 +1,6 @@
 @extends('layouts.app-sidebar')
 
-@section('title', 'Download MIS Report - Admin - BadliCash')
+@section('title', 'Download MIS Report - Admin - ' . config('app.name'))
 @section('page-title', 'Download MIS Report')
 
 @section('content')

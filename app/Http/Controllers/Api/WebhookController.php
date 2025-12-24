@@ -72,7 +72,7 @@ class WebhookController extends Controller
                 'event_type' => 'webhook.test',
                 'timestamp' => now()->toIso8601String(),
                 'data' => [
-                    'message' => 'This is a test webhook from BadliCash',
+                    'message' => 'This is a test webhook from ' . config('app.name'),
                 ],
             ];
 
@@ -81,8 +81,8 @@ class WebhookController extends Controller
             $response = \Illuminate\Support\Facades\Http::timeout(10)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
-                    'X-BadliCash-Signature' => $signature,
-                    'X-BadliCash-Event' => 'webhook.test',
+                    'X-' . str_replace(' ', '-', config('app.name')) . '-Signature' => $signature,
+                    'X-' . str_replace(' ', '-', config('app.name')) . '-Event' => 'webhook.test',
                 ])
                 ->post($merchant->webhook_url, $testPayload);
 
