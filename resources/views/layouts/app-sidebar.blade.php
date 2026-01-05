@@ -879,6 +879,38 @@
                 <span>Base Rates</span>
             </a>
         </div>
+        <!-- Partners Management Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.partners.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-people"></i>
+            <span>Partners Management</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.partners.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.partners.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.partners.index') || request()->routeIs('admin.partners.data') || request()->routeIs('admin.partners.store') || request()->routeIs('admin.partners.update') || request()->routeIs('admin.partners.destroy') || request()->routeIs('admin.partners.show') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list-ul"></i>
+                <span>Partner Details</span>
+            </a>
+            <a href="{{ route('admin.partners.tdr') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.partners.tdr*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Partner TDR Details</span>
+            </a>
+        </div>
+        <!-- Partner Settlements Dropdown - Separate Module -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.partner-settlements.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-handshake"></i>
+            <span>Partner Settlements</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.partner-settlements.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.partner-settlements.summary') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.partner-settlements.summary') || request()->routeIs('admin.partner-settlements.data') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list-ul"></i>
+                <span>Partner Settlement Summary</span>
+            </a>
+            <a href="{{ route('admin.partner-settlements.details') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.partner-settlements.details') || request()->routeIs('admin.partner-settlements.details.data') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Partner Settlement Details</span>
+            </a>
+        </div>
         <!-- Payments Dropdown -->
         <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
             <i class="bi bi-wallet2"></i>
@@ -958,10 +990,110 @@
             <i class="bi bi-cart-check"></i>
             <span>All Orders</span>
         </a>
-        <a href="{{ route('admin.reports.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+        <!-- Reports Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
             <i class="bi bi-file-earmark-bar-graph"></i>
             <span>Reports</span>
-        </a>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.reports.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.index') && !request()->routeIs('admin.reports.gst-invoices.*') && !request()->routeIs('admin.reports.success-rate.*') && !request()->routeIs('admin.reports.profitability.*') && !request()->routeIs('admin.reports.sales.*') && !request()->routeIs('admin.reports.datatable-exports.*') && !request()->routeIs('admin.reports.miscellaneous.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-bar-chart"></i>
+                <span>Reports</span>
+            </a>
+            <!-- GST Invoices Submenu -->
+            <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.gst-invoices.*') ? 'active' : '' }}" onclick="event.stopPropagation(); toggleDropdown(this);" style="padding-left: 50px;">
+                <i class="bi bi-receipt"></i>
+                <span>Gst Invoices</span>
+                <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+            </div>
+            <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.gst-invoices.*') ? 'block' : 'none' }}; padding-left: 50px;">
+                <a href="{{ route('admin.reports.gst-invoices.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.gst-invoices.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Gst Invoices Report</span>
+                </a>
+            </div>
+            <!-- Success Rate Submenu -->
+            <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.success-rate.*') ? 'active' : '' }}" onclick="event.stopPropagation(); toggleDropdown(this);" style="padding-left: 50px;">
+                <i class="bi bi-graph-up"></i>
+                <span>Success Rate</span>
+                <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+            </div>
+            <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.success-rate.*') ? 'block' : 'none' }}; padding-left: 50px;">
+                <a href="{{ route('admin.reports.success-rate.bankcode-wise') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.success-rate.bankcode-wise*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-bank"></i>
+                    <span>Bankcode-wise</span>
+                </a>
+            </div>
+            <!-- Profitability Submenu -->
+            <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.profitability.*') ? 'active' : '' }}" onclick="event.stopPropagation(); toggleDropdown(this);" style="padding-left: 50px;">
+                <i class="bi bi-bar-chart"></i>
+                <span>Profitability</span>
+                <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+            </div>
+            <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.profitability.*') ? 'block' : 'none' }}; padding-left: 50px;">
+                <a href="{{ route('admin.reports.profitability.partner-team-profit') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.profitability.partner-team-profit*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-people"></i>
+                    <span>Partner Team Profit</span>
+                </a>
+            </div>
+            <!-- Sales Submenu -->
+            <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.sales.*') ? 'active' : '' }}" onclick="event.stopPropagation(); toggleDropdown(this);" style="padding-left: 50px;">
+                <i class="bi bi-bar-chart-line"></i>
+                <span>Sales</span>
+                <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+            </div>
+            <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.sales.*') ? 'block' : 'none' }}; padding-left: 50px;">
+                <a href="{{ route('admin.reports.sales.date-and-merchant') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.sales.date-and-merchant*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-square"></i>
+                    <span>Date And Merchant</span>
+                </a>
+                <a href="{{ route('admin.reports.sales.date-and-acquirer') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.sales.date-and-acquirer*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-square"></i>
+                    <span>Date And Acquirer</span>
+                </a>
+                <a href="{{ route('admin.reports.sales.date-and-tid') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.sales.date-and-tid*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-square"></i>
+                    <span>Date And Tid</span>
+                </a>
+                <a href="{{ route('admin.reports.sales.month-and-merchant') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.sales.month-and-merchant*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-square"></i>
+                    <span>Month And Merchant</span>
+                </a>
+                <a href="{{ route('admin.reports.sales.month-and-acquirer') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.sales.month-and-acquirer*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-square"></i>
+                    <span>Month And Acquirer</span>
+                </a>
+                <a href="{{ route('admin.reports.sales.month-and-tid') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.sales.month-and-tid*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-square"></i>
+                    <span>Month And Tid</span>
+                </a>
+            </div>
+            <!-- Datatable Exports Submenu -->
+            <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.datatable-exports.*') ? 'active' : '' }}" onclick="event.stopPropagation(); toggleDropdown(this);" style="padding-left: 50px;">
+                <i class="bi bi-cloud-download"></i>
+                <span>Datatable Exports</span>
+                <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+            </div>
+            <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.datatable-exports.*') ? 'block' : 'none' }}; padding-left: 50px;">
+                <a href="{{ route('admin.reports.datatable-exports.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.datatable-exports.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Datatable Export List</span>
+                </a>
+            </div>
+            <!-- Miscellaneous Submenu -->
+            <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.reports.miscellaneous.*') ? 'active' : '' }}" onclick="event.stopPropagation(); toggleDropdown(this);" style="padding-left: 50px;">
+                <i class="bi bi-clock"></i>
+                <span>Miscellaneous</span>
+                <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+            </div>
+            <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.reports.miscellaneous.*') ? 'block' : 'none' }}; padding-left: 50px;">
+                <a href="{{ route('admin.reports.miscellaneous.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.reports.miscellaneous.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Adhoc Reports</span>
+                </a>
+            </div>
+        </div>
         <a href="{{ route('admin.subscriptions.index') }}" class="sidebar-menu-item {{ request()->routeIs('admin.subscriptions.*') ? 'active' : '' }}">
             <i class="bi bi-receipt"></i>
             <span>Subscriptions</span>
@@ -974,6 +1106,36 @@
             <i class="bi bi-shield-exclamation"></i>
             <span>Risk Management</span>
         </a>
+
+        <!-- Technical Diagnostics Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.s2s-callback-logs.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-tools"></i>
+            <span>Technical Diagnostics</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.s2s-callback-logs.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.s2s-callback-logs.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.s2s-callback-logs.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list"></i>
+                <span>S2S Callback Logs</span>
+            </a>
+        </div>
+
+        <!-- Approvals Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.approvals.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-check-circle"></i>
+            <span>Approvals</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.approvals.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.approvals.merchant-tdr') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.approvals.merchant-tdr*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list"></i>
+                <span>Merchant TDR</span>
+            </a>
+            <a href="{{ route('admin.approvals.pg-refunds') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.approvals.pg-refunds*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-list"></i>
+                <span>Pg Refunds</span>
+            </a>
+        </div>
 
         <!-- Acquirer Details Dropdown -->
         <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.acquirer.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
