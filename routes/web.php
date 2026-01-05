@@ -18,11 +18,6 @@ use App\Http\Controllers\Merchant\WebhooksController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\MerchantsController;
 use App\Http\Controllers\Admin\MerchantAccountsController;
-use App\Http\Controllers\Admin\MerchantRegistrationKeysController;
-use App\Http\Controllers\Admin\MerchantVendorsController;
-use App\Http\Controllers\Admin\PartnersController;
-use App\Http\Controllers\Admin\PartnerTDRController;
-use App\Http\Controllers\Admin\PartnerSettlementsController;
 use App\Http\Controllers\Admin\SettlementSummaryController;
 use App\Http\Controllers\Admin\RefundsController as AdminRefundsController;
 use App\Http\Controllers\Admin\TransactionsController as AdminTransactionsController;
@@ -35,14 +30,6 @@ use App\Http\Controllers\Admin\SettlementDetailsController;
 use App\Http\Controllers\Admin\FundTransferController;
 use App\Http\Controllers\Admin\PendingSettlementController;
 use App\Http\Controllers\Admin\MISReportController;
-use App\Http\Controllers\Admin\GSTInvoicesController;
-use App\Http\Controllers\Admin\BankCodeSuccessRateController;
-use App\Http\Controllers\Admin\PartnerTeamProfitController;
-use App\Http\Controllers\Admin\SalesReportController;
-use App\Http\Controllers\Admin\DatatableExportController;
-use App\Http\Controllers\Admin\AdhocReportController;
-use App\Http\Controllers\Admin\ApprovalController;
-use App\Http\Controllers\Admin\S2SCallbackLogController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\DisputesController;
 use App\Http\Controllers\PaymentCheckoutController;
@@ -266,110 +253,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/merchant-accounts/{id}/duplicate', [MerchantAccountsController::class, 'duplicate'])
             ->name('admin.merchant-accounts.duplicate');
 
-        // Merchant Registration Keys
-        Route::get('/merchant-registration-keys', [MerchantRegistrationKeysController::class, 'index'])
-            ->name('admin.merchant-registration-keys.index');
-        Route::get('/merchant-registration-keys/data', [MerchantRegistrationKeysController::class, 'getData'])
-            ->name('admin.merchant-registration-keys.data');
-        Route::get('/merchant-registration-keys/merchants', [MerchantRegistrationKeysController::class, 'getMerchants'])
-            ->name('admin.merchant-registration-keys.merchants');
-        Route::post('/merchant-registration-keys', [MerchantRegistrationKeysController::class, 'store'])
-            ->name('admin.merchant-registration-keys.store');
-        Route::post('/merchant-registration-keys/{id}', [MerchantRegistrationKeysController::class, 'update'])
-            ->name('admin.merchant-registration-keys.update');
-
-        // Merchant Vendors
-        Route::get('/merchant-vendors', [MerchantVendorsController::class, 'index'])
-            ->name('admin.merchant-vendors.index');
-        Route::get('/merchant-vendors/data', [MerchantVendorsController::class, 'getData'])
-            ->name('admin.merchant-vendors.data');
-        Route::get('/merchant-vendors/merchants', [MerchantVendorsController::class, 'getMerchants'])
-            ->name('admin.merchant-vendors.merchants');
-        Route::post('/merchant-vendors/bulk-status', [MerchantVendorsController::class, 'bulkStatus'])
-            ->name('admin.merchant-vendors.bulk-status');
-        Route::post('/merchant-vendors', [MerchantVendorsController::class, 'store'])
-            ->name('admin.merchant-vendors.store');
-        Route::post('/merchant-vendors/{id}', [MerchantVendorsController::class, 'update'])
-            ->name('admin.merchant-vendors.update');
-        Route::delete('/merchant-vendors/{id}', [MerchantVendorsController::class, 'destroy'])
-            ->name('admin.merchant-vendors.destroy');
-
-        // Partners Management
-        Route::get('/partners', [PartnersController::class, 'index'])
-            ->name('admin.partners.index');
-        Route::get('/partners/data', [PartnersController::class, 'getData'])
-            ->name('admin.partners.data');
-        
-        // Partner TDR Management - Must come before /partners/{id} to avoid route conflicts
-        Route::get('/partners/tdr', [PartnerTDRController::class, 'index'])
-            ->name('admin.partners.tdr');
-        Route::get('/partners/tdr/data', [PartnerTDRController::class, 'getData'])
-            ->name('admin.partners.tdr.data');
-        Route::get('/partners/tdr/partners', [PartnerTDRController::class, 'getPartners'])
-            ->name('admin.partners.tdr.partners');
-        Route::get('/partners/tdr/merchants/search', [PartnerTDRController::class, 'searchMerchants'])
-            ->name('admin.partners.tdr.merchants.search');
-        Route::get('/partners/tdr/categories', [PartnerTDRController::class, 'getCategories'])
-            ->name('admin.partners.tdr.categories');
-        Route::get('/partners/tdr/payment-modes', [PartnerTDRController::class, 'getPaymentModes'])
-            ->name('admin.partners.tdr.payment-modes');
-        Route::get('/partners/tdr/banks', [PartnerTDRController::class, 'getBanks'])
-            ->name('admin.partners.tdr.banks');
-        Route::post('/partners/tdr', [PartnerTDRController::class, 'store'])
-            ->name('admin.partners.tdr.store');
-        Route::post('/partners/tdr/{id}', [PartnerTDRController::class, 'update'])
-            ->name('admin.partners.tdr.update');
-        Route::delete('/partners/tdr/{id}', [PartnerTDRController::class, 'destroy'])
-            ->name('admin.partners.tdr.destroy');
-        Route::post('/partners/tdr/{id}/duplicate', [PartnerTDRController::class, 'duplicate'])
-            ->name('admin.partners.tdr.duplicate');
-        Route::get('/partners/tdr/{id}', [PartnerTDRController::class, 'show'])
-            ->name('admin.partners.tdr.show');
-        
-        // Partners Management - Parameterized routes must come after specific routes
-        Route::get('/partners/{id}', [PartnersController::class, 'show'])
-            ->name('admin.partners.show');
-        Route::post('/partners', [PartnersController::class, 'store'])
-            ->name('admin.partners.store');
-        Route::post('/partners/{id}', [PartnersController::class, 'update'])
-            ->name('admin.partners.update');
-        Route::delete('/partners/{id}', [PartnersController::class, 'destroy'])
-            ->name('admin.partners.destroy');
-
-        // Partner Settlements Management - Separate module
-        Route::get('/partner-settlements/summary', [PartnerSettlementsController::class, 'index'])
-            ->name('admin.partner-settlements.summary');
-        Route::get('/partner-settlements/details', [PartnerSettlementsController::class, 'details'])
-            ->name('admin.partner-settlements.details');
-        Route::get('/partner-settlements/data', [PartnerSettlementsController::class, 'getData'])
-            ->name('admin.partner-settlements.data');
-        Route::get('/partner-settlements/details/data', [PartnerSettlementsController::class, 'getDetails'])
-            ->name('admin.partner-settlements.details.data');
-        Route::get('/partner-settlements/organizations', [PartnerSettlementsController::class, 'getOrganizations'])
-            ->name('admin.partner-settlements.organizations');
-        Route::get('/partner-settlements/partners', [PartnerSettlementsController::class, 'getPartners'])
-            ->name('admin.partner-settlements.partners');
-        Route::get('/partner-settlements/merchant-categories', [PartnerSettlementsController::class, 'getMerchantCategories'])
-            ->name('admin.partner-settlements.merchant-categories');
-        Route::get('/partner-settlements/payment-modes', [PartnerSettlementsController::class, 'getPaymentModes'])
-            ->name('admin.partner-settlements.payment-modes');
-        Route::post('/partner-settlements/mark-settled', [PartnerSettlementsController::class, 'markAsSettled'])
-            ->name('admin.partner-settlements.mark-settled');
-        Route::post('/partner-settlements/transfer-imps', [PartnerSettlementsController::class, 'transferByIMPS'])
-            ->name('admin.partner-settlements.transfer-imps');
-        Route::post('/partner-settlements/transfer-neft', [PartnerSettlementsController::class, 'transferByNEFT'])
-            ->name('admin.partner-settlements.transfer-neft');
-        Route::post('/partner-settlements/check-status', [PartnerSettlementsController::class, 'checkStatus'])
-            ->name('admin.partner-settlements.check-status');
-        Route::post('/partner-settlements', [PartnerSettlementsController::class, 'store'])
-            ->name('admin.partner-settlements.store');
-        Route::post('/partner-settlements/{id}', [PartnerSettlementsController::class, 'update'])
-            ->name('admin.partner-settlements.update');
-        Route::delete('/partner-settlements/{id}', [PartnerSettlementsController::class, 'destroy'])
-            ->name('admin.partner-settlements.destroy');
-        Route::get('/partner-settlements/{id}', [PartnerSettlementsController::class, 'show'])
-            ->name('admin.partner-settlements.show');
-
         // Payments Module
         Route::get('/payments/transactions', [AdminTransactionsController::class, 'index'])
             ->name('admin.payments.transactions');
@@ -465,142 +348,27 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/export', [ReportsController::class, 'exportAdmin'])
             ->name('admin.reports.export');
 
-        // GST Invoices Report
-        Route::get('/reports/gst-invoices', [GSTInvoicesController::class, 'index'])
-            ->name('admin.reports.gst-invoices.index');
-        Route::get('/reports/gst-invoices/data', [GSTInvoicesController::class, 'getData'])
-            ->name('admin.reports.gst-invoices.data');
-        Route::get('/reports/gst-invoices/states', [GSTInvoicesController::class, 'getGSTStates'])
-            ->name('admin.reports.gst-invoices.states');
-        Route::get('/reports/gst-invoices/merchants', [GSTInvoicesController::class, 'getMerchants'])
-            ->name('admin.reports.gst-invoices.merchants');
-        Route::post('/reports/gst-invoices', [GSTInvoicesController::class, 'store'])
-            ->name('admin.reports.gst-invoices.store');
-        Route::post('/reports/gst-invoices/{id}', [GSTInvoicesController::class, 'update'])
-            ->name('admin.reports.gst-invoices.update');
-        Route::delete('/reports/gst-invoices/{id}', [GSTInvoicesController::class, 'destroy'])
-            ->name('admin.reports.gst-invoices.destroy');
-        Route::get('/reports/gst-invoices/{id}', [GSTInvoicesController::class, 'show'])
-            ->name('admin.reports.gst-invoices.show');
-
-        // Bank Code Success Rate Report
-        Route::get('/reports/success-rate/bankcode-wise', [BankCodeSuccessRateController::class, 'index'])
-            ->name('admin.reports.success-rate.bankcode-wise');
-        Route::get('/reports/success-rate/bankcode-wise/data', [BankCodeSuccessRateController::class, 'getData'])
-            ->name('admin.reports.success-rate.bankcode-wise.data');
-        Route::get('/reports/success-rate/bankcode-wise/bank-codes', [BankCodeSuccessRateController::class, 'getBankCodes'])
-            ->name('admin.reports.success-rate.bankcode-wise.bank-codes');
-        Route::get('/reports/success-rate/bankcode-wise/merchants', [BankCodeSuccessRateController::class, 'getMerchants'])
-            ->name('admin.reports.success-rate.bankcode-wise.merchants');
-
-        // Partner Team Profit Report
-        Route::get('/reports/profitability/partner-team-profit', [PartnerTeamProfitController::class, 'index'])
-            ->name('admin.reports.profitability.partner-team-profit');
-        Route::get('/reports/profitability/partner-team-profit/data', [PartnerTeamProfitController::class, 'getData'])
-            ->name('admin.reports.profitability.partner-team-profit.data');
-        Route::get('/reports/profitability/partner-team-profit/partners', [PartnerTeamProfitController::class, 'getPartners'])
-            ->name('admin.reports.profitability.partner-team-profit.partners');
-        Route::get('/reports/profitability/partner-team-profit/merchants', [PartnerTeamProfitController::class, 'getMerchants'])
-            ->name('admin.reports.profitability.partner-team-profit.merchants');
-        Route::get('/reports/profitability/partner-team-profit/payment-modes', [PartnerTeamProfitController::class, 'getPaymentModes'])
-            ->name('admin.reports.profitability.partner-team-profit.payment-modes');
-        Route::get('/reports/profitability/partner-team-profit/payment-channels', [PartnerTeamProfitController::class, 'getPaymentChannels'])
-            ->name('admin.reports.profitability.partner-team-profit.payment-channels');
-
-        // Sales Reports
-        Route::get('/reports/sales/date-and-merchant', [SalesReportController::class, 'dateAndMerchant'])
-            ->name('admin.reports.sales.date-and-merchant');
-        Route::get('/reports/sales/date-and-merchant/data', [SalesReportController::class, 'getDateAndMerchantData'])
-            ->name('admin.reports.sales.date-and-merchant.data');
-        Route::get('/reports/sales/date-and-acquirer', [SalesReportController::class, 'dateAndAcquirer'])
-            ->name('admin.reports.sales.date-and-acquirer');
-        Route::get('/reports/sales/date-and-acquirer/data', [SalesReportController::class, 'getDateAndAcquirerData'])
-            ->name('admin.reports.sales.date-and-acquirer.data');
-        Route::get('/reports/sales/date-and-tid', [SalesReportController::class, 'dateAndTid'])
-            ->name('admin.reports.sales.date-and-tid');
-        Route::get('/reports/sales/date-and-tid/data', [SalesReportController::class, 'getDateAndTidData'])
-            ->name('admin.reports.sales.date-and-tid.data');
-        Route::get('/reports/sales/month-and-merchant', [SalesReportController::class, 'monthAndMerchant'])
-            ->name('admin.reports.sales.month-and-merchant');
-        Route::get('/reports/sales/month-and-merchant/data', [SalesReportController::class, 'getMonthAndMerchantData'])
-            ->name('admin.reports.sales.month-and-merchant.data');
-        Route::get('/reports/sales/month-and-acquirer', [SalesReportController::class, 'monthAndAcquirer'])
-            ->name('admin.reports.sales.month-and-acquirer');
-        Route::get('/reports/sales/month-and-acquirer/data', [SalesReportController::class, 'getMonthAndAcquirerData'])
-            ->name('admin.reports.sales.month-and-acquirer.data');
-        Route::get('/reports/sales/month-and-tid', [SalesReportController::class, 'monthAndTid'])
-            ->name('admin.reports.sales.month-and-tid');
-        Route::get('/reports/sales/month-and-tid/data', [SalesReportController::class, 'getMonthAndTidData'])
-            ->name('admin.reports.sales.month-and-tid.data');
-
-        // Datatable Exports
-        Route::get('/reports/datatable-exports', [DatatableExportController::class, 'index'])
-            ->name('admin.reports.datatable-exports.index');
-        Route::get('/reports/datatable-exports/data', [DatatableExportController::class, 'getData'])
-            ->name('admin.reports.datatable-exports.data');
-        Route::get('/reports/datatable-exports/queue-statuses', [DatatableExportController::class, 'getQueueStatuses'])
-            ->name('admin.reports.datatable-exports.queue-statuses');
-        Route::get('/reports/datatable-exports/file-types', [DatatableExportController::class, 'getFileTypes'])
-            ->name('admin.reports.datatable-exports.file-types');
-
-        // Miscellaneous (Adhoc Reports)
-        Route::get('/reports/miscellaneous', [AdhocReportController::class, 'index'])
-            ->name('admin.reports.miscellaneous.index');
-        Route::get('/reports/miscellaneous/data', [AdhocReportController::class, 'getData'])
-            ->name('admin.reports.miscellaneous.data');
-        Route::post('/reports/miscellaneous', [AdhocReportController::class, 'store'])
-            ->name('admin.reports.miscellaneous.store');
-        Route::get('/reports/miscellaneous/{id}', [AdhocReportController::class, 'show'])
-            ->name('admin.reports.miscellaneous.show');
-        Route::post('/reports/miscellaneous/{id}', [AdhocReportController::class, 'update'])
-            ->name('admin.reports.miscellaneous.update');
-        Route::delete('/reports/miscellaneous/{id}', [AdhocReportController::class, 'destroy'])
-            ->name('admin.reports.miscellaneous.destroy');
-        Route::post('/reports/miscellaneous/{id}/duplicate', [AdhocReportController::class, 'duplicate'])
-            ->name('admin.reports.miscellaneous.duplicate');
-
-        // Approvals
-        Route::prefix('approvals')->name('admin.approvals.')->group(function () {
-            // Merchant TDR Approvals
-            Route::get('/merchant-tdr', [ApprovalController::class, 'merchantTdr'])
-                ->name('merchant-tdr');
-            Route::get('/merchant-tdr/data', [ApprovalController::class, 'getMerchantTdrData'])
-                ->name('merchant-tdr.data');
-            Route::post('/merchant-tdr/{id}/approve', [ApprovalController::class, 'approveMerchantTdr'])
-                ->name('merchant-tdr.approve');
-            Route::post('/merchant-tdr/{id}/reject', [ApprovalController::class, 'rejectMerchantTdr'])
-                ->name('merchant-tdr.reject');
-            Route::post('/merchant-tdr/bulk-action', [ApprovalController::class, 'bulkMerchantTdrAction'])
-                ->name('merchant-tdr.bulk-action');
-
-            // PG Refund Approvals
-            Route::get('/pg-refunds', [ApprovalController::class, 'pgRefunds'])
-                ->name('pg-refunds');
-            Route::get('/pg-refunds/data', [ApprovalController::class, 'getPgRefundData'])
-                ->name('pg-refunds.data');
-            Route::post('/pg-refunds/{id}/approve', [ApprovalController::class, 'approvePgRefund'])
-                ->name('pg-refunds.approve');
-            Route::post('/pg-refunds/{id}/reject', [ApprovalController::class, 'rejectPgRefund'])
-                ->name('pg-refunds.reject');
-            Route::post('/pg-refunds/bulk-action', [ApprovalController::class, 'bulkPgRefundAction'])
-                ->name('pg-refunds.bulk-action');
-        });
-
-        // S2S Callback Logs
-        Route::prefix('s2s-callback-logs')->name('admin.s2s-callback-logs.')->group(function () {
-            Route::get('/', [S2SCallbackLogController::class, 'index'])
-                ->name('index');
-            Route::get('/data', [S2SCallbackLogController::class, 'getData'])
-                ->name('data');
-        });
-
-        // Disputes
-        Route::get('/disputes', [DisputesController::class, 'indexAdmin'])
+        // Disputes (Razorpay-style)
+        Route::get('/disputes', [\App\Http\Controllers\Admin\DisputesController::class, 'index'])
             ->name('admin.disputes.index');
-        Route::get('/disputes/data', [DisputesController::class, 'getDataAdmin'])
+        Route::get('/disputes/data', [\App\Http\Controllers\Admin\DisputesController::class, 'getData'])
             ->name('admin.disputes.data');
-        Route::post('/disputes/{id}/status', [DisputesController::class, 'updateStatus'])
+        Route::get('/disputes/summary', [\App\Http\Controllers\Admin\DisputesController::class, 'getSummary'])
+            ->name('admin.disputes.summary');
+        Route::get('/disputes/{id}', [\App\Http\Controllers\Admin\DisputesController::class, 'showView'])
+            ->name('admin.disputes.show');
+        Route::get('/disputes/{id}/data', [\App\Http\Controllers\Admin\DisputesController::class, 'show'])
+            ->name('admin.disputes.show.data');
+        Route::post('/disputes/{id}/evidence', [\App\Http\Controllers\Admin\DisputesController::class, 'uploadEvidence'])
+            ->name('admin.disputes.upload-evidence');
+        Route::delete('/disputes/{id}/evidence/{evidenceId}', [\App\Http\Controllers\Admin\DisputesController::class, 'deleteEvidence'])
+            ->name('admin.disputes.delete-evidence');
+        Route::post('/disputes/{id}/submit', [\App\Http\Controllers\Admin\DisputesController::class, 'submit'])
+            ->name('admin.disputes.submit');
+        Route::patch('/disputes/{id}/status', [\App\Http\Controllers\Admin\DisputesController::class, 'updateStatus'])
             ->name('admin.disputes.update-status');
+        Route::get('/disputes/export/csv', [\App\Http\Controllers\Admin\DisputesController::class, 'export'])
+            ->name('admin.disputes.export');
 
         // Subscriptions (Admin)
         Route::get('/subscriptions', [SubscriptionsController::class, 'index'])

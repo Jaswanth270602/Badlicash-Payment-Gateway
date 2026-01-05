@@ -9,13 +9,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         :root {
-            --primary-violet: #6366f1;
-            --primary-violet-dark: #4f46e5;
-            --primary-violet-light: #818cf8;
+            --primary-violet: #764ba2;
+            --primary-violet-dark: #667eea;
+            --primary-violet-light: #8b7fb8;
             --gradient-start: #6366f1;
             --gradient-end: #8b5cf6;
-            --sidebar-bg: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
-            --sidebar-hover: rgba(99, 102, 241, 0.2);
+            --sidebar-bg: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            --sidebar-hover: rgba(118, 75, 162, 0.3);
             --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --card-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
@@ -226,7 +226,7 @@
         }
 
         .sidebar-submenu-item:hover {
-            background: rgba(99, 102, 241, 0.15);
+            background: rgba(118, 75, 162, 0.25);
         }
 
         .sidebar-menu-dropdown.active .bi-chevron-down {
@@ -385,7 +385,7 @@
         .btn-primary:hover {
             background: linear-gradient(135deg, var(--primary-violet-dark) 0%, var(--primary-violet) 100%);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
         }
 
         /* Loader */
@@ -1232,14 +1232,48 @@
                     </li>
                 </ul>
             </div>
-            @else
-            <!-- Admin Logout -->
-            <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-box-arrow-right"></i> Logout
+            @elseif(auth()->user()->isAdmin())
+            <!-- Admin Profile Dropdown -->
+            <div class="dropdown profile-dropdown">
+                <button class="btn btn-link text-decoration-none d-flex align-items-center gap-2 profile-dropdown-toggle" type="button" id="adminProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="color: #1f2937; padding: 8px 12px;">
+                    <div class="profile-avatar">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    </div>
+                    <span class="profile-name">{{ auth()->user()->name }}</span>
+                    <i class="bi bi-chevron-down" style="font-size: 12px;"></i>
                 </button>
-            </form>
+                <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu" aria-labelledby="adminProfileDropdown">
+                    <li class="profile-dropdown-header">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="profile-avatar-large">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ auth()->user()->name }}</div>
+                                <div class="small text-muted">{{ auth()->user()->email }}</div>
+                            </div>
+                        </div>
+                        <div class="merchant-id-badge">
+                            <i class="bi bi-shield-check"></i> Admin User
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item profile-menu-item" href="{{ route('admin.dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ route('logout') }}" method="POST" class="d-inline w-100">
+                            @csrf
+                            <button type="submit" class="dropdown-item profile-menu-item logout-item">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
             @endif
         </div>
     </div>

@@ -11,8 +11,9 @@
                 <label class="form-label">Status</label>
                 <select class="form-select" ng-model="mdc.filters.status" ng-change="mdc.load()">
                     <option value="">All</option>
-                    <option value="open">Open</option>
-                    <option value="needs_evidence">Needs Evidence</option>
+                    <option value="action_required">Action Required</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="insufficient_evidence">Insufficient Evidence</option>
                     <option value="won">Won</option>
                     <option value="lost">Lost</option>
                     <option value="closed">Closed</option>
@@ -42,11 +43,20 @@
                 <tbody>
                     <tr ng-repeat="d in mdc.items.data">
                         <td>@{{ ($index + 1) }}</td>
-                        <td>@{{ d.transaction_id || '-' }}</td>
-                        <td>@{{ d.reason }}</td>
-                        <td>INR @{{ d.amount || 0 | number:2 }}</td>
-                        <td><span class="badge bg-secondary text-uppercase">@{{ d.status }}</span></td>
-                        <td>@{{ d.created_at }}</td>
+                        <td>@{{ d.transaction_id || d.order_id || '-' }}</td>
+                        <td>@{{ d.reason_formatted || d.reason }}</td>
+                        <td><strong>@{{ d.currency || 'INR' }} @{{ d.amount || 0 | number:2 }}</strong></td>
+                        <td>
+                            <span class="badge" ng-class="{
+                                'bg-info': d.status === 'action_required',
+                                'bg-primary': d.status === 'under_review',
+                                'bg-warning text-dark': d.status === 'insufficient_evidence',
+                                'bg-success': d.status === 'won',
+                                'bg-danger': d.status === 'lost',
+                                'bg-secondary': d.status === 'closed'
+                            }" ng-bind="d.status_formatted || d.status"></span>
+                        </td>
+                        <td>@{{ d.created_at | date:'MMM d, y HH:mm' }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -62,27 +72,60 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Transaction ID (optional)</label>
-                        <input type="number" class="form-control" ng-model="mdc.form.transaction_id">
+                        <label class="form-label">Transaction ID <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control" ng-model="mdc.form.transaction_id" placeholder="Enter transaction ID (e.g., TXN_123 or 123)">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Reason</label>
-                        <input type="text" class="form-control" ng-model="mdc.form.reason">
+                        <label class="form-label">Order ID <span class="text-muted">(optional)</span></label>
+                        <input type="text" class="form-control" ng-model="mdc.form.order_id" placeholder="e.g., order_123456">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Amount</label>
-                        <input type="number" step="0.01" class="form-control" ng-model="mdc.form.amount">
+                        <label class="form-label">Reason <span class="text-danger">*</span></label>
+                        <select class="form-select" ng-model="mdc.form.reason" required>
+                            <option value="">Select Reason</option>
+                            <option value="fraud">Fraud</option>
+                            <option value="product_not_received">Product Not Received</option>
+                            <option value="product_not_as_described">Product Not As Described</option>
+                            <option value="duplicate_charge">Duplicate Charge</option>
+                            <option value="refund_not_processed">Refund Not Processed</option>
+                            <option value="subscription_canceled">Subscription Canceled</option>
+                            <option value="no_authorization">No Authorization</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" ng-model="mdc.form.amount" placeholder="0.00" required min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" ng-model="mdc.form.currency">
+                                <option value="INR" selected>INR</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-control" ng-model="mdc.form.notes"></textarea>
+                        <label class="form-label">Card Network <span class="text-muted">(optional)</span></label>
+                        <select class="form-select" ng-model="mdc.form.card_network">
+                            <option value="">Select Card Network</option>
+                            <option value="VISA">VISA</option>
+                            <option value="MASTERCARD">MASTERCARD</option>
+                            <option value="RUPAY">RUPAY</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Internal Notes <span class="text-muted">(optional)</span></label>
+                        <textarea class="form-control" ng-model="mdc.form.internal_notes" rows="3" placeholder="Add any additional notes about this dispute..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" ng-click="mdc.create()" ng-disabled="mdc.creating">
+                    <button type="button" class="btn btn-primary" ng-click="mdc.create()" ng-disabled="mdc.creating || !mdc.form.reason || !mdc.form.amount || mdc.form.amount <= 0">
                         <span ng-if="mdc.creating" class="spinner-border spinner-border-sm me-2"></span>
-                        Create
+                        <span ng-if="!mdc.creating">Create</span>
+                        <span ng-if="mdc.creating">Creating...</span>
                     </button>
                 </div>
             </div>

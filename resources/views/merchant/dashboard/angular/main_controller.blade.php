@@ -21,11 +21,26 @@
                     $http.get('/merchant/transactions/data', {
                         params: { page: 1, per_page: 5 }
                     }).then(function(response) {
-                        vm.recentTransactions = response.data.data || [];
+                        if (response.data && response.data.success && response.data.data) {
+                            // Map the API response fields to the template fields
+                            vm.recentTransactions = response.data.data.map(function(txn) {
+                                return {
+                                    txn_id: txn.transaction_id || txn.txn_id || '-',
+                                    amount: parseFloat(txn.amount_paid_by_customer || txn.amount || 0),
+                                    currency: txn.currency_code || txn.currency || 'INR',
+                                    payment_method: txn.payment_mode || txn.payment_method || '-',
+                                    status: txn.payment_status || txn.status || '-',
+                                    created_at: txn.transaction_datetime || txn.created_at || txn.transaction_initiation_time || new Date().toISOString()
+                                };
+                            });
+                        } else {
+                            vm.recentTransactions = [];
+                        }
                         vm.loading = false;
                     }, function(error) {
                         vm.loading = false;
                         console.error('Error loading recent transactions:', error);
+                        vm.recentTransactions = [];
                     });
                 };
 

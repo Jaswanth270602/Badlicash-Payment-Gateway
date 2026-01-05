@@ -3,11 +3,11 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="acquirerAccountModalLabel">@{{ aac.modalTitle }}</h5>
+                <h5 class="modal-title" id="acquirerAccountModalLabel" ng-bind="aac.modalTitle || 'Acquirer Account'">Acquirer Account</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="acquirerAccountForm" ng-submit="aac.submitAccount()">
+                <form id="acquirerAccountForm" ng-submit="aac.submitAccount($event)">
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Team:</label>
@@ -172,9 +172,10 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary" ng-disabled="aac.submitting">
                             <span ng-if="aac.submitting">
-                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span ng-bind="aac.isEditMode ? 'Saving...' : 'Creating...'"></span>
                             </span>
-                            <span ng-if="!aac.submitting">Save</span>
+                            <span ng-if="!aac.submitting" ng-bind="aac.isEditMode ? 'Save' : 'Create'"></span>
                         </button>
                     </div>
                 </form>

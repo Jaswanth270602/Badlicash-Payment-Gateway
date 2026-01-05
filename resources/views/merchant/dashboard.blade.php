@@ -3,6 +3,140 @@
 @section('title', 'Dashboard - ' . config('app.name'))
 @section('page-title', 'Dashboard')
 
+@push('styles')
+<style>
+    .stat-card.card-transactions,
+    .stat-card.card-volume,
+    .stat-card.card-refunds,
+    .stat-card.card-success-rate {
+        position: relative;
+        overflow: hidden;
+        border: none !important;
+    }
+    
+    .stat-card.card-transactions::before,
+    .stat-card.card-volume::before,
+    .stat-card.card-refunds::before,
+    .stat-card.card-success-rate::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .stat-card.card-transactions {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .stat-card.card-transactions h6,
+    .stat-card.card-transactions h3,
+    .stat-card.card-transactions small,
+    .stat-card.card-transactions i {
+        color: white;
+    }
+    
+    .stat-card.card-volume {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .stat-card.card-volume h6,
+    .stat-card.card-volume h3,
+    .stat-card.card-volume small,
+    .stat-card.card-volume i {
+        color: white;
+    }
+    
+    .stat-card.card-refunds {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+    
+    .stat-card.card-refunds h6,
+    .stat-card.card-refunds h3,
+    .stat-card.card-refunds small,
+    .stat-card.card-refunds i {
+        color: white;
+    }
+    
+    .stat-card.card-success-rate {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+        color: white;
+    }
+    
+    .stat-card.card-success-rate h6,
+    .stat-card.card-success-rate h3,
+    .stat-card.card-success-rate small,
+    .stat-card.card-success-rate i {
+        color: white;
+    }
+    
+    .stat-card.card-transactions:hover,
+    .stat-card.card-volume:hover,
+    .stat-card.card-refunds:hover,
+    .stat-card.card-success-rate:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    
+    /* Quick Actions Cards */
+    .quick-action-card {
+        border: none !important;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        text-decoration: none !important;
+    }
+    
+    .quick-action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .quick-action-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        text-decoration: none !important;
+    }
+    
+    .quick-action-card.card-payment-link {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .quick-action-card.card-transactions {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .quick-action-card.card-integration {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+    
+    .quick-action-card.card-api-keys {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+        color: white;
+    }
+    
+    .quick-action-card h6,
+    .quick-action-card small,
+    .quick-action-card i {
+        color: white;
+    }
+</style>
+@endpush
+
 @section('content')
 <div ng-app="badlicashApp" ng-controller="DashboardController as dc">
     <div class="row mb-4">
@@ -15,45 +149,45 @@
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">
-            <div class="stat-card">
+            <div class="stat-card card-transactions">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="text-muted mb-0">Total Transactions</h6>
-                    <i class="bi bi-credit-card-2-front text-primary"></i>
+                    <h6 class="mb-0">Total Transactions</h6>
+                    <i class="bi bi-credit-card-2-front"></i>
                 </div>
                 <h3 class="fw-bold mb-1">{{ number_format($stats['total_transactions']) }}</h3>
-                <small class="text-success">
+                <small>
                     <i class="bi bi-check-circle"></i> {{ number_format($stats['successful_transactions']) }} successful
                 </small>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="stat-card">
+            <div class="stat-card card-volume">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="text-muted mb-0">Total Volume</h6>
-                    <i class="bi bi-currency-dollar text-primary"></i>
+                    <h6 class="mb-0">Total Volume</h6>
+                    <i class="bi bi-currency-dollar"></i>
                 </div>
                 <h3 class="fw-bold mb-1">{{ $merchant->default_currency }} {{ number_format($stats['total_volume'], 2) }}</h3>
-                <small class="text-muted">Lifetime</small>
+                <small>Lifetime</small>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="stat-card">
+            <div class="stat-card card-refunds">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="text-muted mb-0">Pending Refunds</h6>
-                    <i class="bi bi-arrow-counterclockwise text-warning"></i>
+                    <h6 class="mb-0">Pending Refunds</h6>
+                    <i class="bi bi-arrow-counterclockwise"></i>
                 </div>
                 <h3 class="fw-bold mb-1">{{ number_format($stats['pending_refunds']) }}</h3>
-                <small class="text-muted">Awaiting processing</small>
+                <small>Awaiting processing</small>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="stat-card">
+            <div class="stat-card card-success-rate">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="text-muted mb-0">Success Rate</h6>
-                    <i class="bi bi-graph-up text-success"></i>
+                    <h6 class="mb-0">Success Rate</h6>
+                    <i class="bi bi-graph-up"></i>
                 </div>
                 <h3 class="fw-bold mb-1">
                     @if($stats['total_transactions'] > 0)
@@ -62,7 +196,7 @@
                         0%
                     @endif
                 </h3>
-                <small class="text-muted">Payment success</small>
+                <small>Payment success</small>
             </div>
         </div>
     </div>
@@ -74,38 +208,38 @@
                 <h5 class="mb-3"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <a href="{{ route('merchant.payment_links.index') }}" class="card border text-decoration-none text-dark">
+                        <a href="{{ route('merchant.payment_links.index') }}" class="card quick-action-card card-payment-link">
                             <div class="card-body">
-                                <i class="bi bi-link-45deg text-primary fs-4"></i>
+                                <i class="bi bi-link-45deg fs-4"></i>
                                 <h6 class="mt-2 mb-1">Create Payment Link</h6>
-                                <small class="text-muted">Generate a payment link for customers</small>
+                                <small>Generate a payment link for customers</small>
                             </div>
                         </a>
                     </div>
                     <div class="col-md-6">
-                        <a href="{{ route('merchant.transactions.index') }}" class="card border text-decoration-none text-dark">
+                        <a href="{{ route('merchant.transactions.index') }}" class="card quick-action-card card-transactions">
                             <div class="card-body">
-                                <i class="bi bi-credit-card-2-front text-primary fs-4"></i>
+                                <i class="bi bi-credit-card-2-front fs-4"></i>
                                 <h6 class="mt-2 mb-1">View Transactions</h6>
-                                <small class="text-muted">Browse all payment transactions</small>
+                                <small>Browse all payment transactions</small>
                             </div>
                         </a>
                     </div>
                     <div class="col-md-6">
-                        <a href="{{ route('merchant.integration.index') }}" class="card border text-decoration-none text-dark">
+                        <a href="{{ route('merchant.integration.index') }}" class="card quick-action-card card-integration">
                             <div class="card-body">
-                                <i class="bi bi-code-square text-primary fs-4"></i>
+                                <i class="bi bi-code-square fs-4"></i>
                                 <h6 class="mt-2 mb-1">Integration Guide</h6>
-                                <small class="text-muted">Get integration code for your app</small>
+                                <small>Get integration code for your app</small>
                             </div>
                         </a>
                     </div>
                     <div class="col-md-6">
-                        <a href="{{ route('merchant.api_keys.index') }}" class="card border text-decoration-none text-dark">
+                        <a href="{{ route('merchant.api_keys.index') }}" class="card quick-action-card card-api-keys">
                             <div class="card-body">
-                                <i class="bi bi-key text-primary fs-4"></i>
+                                <i class="bi bi-key fs-4"></i>
                                 <h6 class="mt-2 mb-1">API Keys</h6>
-                                <small class="text-muted">Manage your API credentials</small>
+                                <small>Manage your API credentials</small>
                             </div>
                         </a>
                     </div>

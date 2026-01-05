@@ -70,7 +70,7 @@ class AcquirerAccountsController extends Controller
 
             $accounts = $query->paginate($perPage);
 
-            $data = $accounts->items()->map(function($account) {
+            $data = collect($accounts->items())->map(function($account) {
                 return [
                     'id' => $account->id,
                     'account_id' => $account->account_id,

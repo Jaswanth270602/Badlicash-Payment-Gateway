@@ -12,6 +12,27 @@
             app.controller('AdminAcquirerAccountsController', ['$http', '$scope', '$timeout', '$compile', function($http, $scope, $timeout, $compile) {
                 var vm = this;
                 var csrf = document.querySelector('meta[name="csrf-token"]').content;
+                
+                // Full list of acquirer names
+                var defaultAcquirerNames = [
+                    'A2Pay', 'ABCMoney', 'AbhiJack', 'AblePay', 'Accosis', 'AccureUpi', 'AfrimoneyDrc', 
+                    'Aggrepay', 'AggrePayDirect', 'AirPay', 'AirtelRwanda', 'AirtelRwandaV2', 'AirtelUpi', 
+                    'AKGPay', 'ALLAHABAD', 'AmazonPay', 'ApexPayUni', 'ATOM', 'AtomV2', 'AXIS', 'AxisPG', 
+                    'AXISUPI', 'AxisUPICollect', 'AxisUPIV2', 'BankOfBaroda', 'BANKONE', 'BBPSAxis', 'BenePay', 
+                    'BennuPay', 'BHARTIPAY', 'Billdesk', 'BilldeskCards', 'BillDeskUPI', 'BillDeskV2', 'BringePays', 
+                    'CamsPay', 'CASHe', 'CashFree', 'CashFreev2', 'CCAvenue', 'CCAvenuev2', 'ChalPayUpi', 
+                    'CorequestUpi', 'CryptoPool', 'CyberSource', 'Dizibizpay', 'Easebuzz', 'EazyPay', 'EazyPaymentz', 
+                    'EBS', 'Edviron', 'Enkash', 'EquitasBharatQR', 'EquitasUPI', 'Ewire', 'Federal', 'FederalUpi', 
+                    'Feipay', 'FinoUpi', 'FirstData', 'Flakpay', 'FreeCharge', 'FreechargeUPI', 'FreeChargev2', 
+                    'FSSDC', 'Gizmope', 'GrezPay', 'HDFC', 'HDFCBANK', 'HDFCBQR', 'HdfcNonSeamless', 'HDFCUPI', 
+                    'Heksa', 'Hitachi', 'Hyalpha', 'ICICI', 'ICICIBharatQR', 'ICICIUPI', 'IDFC', 'IDFCUpi', 
+                    'IndianBank', 'Indiaonlinepay', 'Indiconnect', 'Indusspay', 'IndusUpi', 'InnopayUPI', 'IPaisa', 
+                    'IppoPayUPI', 'ISERVEU', 'ISGPAY', 'ISGPAYV2', 'iSmartPay', 'JCPays', 'Jeetoabhi', 'JigsPayP2P', 
+                    'JioPay', 'JodetxUpi', 'JssMoney', 'JusPayUpi', 'Kopay', 'KotakAllPay', 'KotakCard', 'KotakDCEMI', 
+                    'KotakUpi', 'LazyPay', 'LazyPayEmi', 'LetsPe', 'LevinPay', 'LightspeedPay', 'Paytm', 'Switch', 
+                    'SBI', 'Razorpay', 'PayU'
+                ];
+                
                 vm.accounts = [];
                 vm.pagination = { current_page: 1, per_page: 5, total: 0, last_page: 1 };
                 vm.filters = {
@@ -98,17 +119,37 @@
                     merchant_ids: []
                 };
 
-                vm.acquirerNames = ['A2Pay', 'Paytm', 'Switch', 'HDFC', 'ICICI', 'Axis', 'SBI', 'Razorpay', 'PayU'];
+                // Initialize with all acquirer names
+                vm.acquirerNames = defaultAcquirerNames.slice(); // Use copy of default list
                 vm.sectors = ['B2B', 'Education', 'E-commerce', 'Travel & Hospitality', 'Insurance', 'Utilities', 'Telecom', 'Healthcare', 'Others'];
                 vm.merchants = [];
+                
+                // Button text getter
+                vm.getSaveButtonText = function() {
+                    return vm.submitting ? 'Saving...' : 'Save';
+                };
 
                 // Load acquirer names
                 vm.loadAcquirerNames = function() {
                     $http.get('/admin/acquirer-accounts/acquirer-names', {
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
-                        if (response.data.success) {
+                        if (response.data && response.data.success && response.data.data && response.data.data.length > 0) {
                             vm.acquirerNames = response.data.data;
+                        }
+                        // If API fails or returns empty, keep default names (use existing list)
+                        if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                            vm.acquirerNames = defaultAcquirerNames.slice();
+                        }
+                        // Force Angular update (no need to manually trigger, $timeout handles it)
+                        $timeout(function() {
+                            // Angular digest cycle will be triggered automatically
+                        });
+                    }).catch(function(error) {
+                        console.error('Error loading acquirer names:', error);
+                        // Keep default names on error - use full list
+                        if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                            vm.acquirerNames = defaultAcquirerNames.slice();
                         }
                     });
                 };
@@ -118,9 +159,14 @@
                     $http.get('/admin/acquirer-accounts/merchants', {
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
-                        if (response.data.success) {
-                            vm.merchants = response.data.data;
+                        if (response.data && response.data.success) {
+                            vm.merchants = response.data.data || [];
+                        } else {
+                            vm.merchants = [];
                         }
+                    }).catch(function(error) {
+                        console.error('Error loading merchants:', error);
+                        vm.merchants = [];
                     });
                 };
 
@@ -241,6 +287,8 @@
 
                 // Open new modal
                 vm.openNewModal = function() {
+                    // CRITICAL: Reset submitting to false FIRST - before anything else
+                    vm.submitting = false;
                     vm.modalTitle = 'Create new entry';
                     vm.isEditMode = false;
                     vm.accountForm = {
@@ -272,16 +320,31 @@
                         nodal_account: '',
                         merchant_ids: []
                     };
+                    
+                    // Always ensure acquirer names are set to defaults BEFORE opening modal
+                    vm.acquirerNames = defaultAcquirerNames.slice();
+                    console.log('Opening modal - Acquirer names available:', vm.acquirerNames.length);
+                    
+                    // Reload merchants
+                    vm.loadMerchants();
+                    
                     var modalElement = document.getElementById('acquirerAccountModal');
                     var modal = new bootstrap.Modal(modalElement);
                     
                     // Ensure Angular compiles the modal when shown
                     modalElement.addEventListener('shown.bs.modal', function() {
+                        // Force ensure acquirer names are set BEFORE timeout
+                        if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                            vm.acquirerNames = defaultAcquirerNames.slice();
+                        }
                         $timeout(function() {
-                            // Manually trigger Angular digest cycle
-                            if (!$scope.$$phase && !$scope.$root.$$phase) {
-                                $scope.$apply();
+                            // Force reset submitting flag immediately
+                            vm.submitting = false;
+                            // Force ensure acquirer names are set (defensive)
+                            if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                                vm.acquirerNames = defaultAcquirerNames.slice();
                             }
+                            console.log('Modal shown - Acquirer names:', vm.acquirerNames.length, 'Submitting:', vm.submitting, 'isEditMode:', vm.isEditMode);
                         }, 100);
                     }, { once: true });
                     
@@ -293,6 +356,8 @@
                     if (account) vm.selectedAccount = account;
                     if (!vm.selectedAccount) return;
 
+                    // Reset submitting flag first
+                    vm.submitting = false;
                     vm.modalTitle = 'Edit Acquirer Account';
                     vm.isEditMode = true;
                     vm.accountForm = {
@@ -325,24 +390,54 @@
                         merchant_ids: vm.selectedAccount.merchant_ids || []
                     };
 
+                    // Ensure acquirer names are loaded
+                    if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                        vm.acquirerNames = defaultAcquirerNames.slice();
+                    }
+                    
+                    // Reload merchants (don't reload acquirer names to avoid overwriting with empty array from API)
+                    vm.loadMerchants();
+                    // Only load acquirer names if array is empty
+                    if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                        vm.loadAcquirerNames();
+                    }
+
+                    // Force Angular to update (no need to manually trigger, $timeout handles it)
+                    $timeout(function() {
+                        // Angular digest cycle will be triggered automatically
+                    }, 0);
+
                     var modalElement = document.getElementById('acquirerAccountModal');
                     var modal = new bootstrap.Modal(modalElement);
                     
                     // Ensure Angular compiles the modal when shown
                     modalElement.addEventListener('shown.bs.modal', function() {
+                        // Reset submitting flag explicitly to false (boolean)
                         $timeout(function() {
-                            // Manually trigger Angular digest cycle
-                            if (!$scope.$$phase && !$scope.$root.$$phase) {
-                                $scope.$apply();
+                            vm.submitting = false;
+                            // Ensure data is loaded
+                            if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                                vm.acquirerNames = defaultAcquirerNames.slice();
                             }
-                        }, 100);
+                            console.log('Edit modal shown - Submitting state:', vm.submitting, 'Type:', typeof vm.submitting);
+                        }, 0);
                     }, { once: true });
                     
                     modal.show();
                 };
 
                 // Submit account
-                vm.submitAccount = function() {
+                vm.submitAccount = function($event) {
+                    if ($event) {
+                        $event.preventDefault();
+                        $event.stopPropagation();
+                    }
+                    
+                    // Prevent double submission
+                    if (vm.submitting) {
+                        return false;
+                    }
+                    
                     vm.submitting = true;
 
                     var url = vm.isEditMode 
@@ -351,9 +446,38 @@
                     var method = vm.isEditMode ? 'PUT' : 'POST';
 
                     var data = angular.copy(vm.accountForm);
-                    data.refund_allowed = data.refund_allowed === true || data.refund_allowed === 'true';
-                    data.settlements_to_be_created = data.settlements_to_be_created === true || data.settlements_to_be_created === 'true';
-                    data.mask_pii = data.mask_pii === true || data.mask_pii === 'true';
+                    
+                    // Convert string booleans to actual booleans
+                    if (data.refund_allowed === 'true' || data.refund_allowed === true) {
+                        data.refund_allowed = true;
+                    } else if (data.refund_allowed === 'false' || data.refund_allowed === false) {
+                        data.refund_allowed = false;
+                    } else {
+                        data.refund_allowed = false;
+                    }
+                    
+                    if (data.settlements_to_be_created === 'true' || data.settlements_to_be_created === true) {
+                        data.settlements_to_be_created = true;
+                    } else if (data.settlements_to_be_created === 'false' || data.settlements_to_be_created === false) {
+                        data.settlements_to_be_created = false;
+                    } else {
+                        data.settlements_to_be_created = false;
+                    }
+                    
+                    if (data.mask_pii === 'true' || data.mask_pii === true) {
+                        data.mask_pii = true;
+                    } else if (data.mask_pii === 'false' || data.mask_pii === false) {
+                        data.mask_pii = false;
+                    } else {
+                        data.mask_pii = false;
+                    }
+                    
+                    // Remove copy_rates_from if empty (not needed for save)
+                    if (!data.copy_rates_from || data.copy_rates_from === '') {
+                        delete data.copy_rates_from;
+                    }
+                    
+                    console.log('Submitting account data:', data);
 
                     $http({
                         method: method,
@@ -361,40 +485,56 @@
                         data: data,
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
-                        if (response.data.success) {
+                        console.log('Account save response:', response.data);
+                        vm.submitting = false;
+                        if (response.data && response.data.success) {
                             if (typeof showToast === 'function') {
-                                showToast(response.data.message, 'success');
+                                showToast(response.data.message || 'Account saved successfully', 'success');
                             } else {
-                                alert(response.data.message);
+                                alert(response.data.message || 'Account saved successfully');
                             }
-                            var modal = bootstrap.Modal.getInstance(document.getElementById('acquirerAccountModal'));
-                            modal.hide();
+                            var modalElement = document.getElementById('acquirerAccountModal');
+                            var modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) {
+                                modal.hide();
+                            }
                             vm.loadAccounts();
                         } else {
-                            var errorMsg = 'Error: ' + (response.data.message || 'Failed to save account');
+                            vm.submitting = false;
+                            var errorMsg = 'Error: ' + (response.data && response.data.message || 'Failed to save account');
                             if (typeof showToast === 'function') {
                                 showToast(errorMsg, 'error');
                             } else {
                                 alert(errorMsg);
                             }
                         }
-                        vm.submitting = false;
                     }).catch(function(error) {
+                        vm.submitting = false;
                         console.error('Error saving account:', error);
-                        var errorMsg = error.data && error.data.message 
-                            ? error.data.message 
-                            : 'Failed to save account';
-                        if (error.data && error.data.errors) {
-                            var errors = Object.values(error.data.errors).flat().join(', ');
-                            errorMsg += ': ' + errors;
+                        var errorMsg = 'Failed to save account';
+                        
+                        if (error.data) {
+                            if (error.data.message) {
+                                errorMsg = error.data.message;
+                            }
+                            if (error.data.errors) {
+                                var errors = Object.values(error.data.errors).flat().join(', ');
+                                errorMsg += ': ' + errors;
+                            }
+                        } else if (error.status === 422) {
+                            errorMsg = 'Validation failed. Please check your input.';
+                        } else if (error.status === 500) {
+                            errorMsg = 'Server error. Please try again.';
                         }
+                        
                         if (typeof showToast === 'function') {
                             showToast(errorMsg, 'error');
                         } else {
                             alert(errorMsg);
                         }
-                        vm.submitting = false;
                     });
+                    
+                    return false;
                 };
 
                 // Delete account
@@ -432,7 +572,8 @@
                 };
 
                 // Initialize
-                vm.loadAcquirerNames();
+                // Don't call loadAcquirerNames on init - use defaults to avoid overwriting with empty array from API
+                // vm.loadAcquirerNames(); // Commented out to preserve default names
                 vm.loadMerchants();
                 vm.loadAccounts();
             }]);

@@ -13,7 +13,15 @@
                 var vm = this;
                 vm.filters = { status: '' };
                 vm.items = { data: [] };
-                vm.form = { transaction_id: '', reason: '', amount: '', notes: '' };
+                vm.form = { 
+                    transaction_id: '', 
+                    order_id: '',
+                    reason: '', 
+                    amount: '', 
+                    currency: 'INR',
+                    card_network: '',
+                    internal_notes: '' 
+                };
                 vm.creating = false;
 
                 vm.load = function(page) {
@@ -25,17 +33,54 @@
                 };
 
                 vm.create = function() {
+                    // Validation
+                    if (!vm.form.reason) {
+                        alert('Please select a reason');
+                        return;
+                    }
+                    if (!vm.form.amount || vm.form.amount <= 0) {
+                        alert('Please enter a valid amount');
+                        return;
+                    }
+
                     vm.creating = true;
-                    $http.post('/merchant/disputes', vm.form).then(function() {
+                    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+                    $http.post('/merchant/disputes', vm.form, {
+                        headers: { 'X-CSRF-TOKEN': csrf }
+                    }).then(function(response) {
                         vm.creating = false;
-                        vm.form = { transaction_id: '', reason: '', amount: '', notes: '' };
-                        var modalEl = document.getElementById('newDisputeModal');
-                        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                        modal.hide();
-                        vm.load();
-                    }, function() {
+                        if (response.data.success) {
+                            // Reset form
+                            vm.form = { 
+                                transaction_id: '', 
+                                order_id: '',
+                                reason: '', 
+                                amount: '', 
+                                currency: 'INR',
+                                card_network: '',
+                                internal_notes: '' 
+                            };
+                            var modalEl = document.getElementById('newDisputeModal');
+                            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            modal.hide();
+                            vm.load();
+                            alert('Dispute created successfully!');
+                        } else {
+                            alert('Failed to create dispute: ' + (response.data.message || 'Unknown error'));
+                        }
+                    }, function(error) {
                         vm.creating = false;
-                        alert('Failed to create dispute');
+                        var errorMsg = 'Failed to create dispute';
+                        if (error.data && error.data.message) {
+                            errorMsg = error.data.message;
+                        } else if (error.data && error.data.errors) {
+                            var errors = [];
+                            for (var field in error.data.errors) {
+                                errors.push(error.data.errors[field].join(', '));
+                            }
+                            errorMsg = errors.join('\n');
+                        }
+                        alert(errorMsg);
                     });
                 };
 
