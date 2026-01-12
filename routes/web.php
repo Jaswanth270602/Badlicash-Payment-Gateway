@@ -70,6 +70,8 @@ Route::get('/', [LandingController::class, 'index'])->name('landing');
 // Public payment checkout
 Route::get('/pay/{token}', [PaymentCheckoutController::class, 'show'])->name('payment.checkout');
 Route::post('/pay/{token}', [PaymentCheckoutController::class, 'process'])->name('payment.process');
+Route::post('/pay/{token}/verify-razorpay', [PaymentCheckoutController::class, 'verifyRazorpay'])->name('payment.verify.razorpay');
+Route::get('/pay/{token}/callback', [PaymentCheckoutController::class, 'handleEmbeddedCallback'])->name('payment.embedded.callback');
 Route::get('/payment/success/{token}', [PaymentCheckoutController::class, 'success'])->name('payment.success');
 Route::get('/payment/failed/{token}', [PaymentCheckoutController::class, 'failed'])->name('payment.failed');
 

@@ -22,8 +22,11 @@
                             <label class="form-label">Acquirer: <span class="text-danger">*</span></label>
                             <select class="form-select" ng-model="aac.accountForm.acquirer_name" required>
                                 <option value="">Select Acquirer</option>
-                                <option ng-repeat="name in aac.acquirerNames" value="@{{ name }}">@{{ name }}</option>
+                                <option ng-repeat="name in aac.acquirerNames track by $index" ng-value="name" ng-bind="name"></option>
                             </select>
+                            <small class="text-muted" ng-if="aac.acquirerNames && aac.acquirerNames.length > 0">
+                                <span ng-bind="aac.acquirerNames.length"></span> acquirers available
+                            </small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Account Id: <span class="text-danger">*</span></label>
@@ -156,13 +159,20 @@
                             </select>
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">Is Active:</label>
+                            <select class="form-select" ng-model="aac.accountForm.is_active">
+                                <option ng-value="true">Yes</option>
+                                <option ng-value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">Email Ids:</label>
                             <input type="text" class="form-control" ng-model="aac.accountForm.email_ids" placeholder="Comma-separated emails">
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">Merchants:</label>
                             <select class="form-select" ng-model="aac.accountForm.merchant_ids" multiple size="5">
-                                <option ng-repeat="merchant in aac.merchants" value="@{{ merchant.id }}">@{{ merchant.name }} (@{{ merchant.email }})</option>
+                                <option ng-repeat="merchant in aac.merchants track by merchant.id" ng-value="merchant.id" ng-bind="merchant.name + ' (' + merchant.email + ')'"></option>
                             </select>
                             <small class="text-muted">Hold Ctrl/Cmd to select multiple merchants</small>
                         </div>

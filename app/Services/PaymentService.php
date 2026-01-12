@@ -6,6 +6,8 @@ use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\Merchant;
 use App\Services\BankProviders\BankProviderInterface;
+use App\Services\Acquirers\AcquirerInterface;
+use App\Services\Acquirers\AcquirerResolver;
 use App\Events\PaymentCreated;
 use App\Events\PaymentSuccess;
 use App\Events\PaymentFailed;
@@ -67,8 +69,12 @@ class PaymentService
     public function processPayment(Order $order, array $paymentData): Transaction
     {
         return DB::transaction(function () use ($order, $paymentData) {
-            // Get the appropriate bank provider based on merchant mode
-            $bankProvider = $this->getBankProvider($order->merchant);
+            // Try to get acquirer adapter first (new system)
+            $acquirerAdapter = $this->getAcquirerAdapter($order->merchant);
+            
+            // Fallback to bank provider if no acquirer adapter (legacy system)
+            $useAcquirer = $acquirerAdapter !== null;
+            $provider = $useAcquirer ? $acquirerAdapter : $this->getBankProvider($order->merchant);
             
             // Check for idempotency
             if (isset($paymentData['idempotency_key'])) {
@@ -127,17 +133,53 @@ class PaymentService
             $sanitizedPaymentData = $this->sanitizePaymentDetails($paymentData);
             
             try {
-                // Pass full card data to bank provider (they handle PCI compliance)
-                // But sanitize immediately after for our records
-                $result = $bankProvider->processPayment([
-                    'merchant_id' => $order->merchant_id,
-                    'order_id' => $order->order_id,
-                    'transaction_id' => $transaction->txn_id,
-                    'amount' => $transaction->amount,
-                    'currency' => $transaction->currency,
-                    'payment_method' => $paymentData['payment_method'],
-                    'payment_details' => $paymentData, // Bank provider needs full data
-                ]);
+                // Process payment through acquirer adapter or bank provider
+                if ($useAcquirer) {
+                    // First create order with acquirer adapter
+                    $orderResult = $acquirerAdapter->createOrder([
+                        'order_id' => $order->order_id,
+                        'amount' => $transaction->amount,
+                        'currency' => $transaction->currency,
+                        'customer_details' => $order->customer_details,
+                        'metadata' => $order->metadata,
+                    ]);
+
+                    if (!$orderResult['success']) {
+                        throw new \Exception($orderResult['message'] ?? 'Order creation failed');
+                    }
+
+                    // Store gateway order ID
+                    $gatewayOrderId = $orderResult['gateway_order_id'];
+                    $transaction->update(['gateway_order_id' => $gatewayOrderId]);
+
+                    // Initiate payment
+                    $result = $acquirerAdapter->initiatePayment([
+                        'order_id' => $gatewayOrderId,
+                        'gateway_order_id' => $gatewayOrderId,
+                        'payment_method' => $paymentData['payment_method'],
+                        'card_number' => $paymentData['card_number'] ?? null,
+                        'cvv' => $paymentData['cvv'] ?? null,
+                        'expiry_month' => $paymentData['expiry_month'] ?? null,
+                        'expiry_year' => $paymentData['expiry_year'] ?? null,
+                        'card_holder' => $paymentData['card_holder'] ?? null,
+                    ]);
+
+                    // Normalize result format
+                    if ($result['success']) {
+                        $result['gateway_txn_id'] = $result['payment_id'] ?? $result['gateway_payment_id'] ?? null;
+                    }
+                } else {
+                    // Legacy bank provider flow
+                    $result = $provider->processPayment([
+                        'merchant_id' => $order->merchant_id,
+                        'order_id' => $order->order_id,
+                        'transaction_id' => $transaction->txn_id,
+                        'amount' => $transaction->amount,
+                        'currency' => $transaction->currency,
+                        'payment_method' => $paymentData['payment_method'],
+                        'payment_details' => $paymentData, // Bank provider needs full data
+                    ]);
+                }
 
                 if ($result['success']) {
                     // PCI-DSS: Sanitize gateway response before storing
@@ -219,7 +261,34 @@ class PaymentService
     // SanitizePaymentDetails method moved to SanitizesCardData trait
 
     /**
-     * Get the appropriate bank provider for the merchant.
+     * Get acquirer adapter for the merchant (if available).
+     * 
+     * @param Merchant $merchant
+     * @return AcquirerInterface|null
+     */
+    protected function getAcquirerAdapter(Merchant $merchant): ?AcquirerInterface
+    {
+        try {
+            $acquirerAccount = $merchant->getActiveAcquirerAccount();
+
+            if (!$acquirerAccount) {
+                return null;
+            }
+
+            $resolver = app(AcquirerResolver::class);
+            return $resolver->resolve($acquirerAccount);
+
+        } catch (\Exception $e) {
+            Log::warning('Failed to resolve acquirer adapter', [
+                'merchant_id' => $merchant->id,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Get the appropriate bank provider for the merchant (legacy fallback).
      */
     protected function getBankProvider(Merchant $merchant): BankProviderInterface
     {

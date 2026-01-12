@@ -18,10 +18,9 @@
     @auth
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ route('dashboard') }}">
-            <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="{{ config('app.name') }}" style="height: 42px; width: auto;">
-
-                <!-- <strong>BadiliCash</strong> -->
+            <a class="navbar-brand" href="{{ route('dashboard') }}" style="display: flex; align-items: center; gap: 10px;">
+            <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height: 42px; width: auto;">
+            <strong style="color: #fff;">{{ config('app.name') }}</strong>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

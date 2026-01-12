@@ -85,13 +85,21 @@ class AcquirerAccountsController extends Controller
                     'refund_allowed' => $account->refund_allowed,
                     'settlements_to_be_created' => $account->settlements_to_be_created,
                     'mask_pii' => $account->mask_pii,
+                    'is_active' => $account->is_active,
                     'email_ids' => $account->email_ids,
+                    'secret_key' => $account->secret_key, // Include for editing
+                    'salt' => $account->salt, // Include for editing
+                    'additional_key_1' => $account->additional_key_1, // Include for editing
+                    'additional_key_2' => $account->additional_key_2, // Include for editing
+                    'additional_key_3' => $account->additional_key_3, // Include for editing
+                    'additional_key_data' => $account->additional_key_data, // Include for editing
                     'live_request_url' => $account->live_request_url,
                     'live_query_url' => $account->live_query_url,
                     'live_refund_url' => $account->live_refund_url,
                     'test_request_url' => $account->test_request_url,
                     'test_query_url' => $account->test_query_url,
                     'test_refund_url' => $account->test_refund_url,
+                    'nodal_account' => $account->nodal_account,
                     'merchants' => $account->merchants->pluck('name')->implode(', '),
                     'merchant_ids' => $account->merchants->pluck('id')->toArray(),
                     'created_at' => $account->created_at->format('Y-m-d H:i:s'),
@@ -134,6 +142,7 @@ class AcquirerAccountsController extends Controller
             'refund_allowed' => 'boolean',
             'settlements_to_be_created' => 'boolean',
             'mask_pii' => 'boolean',
+            'is_active' => 'boolean',
             'email_ids' => 'nullable|string',
             'secret_key' => 'nullable|string',
             'salt' => 'nullable|string',
@@ -162,6 +171,14 @@ class AcquirerAccountsController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // Log what's being saved for debugging
+            \Log::debug('Creating acquirer account', [
+                'account_id' => $request->account_id,
+                'acquirer_name' => $request->acquirer_name,
+                'has_additional_key_1' => !empty($request->additional_key_1),
+                'has_secret_key' => !empty($request->secret_key),
+            ]);
 
             $account = AcquirerAccount::create($validator->validated());
 
@@ -206,6 +223,7 @@ class AcquirerAccountsController extends Controller
             'refund_allowed' => 'boolean',
             'settlements_to_be_created' => 'boolean',
             'mask_pii' => 'boolean',
+            'is_active' => 'boolean',
             'email_ids' => 'nullable|string',
             'secret_key' => 'nullable|string',
             'salt' => 'nullable|string',
@@ -234,6 +252,13 @@ class AcquirerAccountsController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // Log what's being updated for debugging
+            \Log::debug('Updating acquirer account', [
+                'account_id' => $account->id,
+                'has_additional_key_1' => !empty($request->additional_key_1),
+                'has_secret_key' => !empty($request->secret_key),
+            ]);
 
             $account->update($validator->validated());
 
@@ -284,10 +309,28 @@ class AcquirerAccountsController extends Controller
      */
     public function getAcquirerNames(): JsonResponse
     {
-        $names = AcquirerAccount::distinct()->pluck('acquirer_name')->filter()->values();
-        // Add common acquirer names
-        $commonNames = collect(['A2Pay', 'Paytm', 'Switch', 'HDFC', 'ICICI', 'Axis', 'SBI', 'Razorpay', 'PayU']);
-        $allNames = $commonNames->merge($names)->unique()->sort()->values();
+        // Get distinct acquirer names from database
+        $dbNames = AcquirerAccount::distinct()
+            ->whereNotNull('acquirer_name')
+            ->pluck('acquirer_name')
+            ->filter()
+            ->values();
+        
+        // Add common acquirer names (including Razorpay)
+        $commonNames = collect([
+            'A2Pay', 'Paytm', 'Switch', 'HDFC', 'ICICI', 'Axis', 'SBI', 
+            'Razorpay', 'razorpay', 'razorpay_test', 'razorpay_live', 'PayU'
+        ]);
+        
+        // Merge and ensure Razorpay variants are included
+        $allNames = $commonNames->merge($dbNames)
+            ->map(function($name) {
+                return trim($name);
+            })
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
         
         return response()->json([
             'success' => true,

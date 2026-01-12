@@ -132,9 +132,10 @@
                         <!-- <i class="bi bi-wallet2 text-primary"></i> -->
                     </div>
                     <div class="ms-2">
-                        <!-- <div class="fw-semibold text-white">BadliCash</div> -->
-                        <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="BadiliCash" style="height: 42px; width: auto;">
-
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                            <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height: 42px; width: auto;">
+                            <div class="fw-semibold text-white">{{ config('app.name') }}</div>
+                        </div>
                         <div class="small-muted">Merchant onboarding</div>
                     </div>
                 </div>

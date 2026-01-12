@@ -723,6 +723,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Razorpay Checkout.js -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
         const paymentLink = @json($paymentLink);
         let selectedMethod = 'card';
@@ -825,14 +827,14 @@
                 let value = e.target.value.replace(/\s/g, '');
                 let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
                 e.target.value = formattedValue;
-                validateForm();
+                validateForm(true); // Silent validation on input
             });
         }
 
-        // Real-time validation
+        // Real-time validation (debounced)
         document.querySelectorAll('input, select').forEach(input => {
-            input.addEventListener('input', validateForm);
-            input.addEventListener('change', validateForm);
+            input.addEventListener('input', () => validateForm(true)); // Silent validation on input
+            input.addEventListener('change', () => validateForm(false)); // Log on change
         });
 
         // Update pay button text and validate amount in real-time (for partial payments)
@@ -841,10 +843,13 @@
         const amountErrorDiv = document.getElementById('amountError');
         
         if (customAmountInput && amountErrorDiv) {
+            const remainingBalanceValue = {{ $paymentLink->getRemainingBalance() }};
+            const totalAmountValue = {{ $paymentLink->amount }};
+            
             customAmountInput.addEventListener('input', () => {
                 const customAmount = parseFloat(customAmountInput.value) || 0;
-                const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
-                const totalAmount = parseFloat({{ $paymentLink->amount }});
+                const remainingBalance = parseFloat(remainingBalanceValue);
+                const totalAmount = parseFloat(totalAmountValue);
                 
                 // Clear previous error styling
                 customAmountInput.classList.remove('is-invalid', 'is-valid');
@@ -907,8 +912,8 @@
                     // Update pay button text immediately with custom amount
                     if (payButton && payButtonText) {
                         // Check if form is valid (customer details and payment method)
-                        const formValid = validateForm();
-                        if (formValid) {
+                        validateForm(true); // Silent validation
+                        if (!payButton.disabled) {
                             payButton.disabled = false;
                             // Force update to custom amount (don't let validateForm override it)
                             payButtonText.textContent = `Pay ${paymentLink.currency} ${customAmount.toFixed(2)}`;
@@ -922,10 +927,10 @@
                     customAmountInput.classList.remove('is-invalid', 'is-valid');
                     amountErrorDiv.style.display = 'none';
                     if (payButton) {
-                        const formValid = validateForm();
-                        if (formValid) {
+                        validateForm(true); // Silent validation
+                        if (!payButton.disabled) {
                             payButton.disabled = false;
-                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalanceValue.toFixed(2)}`;
                         } else {
                             payButton.disabled = true;
                             payButtonText.textContent = 'Complete payment details';
@@ -936,74 +941,139 @@
         }
         @endif
 
-        function validateForm() {
-            const name = document.getElementById('customerName').value.trim();
-            const email = document.getElementById('customerEmail').value.trim();
-            const phone = document.getElementById('customerPhone').value.trim();
-            
-            if (!name || !email || !phone || phone.length !== 10) {
-                payButton.disabled = true;
-                payButtonText.textContent = 'Enter customer details';
-                return false;
+        // Debounce validation to prevent excessive calls
+        let validationTimeout = null;
+        
+        // Store payment link values at page load to avoid Blade syntax issues in callbacks
+        const paymentLinkAmount = {{ $paymentLink->amount }};
+        const paymentLinkCurrency = '{{ $paymentLink->currency }}';
+        @if($paymentLink->allow_partial_payment)
+        const paymentLinkRemainingBalance = {{ $paymentLink->getRemainingBalance() }};
+        @endif
+        
+        function validateForm(silent = false) {
+            // Clear any pending validation
+            if (validationTimeout) {
+                clearTimeout(validationTimeout);
             }
-
-            let methodValid = false;
             
-            if (selectedMethod === 'card') {
-                const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
-                const cardHolder = document.getElementById('cardHolder').value.trim();
-                const month = document.getElementById('expiryMonth').value.trim();
-                const year = document.getElementById('expiryYear').value.trim();
-                const cvv = document.getElementById('cvv').value.trim();
+            // Debounce validation - only run after 200ms of no changes
+            validationTimeout = setTimeout(() => {
+                const name = document.getElementById('customerName')?.value.trim() || '';
+                const email = document.getElementById('customerEmail')?.value.trim() || '';
+                const phone = document.getElementById('customerPhone')?.value.trim() || '';
                 
-                methodValid = cardNumber.length >= 15 && cardHolder && 
-                             month.length === 2 && year.length === 4 && cvv.length === 3;
-            } else if (selectedMethod === 'upi') {
-                const upiId = document.getElementById('upiId').value.trim();
-                const upiApp = document.getElementById('upiApp').value;
-                methodValid = upiId || upiApp;
-            } else if (selectedMethod === 'netbanking') {
-                methodValid = document.getElementById('bankCode').value;
-            } else if (selectedMethod === 'wallet') {
-                methodValid = document.getElementById('walletProvider').value;
-            }
-
-            if (methodValid) {
-                payButton.disabled = false;
-                @if($paymentLink->allow_partial_payment)
-                    // Check if custom amount is entered
-                    const customAmountInput = document.getElementById('customAmount');
-                    if (customAmountInput && customAmountInput.value && customAmountInput.value.trim() !== '') {
-                        const customAmount = parseFloat(customAmountInput.value) || 0;
-                        const totalAmount = parseFloat({{ $paymentLink->amount }});
-                        const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
-                        
-                        // Only update if amount is valid
-                        if (customAmount >= 0.01 && customAmount <= totalAmount && customAmount <= remainingBalance) {
-                            payButtonText.textContent = `Pay ${paymentLink.currency} ${customAmount.toFixed(2)}`;
-                        } else {
-                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
-                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                if (!silent) {
+                    console.log('Validating form:', { 
+                        hasName: !!name, 
+                        hasEmail: !!email, 
+                        phoneLength: phone.length,
+                        selectedMethod 
+                    });
+                }
+                
+                // Always validate customer details first - ALL fields are required
+                // CRITICAL: Validate ALL customer details - phone is REQUIRED
+                const nameTrimmed = (name || '').trim();
+                const emailTrimmed = (email || '').trim();
+                const phoneTrimmed = (phone || '').trim();
+                
+                if (!nameTrimmed || !emailTrimmed || !phoneTrimmed || phoneTrimmed.length !== 10) {
+                    // Build list of missing fields
+                    let missingFields = [];
+                    if (!nameTrimmed) missingFields.push('Name');
+                    if (!emailTrimmed) missingFields.push('Email');
+                    if (!phoneTrimmed || phoneTrimmed.length !== 10) missingFields.push('Phone (10 digits)');
+                    
+                    if (payButton) {
+                        payButton.disabled = true;
+                        if (payButtonText) {
+                            payButtonText.textContent = `Enter ${missingFields.join(', ')}`;
                         }
-                    } else {
-                        const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
-                        payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
                     }
-                @else
-                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
-                @endif
-            } else {
-                payButton.disabled = true;
-                payButtonText.textContent = 'Complete payment details';
-            }
-            
-            return methodValid;
+                    if (!silent) {
+                        console.log('Validation failed: Customer details incomplete', {
+                            name: nameTrimmed.length,
+                            email: emailTrimmed.length,
+                            phone: phoneTrimmed.length,
+                            missingFields: missingFields
+                        });
+                    }
+                    return;
+                }
+
+                let methodValid = false;
+                
+                if (selectedMethod === 'card') {
+                    // For card payments, backend will decide if Razorpay Checkout.js should be used
+                    // If Razorpay is configured, we don't need card details here
+                    // Button is enabled if customer details are filled (already validated above)
+                    methodValid = true;
+                    if (!silent) {
+                        console.log('✅ Card payment selected - button enabled (backend/Razorpay will handle card validation)');
+                    }
+                } else if (selectedMethod === 'upi') {
+                    const upiId = document.getElementById('upiId')?.value.trim();
+                    const upiApp = document.getElementById('upiApp')?.value;
+                    methodValid = !!(upiId || upiApp);
+                } else if (selectedMethod === 'netbanking') {
+                    methodValid = !!document.getElementById('bankCode')?.value;
+                } else if (selectedMethod === 'wallet') {
+                    methodValid = !!document.getElementById('walletProvider')?.value;
+                }
+
+                if (methodValid && payButton && payButtonText) {
+                    payButton.disabled = false;
+                    @if($paymentLink->allow_partial_payment)
+                        // Check if custom amount is entered
+                        const customAmountInput = document.getElementById('customAmount');
+                        if (customAmountInput && customAmountInput.value && customAmountInput.value.trim() !== '') {
+                            const customAmount = parseFloat(customAmountInput.value) || 0;
+                            
+                            // Only update if amount is valid
+                            if (customAmount >= 0.01 && customAmount <= paymentLinkAmount && customAmount <= paymentLinkRemainingBalance) {
+                                payButtonText.textContent = `Pay ${paymentLinkCurrency} ${customAmount.toFixed(2)}`;
+                            } else {
+                                payButtonText.textContent = `Pay ${paymentLinkCurrency} ${paymentLinkRemainingBalance.toFixed(2)}`;
+                            }
+                        } else {
+                            payButtonText.textContent = `Pay ${paymentLinkCurrency} ${paymentLinkRemainingBalance.toFixed(2)}`;
+                        }
+                    @else
+                        payButtonText.textContent = `Pay ${paymentLinkCurrency} ${paymentLinkAmount.toFixed(2)}`;
+                    @endif
+                } else if (payButton && payButtonText) {
+                    payButton.disabled = true;
+                    payButtonText.textContent = 'Complete payment details';
+                }
+            }, 200); // Debounce by 200ms
         }
 
         // Process payment
-        payButton.addEventListener('click', async () => {
-            if (payButton.disabled) return;
+        payButton.addEventListener('click', async (event) => {
+            // CRITICAL: Prevent default form submission and event bubbling
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
             
+            if (payButton.disabled) {
+                console.log('Pay button is disabled, ignoring click');
+                return false;
+            }
+            
+            // Prevent duplicate clicks
+            if (payButton.dataset.processing === 'true') {
+                console.log('Payment already processing, ignoring duplicate click');
+                return false;
+            }
+            
+            // Prevent if Razorpay modal is already opening
+            if (payButton.dataset.razorpayOpening === 'true') {
+                console.log('Razorpay modal already opening, ignoring click');
+                return false;
+            }
+            
+            payButton.dataset.processing = 'true';
             successAlert.style.display = 'none';
             errorAlert.style.display = 'none';
             
@@ -1020,14 +1090,14 @@
                 payment_details: {}
             };
 
+            // For card payments, don't send card details if Razorpay Checkout.js will be used
+            // The backend will determine if Razorpay should be used, and Razorpay will handle card input
             if (selectedMethod === 'card') {
-                paymentData.payment_details = {
-                    card_number: document.getElementById('cardNumber').value.replace(/\s/g, ''),
-                    card_holder: document.getElementById('cardHolder').value.trim(),
-                    expiry_month: document.getElementById('expiryMonth').value.trim(),
-                    expiry_year: document.getElementById('expiryYear').value.trim(),
-                    cvv: document.getElementById('cvv').value.trim(),
-                };
+                // Don't send payment_details for card payments - backend/Razorpay will handle card input
+                // Razorpay Checkout.js will collect card details securely on the frontend
+                // Backend validation will allow empty payment_details for Razorpay Checkout.js
+                // If not Razorpay, backend will return error and we'll handle it
+                delete paymentData.payment_details; // Remove it entirely - backend will validate accordingly
             } else if (selectedMethod === 'upi') {
                 paymentData.payment_details = {
                     upi_id: document.getElementById('upiId').value.trim() || null,
@@ -1092,39 +1162,381 @@
                 });
 
                 const result = await response.json();
+                
+                console.log('Payment response:', result);
+                console.log('result.success:', result.success);
+                console.log('result.use_razorpay_checkout:', result.use_razorpay_checkout);
+                console.log('result.razorpay_key:', result.razorpay_key);
+                console.log('result.razorpay_order_id:', result.razorpay_order_id);
 
                 if (result.success) {
-                    let successMsg = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
-                    
-                    // Show partial payment info if available
-                    @if($paymentLink->allow_partial_payment)
-                    if (result.payment_link) {
-                        const paymentLinkInfo = result.payment_link;
-                        if (paymentLinkInfo.is_partially_paid) {
-                            successMsg += `\n\nAmount Paid: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.amount_paid).toFixed(2)}`;
-                            successMsg += `\nRemaining Balance: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.remaining_balance).toFixed(2)}`;
-                            if (!paymentLinkInfo.is_fully_paid) {
-                                successMsg += `\n\nYou can use this same link to pay the remaining balance later.`;
+                    console.log('Payment response success is true, checking Razorpay Checkout...');
+                    // Check if we need to use Razorpay Checkout.js
+                    if (result.use_razorpay_checkout && result.razorpay_key && result.razorpay_order_id) {
+                        console.log('✅ All conditions met - Opening Razorpay Checkout.js', {
+                            key: result.razorpay_key,
+                            order_id: result.razorpay_order_id,
+                            amount: result.amount
+                        });
+                        
+                        // Hide the custom card form since Razorpay Checkout.js will handle it
+                        const cardForm = document.getElementById('cardForm');
+                        if (cardForm) {
+                            cardForm.style.display = 'none';
+                            console.log('Card form hidden - Razorpay Checkout.js will handle payment');
+                        }
+                        
+                        // Reset processing flag so modal can open
+                        payButton.dataset.processing = '';
+                        payButton.disabled = false;
+                        payButtonText.textContent = 'Processing Payment...';
+                        console.log('Pay button ready for Razorpay Checkout');
+                        
+                        // Open Razorpay Checkout.js
+                        // Store order_id and link_token for handler
+                        const orderIdForVerification = result.order_id;
+                        const linkTokenForVerification = paymentLink.link_token;
+                        
+                        const options = {
+                            key: result.razorpay_key,
+                            amount: result.amount, // Amount in paise
+                            currency: result.currency,
+                            name: '{{ $paymentLink->merchant->name }}',
+                            description: '{{ $paymentLink->title }}',
+                            order_id: result.razorpay_order_id,
+                            prefill: {
+                                name: result.customer_details.name,
+                                email: result.customer_details.email,
+                                contact: result.customer_details.phone,
+                            },
+                            // Force card payment method only - explicitly disable other methods
+                            method: {
+                                card: {},      // Enable only card payments
+                                netbanking: false,
+                                wallet: false,
+                                upi: false,
+                                emi: false
+                            },
+                            // CRITICAL: DO NOT set callback_url - it causes Razorpay to redirect
+                            // We handle everything in the handler function
+                            // callback_url: undefined, // Explicitly undefined
+                            // IMPORTANT: Prevent Razorpay from auto-redirecting
+                            // Handler will manage everything - close modal, verify, redirect
+                            handler: function(response) {
+                                // PREVENT DEFAULT RAZORPAY BEHAVIOR IMMEDIATELY
+                                console.log('=== RAZORPAY HANDLER FIRED ===');
+                                console.log('🛑 PREVENTING RAZORPAY REDIRECT');
+                                console.log('Response:', response);
+                                console.log('Payment ID:', response.razorpay_payment_id);
+                                console.log('Order ID:', response.razorpay_order_id);
+                                console.log('Signature:', response.razorpay_signature ? 'Present' : 'Missing');
+                                
+                                // CRITICAL: Close modal SYNCHRONOUSLY FIRST - before any async work
+                                if (window.razorpayInstance) {
+                                    try {
+                                        window.razorpayInstance.close();
+                                        console.log('✅ Razorpay modal closed immediately');
+                                        // Clear instance reference
+                                        window.razorpayInstance = null;
+                                    } catch(e) {
+                                        console.error('❌ Error closing modal:', e);
+                                    }
+                                }
+                                
+                                // Store response for async processing
+                                const paymentResponse = response;
+                                
+                                // Update UI immediately - show verification in progress
+                                payButtonText.innerHTML = '<span class="spinner"></span> Verifying payment...';
+                                payButton.disabled = true;
+                                
+                                // Hide any existing alerts
+                                if (successAlert) {
+                                    successAlert.style.display = 'none';
+                                }
+                                if (errorAlert) {
+                                    errorAlert.style.display = 'none';
+                                }
+                                
+                                try {
+                                
+                                    // IMPORTANT: Execute async verification AFTER closing modal
+                                    (async function() {
+                                        const response = paymentResponse;
+                                        try {
+                                            console.log('Razorpay payment successful, verifying...', response);
+                                            console.log('Calling verification endpoint...');
+                                            console.log('Link token:', linkTokenForVerification);
+                                            console.log('Order ID:', orderIdForVerification);
+                                            
+                                            const verifyResponse = await fetch(`/pay/${linkTokenForVerification}/verify-razorpay`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                                },
+                                                body: JSON.stringify({
+                                                    razorpay_payment_id: response.razorpay_payment_id,
+                                                    razorpay_order_id: response.razorpay_order_id,
+                                                    razorpay_signature: response.razorpay_signature,
+                                                    order_id: orderIdForVerification,
+                                                }),
+                                            });
+                                            
+                                            console.log('Verification response status:', verifyResponse.status);
+                                            
+                                            if (!verifyResponse.ok) {
+                                                const errorText = await verifyResponse.text();
+                                                console.error('Verification failed:', errorText);
+                                                throw new Error(`Verification failed: ${verifyResponse.status} - ${errorText}`);
+                                            }
+                                            
+                                            const verifyResult = await verifyResponse.json();
+                                            console.log('Verification response:', verifyResult);
+                                        
+                                            if (verifyResult.success) {
+                                                console.log('Payment verified successfully!', verifyResult);
+                                                let successMsg = `Order ID: ${verifyResult.order_id} | Transaction ID: ${verifyResult.transaction_id}`;
+                                                
+                                                @if($paymentLink->allow_partial_payment)
+                                                if (verifyResult.payment_link) {
+                                                    const paymentLinkInfo = verifyResult.payment_link;
+                                                    if (paymentLinkInfo.is_partially_paid) {
+                                                        successMsg += `\n\nAmount Paid: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.amount_paid).toFixed(2)}`;
+                                                        successMsg += `\nRemaining Balance: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.remaining_balance).toFixed(2)}`;
+                                                        if (!paymentLinkInfo.is_fully_paid) {
+                                                            successMsg += `\n\nYou can use this same link to pay the remaining balance later.`;
+                                                        }
+                                                    }
+                                                }
+                                                @endif
+                                                
+                                                successMessage.textContent = successMsg;
+                                                successAlert.style.display = 'flex';
+                                                payButtonText.textContent = 'Payment Successful!';
+                                                payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                                                successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                
+                                                // Disable all inputs
+                                                document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+                                                
+                                                // Redirect after 2 seconds ONLY if verification succeeded and has transaction_id
+                                                if (verifyResult.redirect_url && verifyResult.transaction_id) {
+                                                    console.log('Redirecting to:', verifyResult.redirect_url);
+                                                    setTimeout(() => {
+                                                        window.location.href = verifyResult.redirect_url;
+                                                    }, 2000);
+                                                } else {
+                                                    console.error('Missing redirect_url or transaction_id:', verifyResult);
+                                                    // Show error if transaction_id is missing
+                                                    errorMessage.textContent = 'Payment completed but transaction ID not received. Please contact support with Order ID: ' + (verifyResult.order_id || orderIdForVerification);
+                                                    errorAlert.style.display = 'flex';
+                                                }
+                                            } else {
+                                                errorMessage.textContent = verifyResult.message || 'Payment verification failed';
+                                                errorAlert.style.display = 'flex';
+                                                payButton.disabled = false;
+                                                @if($paymentLink->allow_partial_payment)
+                                                const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                                                payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                                                @else
+                                                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                                                @endif
+                                            }
+                                        } catch (error) {
+                                            console.error('Verification error:', error);
+                                            console.error('Error details:', {
+                                                message: error.message,
+                                                stack: error.stack,
+                                                response: error.response
+                                            });
+                                            errorMessage.textContent = 'Payment verification failed. Please contact support.';
+                                            errorAlert.style.display = 'flex';
+                                            payButton.disabled = false;
+                                            @if($paymentLink->allow_partial_payment)
+                                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                                            @else
+                                            payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                                            @endif
+                                        }
+                                    })();
+                                } catch (error) {
+                                    console.error('Razorpay handler outer error:', error);
+                                    errorMessage.textContent = 'An error occurred. Please try again.';
+                                    errorAlert.style.display = 'flex';
+                                    payButton.disabled = false;
+                                    @if($paymentLink->allow_partial_payment)
+                                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                                    @else
+                                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                                    @endif
+                                }
+                                
+                                // CRITICAL: Return false and prevent default to stop Razorpay redirect
+                                // This prevents Razorpay from following its default redirect behavior
+                                if (typeof event !== 'undefined') {
+                                    event.preventDefault?.();
+                                    event.stopPropagation?.();
+                                }
+                                return false;
+                            },
+                            modal: {
+                                ondismiss: function() {
+                                    console.log('Razorpay modal dismissed by user');
+                                    // Reset flag when modal is dismissed
+                                    if (payButton) {
+                                        payButton.dataset.razorpayOpened = '';
+                                    }
+                                    // User closed the Razorpay checkout
+                                    payButton.disabled = false;
+                                    @if($paymentLink->allow_partial_payment)
+                                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                                    @else
+                                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                                    @endif
+                                }
+                            }
+                        };
+                        
+                        console.log('🚀 About to create Razorpay instance...');
+                        console.log('Razorpay options:', JSON.stringify(options, null, 2));
+                        
+                        // Close any existing Razorpay instance to prevent duplicates
+                        if (window.razorpayInstance) {
+                            console.log('Closing existing Razorpay instance...');
+                            try {
+                                window.razorpayInstance.close();
+                            } catch(e) {
+                                console.log('No existing instance to close');
+                            }
+                            window.razorpayInstance = null;
+                        }
+                        
+                        // Prevent duplicate opens - check if already opened
+                        if (payButton.dataset.razorpayOpening === 'true') {
+                            console.warn('Razorpay already opening, preventing duplicate');
+                            return;
+                        }
+                        
+                        payButton.dataset.razorpayOpening = 'true';
+                        
+                        // CRITICAL: Ensure callback_url is NOT set to prevent Razorpay auto-redirect
+                        if (options.callback_url) {
+                            delete options.callback_url;
+                            console.log('⚠️ Removed callback_url to prevent Razorpay redirect');
+                        }
+                        
+                        const razorpay = new Razorpay(options);
+                        window.razorpayInstance = razorpay; // Store globally to prevent duplicates
+                        
+                        // Add error handler for Razorpay payment failures
+                        razorpay.on('payment.failed', function(response) {
+                            console.error('❌ Razorpay payment failed:', response);
+                            payButton.dataset.razorpayOpening = ''; // Reset flag
+                            payButton.dataset.processing = ''; // Reset processing flag
+                            
+                            // Close modal immediately on failure
+                            try {
+                                razorpay.close();
+                                console.log('Razorpay modal closed after payment failure');
+                            } catch(e) {
+                                console.log('Error closing modal:', e);
+                            }
+                            
+                            // Show card form again
+                            const cardForm = document.getElementById('cardForm');
+                            if (cardForm) {
+                                cardForm.style.display = '';
+                            }
+                            
+                            errorMessage.textContent = 'Payment failed: ' + (response.error?.description || response.error?.reason || 'Unknown error');
+                            errorAlert.style.display = 'flex';
+                            payButton.disabled = false;
+                            @if($paymentLink->allow_partial_payment)
+                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                            @else
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                            @endif
+                        });
+                        
+                        // CRITICAL: Open Razorpay Checkout.js IMMEDIATELY
+                        // This must happen synchronously to prevent any redirect
+                        try {
+                            // Open modal immediately - this prevents redirect
+                            razorpay.open();
+                            console.log('✅ Razorpay Checkout.js modal opened successfully - NO REDIRECT');
+                            
+                            // The modal is now open - user will enter card details in the modal
+                            // Handler will be called when payment completes
+                            
+                            // Reset flag after modal opens
+                            setTimeout(() => {
+                                payButton.dataset.razorpayOpening = '';
+                            }, 1000);
+                            
+                            // CRITICAL: Return false to prevent any form submission or redirect
+                            return false;
+                        } catch (error) {
+                            console.error('❌ Error opening Razorpay Checkout:', error);
+                            payButton.dataset.razorpayOpening = '';
+                            payButton.dataset.processing = '';
+                            
+                            // Show card form again if error
+                            const cardForm = document.getElementById('cardForm');
+                            if (cardForm) {
+                                cardForm.style.display = '';
+                            }
+                            
+                            errorMessage.textContent = 'Failed to open payment gateway. Please try again.';
+                            errorAlert.style.display = 'flex';
+                            payButton.disabled = false;
+                            @if($paymentLink->allow_partial_payment)
+                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                            @else
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                            @endif
+                            
+                            return false;
+                        }
+                    } else {
+                        // Normal payment flow (non-Razorpay Checkout.js or non-card payments)
+                        let successMsg = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
+                        
+                        // Show partial payment info if available
+                        @if($paymentLink->allow_partial_payment)
+                        if (result.payment_link) {
+                            const paymentLinkInfo = result.payment_link;
+                            if (paymentLinkInfo.is_partially_paid) {
+                                successMsg += `\n\nAmount Paid: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.amount_paid).toFixed(2)}`;
+                                successMsg += `\nRemaining Balance: ${paymentLink.currency} ${parseFloat(paymentLinkInfo.remaining_balance).toFixed(2)}`;
+                                if (!paymentLinkInfo.is_fully_paid) {
+                                    successMsg += `\n\nYou can use this same link to pay the remaining balance later.`;
+                                }
                             }
                         }
+                        @endif
+                        
+                        successMessage.textContent = successMsg;
+                        successAlert.style.display = 'flex';
+                        payButtonText.textContent = 'Payment Successful!';
+                        payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                        successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Redirect to merchant test app success page after 2 seconds
+                        if (result.redirect_url) {
+                            setTimeout(() => {
+                                window.location.href = result.redirect_url;
+                            }, 2000);
+                        }
+                        
+                        // Disable all inputs
+                        document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
                     }
-                    @endif
-                    
-                    successMessage.textContent = successMsg;
-                    successAlert.style.display = 'flex';
-                    payButtonText.textContent = 'Payment Successful!';
-                    payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                    successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
-                    // Redirect to merchant test app success page after 2 seconds
-                    if (result.redirect_url) {
-                        setTimeout(() => {
-                            window.location.href = result.redirect_url;
-                        }, 2000);
-                    }
-                    
-                    // Disable all inputs
-                    document.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
                 } else {
                     errorMessage.textContent = result.message || 'Payment failed. Please try again.';
                     errorAlert.style.display = 'flex';
@@ -1159,7 +1571,25 @@
             }
         });
 
-        validateForm();
+        // Run validation on page load (only once, with minimal logging)
+        setTimeout(() => {
+            validateForm(false); // Log once on initial load
+        }, 500);
+        
+        // Also run validation when customer details are filled (on blur)
+        const customerNameInput = document.getElementById('customerName');
+        const customerEmailInput = document.getElementById('customerEmail');
+        const customerPhoneInput = document.getElementById('customerPhone');
+        
+        if (customerNameInput) {
+            customerNameInput.addEventListener('blur', () => validateForm(false));
+        }
+        if (customerEmailInput) {
+            customerEmailInput.addEventListener('blur', () => validateForm(false));
+        }
+        if (customerPhoneInput) {
+            customerPhoneInput.addEventListener('blur', () => validateForm(false));
+        }
 
         // Test mode simulation buttons
         @if($paymentLink->test_mode)

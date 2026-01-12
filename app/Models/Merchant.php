@@ -5,12 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 
 class Merchant extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'merchant_unique_id',
         'name',
         'email',
         'company_name',
@@ -157,6 +160,28 @@ class Merchant extends Model
     }
 
     /**
+     * Get acquirer accounts associated with this merchant.
+     */
+    public function acquirerAccounts(): BelongsToMany
+    {
+        return $this->belongsToMany(AcquirerAccount::class, 'acquirer_account_merchant')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get active acquirer account for this merchant (matching mode).
+     */
+    public function getActiveAcquirerAccount(): ?AcquirerAccount
+    {
+        $mode = $this->test_mode ? 'TEST' : 'LIVE';
+        
+        return $this->acquirerAccounts()
+            ->where('mode', $mode)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
      * Get webhook events for this merchant.
      */
     public function webhookEvents(): HasMany
@@ -255,6 +280,66 @@ class Merchant extends Model
         }
 
         return $missing;
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($merchant) {
+            if (empty($merchant->merchant_unique_id)) {
+                $merchant->merchant_unique_id = static::generateMerchantUniqueId();
+            }
+        });
+    }
+
+    /**
+     * Generate the next unique merchant ID in format BC_MID_000001.
+     *
+     * @return string
+     */
+    public static function generateMerchantUniqueId(): string
+    {
+        // Get all existing merchant_unique_ids
+        $existingIds = static::whereNotNull('merchant_unique_id')
+            ->where('merchant_unique_id', 'like', 'BC_MID_%')
+            ->pluck('merchant_unique_id')
+            ->toArray();
+
+        if (empty($existingIds)) {
+            // First merchant
+            $nextNumber = 1;
+        } else {
+            // Extract all numbers and find the maximum
+            $numbers = [];
+            foreach ($existingIds as $id) {
+                $numberPart = substr($id, 7); // Remove 'BC_MID_' prefix (7 characters)
+                if (is_numeric($numberPart)) {
+                    $numbers[] = (int) $numberPart;
+                }
+            }
+            
+            if (empty($numbers)) {
+                $nextNumber = 1;
+            } else {
+                $nextNumber = max($numbers) + 1;
+            }
+        }
+
+        // Format as BC_MID_000001 (6 digits with leading zeros)
+        return 'BC_MID_' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get the route key for the model.
+     * This allows using merchant_unique_id in route model binding.
+     */
+    public function getRouteKeyName()
+    {
+        return 'merchant_unique_id';
     }
 }
 

@@ -25,6 +25,11 @@ use Illuminate\Support\Facades\Route;
 Route::post('/webhooks/receive', [WebhookController::class, 'receive'])
     ->name('api.webhooks.receive');
 
+// Unified acquirer callback/webhook endpoint (no auth required)
+// This handles callbacks from all acquirer providers (Razorpay, Paytm, etc.)
+Route::post('/webhooks/acquirer', [\App\Http\Controllers\Api\AcquirerCallbackController::class, 'handle'])
+    ->name('api.webhooks.acquirer');
+
 // Quick access routes (without v1 prefix) - for test app
 Route::middleware([\App\Http\Middleware\AuthenticateApiKey::class])->group(function () {
     Route::post('/payments', [PaymentController::class, 'createPayment'])->name('api.payments.create');

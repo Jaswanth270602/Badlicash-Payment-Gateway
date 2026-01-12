@@ -9,13 +9,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         :root {
-            --primary-violet: #764ba2;
-            --primary-violet-dark: #667eea;
-            --primary-violet-light: #8b7fb8;
-            --gradient-start: #6366f1;
-            --gradient-end: #8b5cf6;
-            --sidebar-bg: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            --sidebar-hover: rgba(118, 75, 162, 0.3);
+            --primary-violet: #6366f1;
+            --primary-violet-dark: #4f46e5;
+            --primary-violet-light: #818cf8;
+            --gradient-start: #0f172a;
+            --gradient-end: #1e293b;
+            --sidebar-bg: #6366f1;
+            --sidebar-hover: rgba(99, 102, 241, 0.2);
             --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --card-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
@@ -42,7 +42,7 @@
             width: 260px;
             background: var(--sidebar-bg);
             color: #fff;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             overflow-y: auto;
             transition: transform 0.3s ease, width 0.3s ease;
@@ -55,7 +55,7 @@
             width: 70px !important;
         }
         
-        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .sidebar-brand .brand-name,
         .sidebar.collapsed .sidebar-menu-item span,
         .sidebar.collapsed .mode-badge {
             display: none !important;
@@ -70,7 +70,7 @@
             margin-right: 0 !important;
         }
 
-        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .sidebar-brand .brand-name,
         .sidebar.collapsed .sidebar-menu-item span,
         .sidebar.collapsed .mode-badge {
             display: none;
@@ -96,8 +96,9 @@
 
         .sidebar-header {
             padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -149,7 +150,31 @@
             background-clip: text;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .sidebar-brand img {
+            flex-shrink: 0;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+        
+        .sidebar-brand .brand-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar.collapsed .sidebar-brand {
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar.collapsed .sidebar-brand .brand-name {
+            display: none;
         }
 
         .sidebar-brand i {
@@ -191,17 +216,19 @@
         }
 
         .sidebar-menu-item:hover {
-            background: var(--sidebar-hover);
+            background: rgba(99, 102, 241, 0.15);
             color: #fff;
-            border-left-color: var(--primary-violet-light);
+            border-left: 3px solid rgba(129, 140, 248, 0.5);
             padding-left: 24px;
+            transition: all 0.2s ease;
         }
 
         .sidebar-menu-item.active {
-            background: var(--sidebar-hover);
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
             color: #fff;
-            border-left-color: var(--primary-violet);
+            border-left: 3px solid var(--primary-violet);
             font-weight: 600;
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
         }
 
         .sidebar-divider {
@@ -215,7 +242,7 @@
         }
 
         .sidebar-submenu {
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(15, 23, 42, 0.3);
             overflow: hidden;
             transition: all 0.3s ease;
         }
@@ -226,7 +253,7 @@
         }
 
         .sidebar-submenu-item:hover {
-            background: rgba(118, 75, 162, 0.25);
+            background: rgba(99, 102, 241, 0.2);
         }
 
         .sidebar-menu-dropdown.active .bi-chevron-down {
@@ -728,10 +755,9 @@
     <div class="sidebar-header">
         <div class="sidebar-header-content">
         <div class="sidebar-brand">
-    <img src="{{ asset('images/logo/Badilicash_logo.png') }}" alt="{{ config('app.name') }}" style="height:42px; width:auto;">
-    <!-- <span>{{ config('app.name') }}</span> -->
-
-</div>
+            <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height:42px; width:auto;">
+            <span class="brand-name">{{ config('app.name') }}</span>
+        </div>
             @if(auth()->user()->merchant)
                 <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
                     {{ auth()->user()->merchant->test_mode ? 'TEST MODE' : 'LIVE MODE' }}

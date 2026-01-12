@@ -16,6 +16,7 @@ class Order extends Model
         'merchant_id',
         'payment_link_id',
         'order_id',
+        'gateway_order_id',
         'amount',
         'currency',
         'payment_method',

@@ -46,7 +46,8 @@
                     organization: { visible: true, label: 'Organization Name' },
                     category: { visible: true, label: 'Merchant Category' },
                     registration_date: { visible: true, label: 'Registration Date' },
-                    challan_urn: { visible: true, label: 'Challan URN' }
+                    challan_urn: { visible: true, label: 'Challan URN' },
+                    merchant_unique_id: { visible: true, label: 'Merchant Unique ID' }
                 };
 
                 // Merchant form

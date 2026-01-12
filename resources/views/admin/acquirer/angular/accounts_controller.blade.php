@@ -30,7 +30,7 @@
                     'IppoPayUPI', 'ISERVEU', 'ISGPAY', 'ISGPAYV2', 'iSmartPay', 'JCPays', 'Jeetoabhi', 'JigsPayP2P', 
                     'JioPay', 'JodetxUpi', 'JssMoney', 'JusPayUpi', 'Kopay', 'KotakAllPay', 'KotakCard', 'KotakDCEMI', 
                     'KotakUpi', 'LazyPay', 'LazyPayEmi', 'LetsPe', 'LevinPay', 'LightspeedPay', 'Paytm', 'Switch', 
-                    'SBI', 'Razorpay', 'PayU'
+                    'SBI', 'Razorpay', 'razorpay', 'razorpay_test', 'razorpay_live', 'PayU'
                 ];
                 
                 vm.accounts = [];
@@ -131,26 +131,54 @@
 
                 // Load acquirer names
                 vm.loadAcquirerNames = function() {
+                    // Always start with default names to ensure Razorpay is included
+                    vm.acquirerNames = defaultAcquirerNames.slice();
+                    console.log('Initial acquirer names count:', vm.acquirerNames.length);
+                    console.log('Razorpay in list?', vm.acquirerNames.indexOf('Razorpay') !== -1 || vm.acquirerNames.indexOf('razorpay') !== -1);
+                    
                     $http.get('/admin/acquirer-accounts/acquirer-names', {
                         headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
+                        console.log('API response received:', response.data);
                         if (response.data && response.data.success && response.data.data && response.data.data.length > 0) {
-                            vm.acquirerNames = response.data.data;
-                        }
-                        // If API fails or returns empty, keep default names (use existing list)
-                        if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
+                            // Merge API response with defaults (API may have additional names from database)
+                            var apiNames = response.data.data;
+                            var merged = defaultAcquirerNames.slice();
+                            // Add any new names from API that aren't in defaults
+                            apiNames.forEach(function(name) {
+                                if (merged.indexOf(name) === -1) {
+                                    merged.push(name);
+                                }
+                            });
+                            // Sort and set
+                            vm.acquirerNames = merged.sort();
+                            console.log('After merge, acquirer names count:', vm.acquirerNames.length);
+                            console.log('Razorpay variants:', vm.acquirerNames.filter(function(n) { return n.toLowerCase().indexOf('razorpay') !== -1; }));
+                        } else {
+                            // If API returns empty, keep defaults
                             vm.acquirerNames = defaultAcquirerNames.slice();
+                            console.log('API returned empty, using defaults');
                         }
-                        // Force Angular update (no need to manually trigger, $timeout handles it)
+                        // Force Angular update
                         $timeout(function() {
-                            // Angular digest cycle will be triggered automatically
-                        });
+                            try {
+                                $scope.$apply();
+                            } catch(e) {
+                                // If apply fails (e.g., already in digest), Angular will update on next digest
+                            }
+                        }, 0);
                     }).catch(function(error) {
                         console.error('Error loading acquirer names:', error);
-                        // Keep default names on error - use full list
-                        if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
-                            vm.acquirerNames = defaultAcquirerNames.slice();
-                        }
+                        console.log('Using default names due to error');
+                        // Keep default names on error
+                        vm.acquirerNames = defaultAcquirerNames.slice();
+                        $timeout(function() {
+                            try {
+                                $scope.$apply();
+                            } catch(e) {
+                                // If apply fails (e.g., already in digest), Angular will update on next digest
+                            }
+                        }, 0);
                     });
                 };
 
@@ -213,6 +241,20 @@
                         if (response.data.success) {
                             vm.accounts = response.data.data;
                             vm.pagination = response.data.pagination;
+                            
+                            // Debug: Check if keys are in the response
+                            if (vm.accounts && vm.accounts.length > 0) {
+                                var razorpayAccount = vm.accounts.find(function(acc) {
+                                    return acc.acquirer_name && acc.acquirer_name.toLowerCase().indexOf('razorpay') !== -1;
+                                });
+                                if (razorpayAccount) {
+                                    console.log('Razorpay account in response:', {
+                                        id: razorpayAccount.id,
+                                        additional_key_1: razorpayAccount.additional_key_1 ? 'SET (' + (razorpayAccount.additional_key_1.length || 0) + ' chars)' : 'EMPTY',
+                                        secret_key: razorpayAccount.secret_key ? 'SET (' + (razorpayAccount.secret_key.length || 0) + ' chars)' : 'EMPTY'
+                                    });
+                                }
+                            }
                         }
                         vm.loading = false;
                     }).catch(function(error) {
@@ -304,6 +346,7 @@
                         refund_allowed: true,
                         settlements_to_be_created: true,
                         mask_pii: false,
+                        is_active: true,
                         email_ids: '',
                         secret_key: '',
                         salt: '',
@@ -325,6 +368,9 @@
                     vm.acquirerNames = defaultAcquirerNames.slice();
                     console.log('Opening modal - Acquirer names available:', vm.acquirerNames.length);
                     
+                    // Load acquirer names from API (will merge with defaults)
+                    vm.loadAcquirerNames();
+                    
                     // Reload merchants
                     vm.loadMerchants();
                     
@@ -337,6 +383,10 @@
                         if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
                             vm.acquirerNames = defaultAcquirerNames.slice();
                         }
+                        
+                        // Compile the modal content with Angular
+                        $compile(modalElement)($scope);
+                        
                         $timeout(function() {
                             // Force reset submitting flag immediately
                             vm.submitting = false;
@@ -344,7 +394,15 @@
                             if (!vm.acquirerNames || vm.acquirerNames.length === 0) {
                                 vm.acquirerNames = defaultAcquirerNames.slice();
                             }
+                            // Force Angular to update the view
+                            try {
+                                $scope.$apply();
+                            } catch(e) {
+                                // Already in digest
+                            }
                             console.log('Modal shown - Acquirer names:', vm.acquirerNames.length, 'Submitting:', vm.submitting, 'isEditMode:', vm.isEditMode);
+                            console.log('Razorpay variants in dropdown:', vm.acquirerNames.filter(function(n) { return n.toLowerCase().indexOf('razorpay') !== -1; }));
+                            console.log('First 5 acquirer names:', vm.acquirerNames.slice(0, 5));
                         }, 100);
                     }, { once: true });
                     
@@ -355,6 +413,14 @@
                 vm.openEditModal = function(account) {
                     if (account) vm.selectedAccount = account;
                     if (!vm.selectedAccount) return;
+
+                    // Debug: Log the selected account data
+                    console.log('Selected Account Data:', {
+                        id: vm.selectedAccount.id,
+                        additional_key_1: vm.selectedAccount.additional_key_1 ? 'SET (' + vm.selectedAccount.additional_key_1.length + ' chars)' : 'EMPTY',
+                        secret_key: vm.selectedAccount.secret_key ? 'SET (' + vm.selectedAccount.secret_key.length + ' chars)' : 'EMPTY',
+                        full_data: vm.selectedAccount
+                    });
 
                     // Reset submitting flag first
                     vm.submitting = false;
@@ -373,13 +439,14 @@
                         refund_allowed: vm.selectedAccount.refund_allowed,
                         settlements_to_be_created: vm.selectedAccount.settlements_to_be_created,
                         mask_pii: vm.selectedAccount.mask_pii,
+                        is_active: vm.selectedAccount.is_active !== undefined ? vm.selectedAccount.is_active : true,
                         email_ids: vm.selectedAccount.email_ids || '',
-                        secret_key: '',
-                        salt: '',
-                        additional_key_1: '',
-                        additional_key_2: '',
-                        additional_key_3: '',
-                        additional_key_data: '',
+                        secret_key: vm.selectedAccount.secret_key || '',
+                        salt: vm.selectedAccount.salt || '',
+                        additional_key_1: vm.selectedAccount.additional_key_1 || '',
+                        additional_key_2: vm.selectedAccount.additional_key_2 || '',
+                        additional_key_3: vm.selectedAccount.additional_key_3 || '',
+                        additional_key_data: vm.selectedAccount.additional_key_data || '',
                         live_request_url: vm.selectedAccount.live_request_url || '',
                         live_query_url: vm.selectedAccount.live_query_url || '',
                         live_refund_url: vm.selectedAccount.live_refund_url || '',
@@ -402,13 +469,18 @@
                         vm.loadAcquirerNames();
                     }
 
-                    // Force Angular to update (no need to manually trigger, $timeout handles it)
-                    $timeout(function() {
-                        // Angular digest cycle will be triggered automatically
-                    }, 0);
+                    // Ensure merchants are loaded
+                    if (!vm.merchants || vm.merchants.length === 0) {
+                        vm.loadMerchants();
+                    }
 
                     var modalElement = document.getElementById('acquirerAccountModal');
                     var modal = new bootstrap.Modal(modalElement);
+                    
+                    // Compile modal to ensure Angular bindings work
+                    $timeout(function() {
+                        $compile(modalElement)($scope);
+                    }, 0);
                     
                     // Ensure Angular compiles the modal when shown
                     modalElement.addEventListener('shown.bs.modal', function() {
@@ -472,12 +544,29 @@
                         data.mask_pii = false;
                     }
                     
+                    if (data.is_active === 'true' || data.is_active === true) {
+                        data.is_active = true;
+                    } else if (data.is_active === 'false' || data.is_active === false) {
+                        data.is_active = false;
+                    } else {
+                        data.is_active = true; // Default to true if not set
+                    }
+                    
                     // Remove copy_rates_from if empty (not needed for save)
                     if (!data.copy_rates_from || data.copy_rates_from === '') {
                         delete data.copy_rates_from;
                     }
                     
-                    console.log('Submitting account data:', data);
+                    // Debug: Log key fields being submitted
+                    console.log('Submitting account data:', {
+                        account_id: data.account_id,
+                        acquirer_name: data.acquirer_name,
+                        additional_key_1: data.additional_key_1 ? 'SET (' + data.additional_key_1.length + ' chars)' : 'EMPTY',
+                        secret_key: data.secret_key ? 'SET (' + data.secret_key.length + ' chars)' : 'EMPTY',
+                        is_edit: vm.isEditMode
+                    });
+                    
+                    console.log('Full data being submitted:', data);
 
                     $http({
                         method: method,

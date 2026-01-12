@@ -116,6 +116,11 @@
                                 </div>
                                 <input type="text" class="form-control form-control-sm mt-1" placeholder="Filter..." ng-model="amac.filters.filter_id" ng-change="amac.applyFilters()">
                             </th>
+                            <th ng-show="amac.visibleColumns.merchant_unique_id.visible">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span>Merchant Unique ID</span>
+                                </div>
+                            </th>
                             <th ng-show="amac.visibleColumns.name.visible">
                                 <div class="d-flex align-items-center gap-2">
                                     <span>Merchant Name</span>
@@ -214,7 +219,7 @@
                     </thead>
                     <tbody>
                         <tr ng-if="amac.merchants.length === 0">
-                            <td colspan="13" class="text-center text-danger py-4">No matching records found</td>
+                            <td colspan="14" class="text-center text-danger py-4">No matching records found</td>
                         </tr>
                         <tr ng-repeat="merchant in amac.merchants track by $index" 
                             ng-click="amac.selectMerchant(merchant)" 
@@ -223,6 +228,9 @@
                                 <input type="checkbox" ng-model="merchant.selected" ng-click="$event.stopPropagation()">
                             </td>
                             <td ng-show="amac.visibleColumns.id.visible">@{{ merchant.id }}</td>
+                            <td ng-show="amac.visibleColumns.merchant_unique_id.visible">
+                                <strong class="text-primary">@{{ merchant.merchant_unique_id || '-' }}</strong>
+                            </td>
                             <td ng-show="amac.visibleColumns.name.visible">@{{ merchant.name }}</td>
                             <td ng-show="amac.visibleColumns.email.visible">@{{ merchant.email }}</td>
                             <td ng-show="amac.visibleColumns.phone.visible">@{{ merchant.phone || '-' }}</td>
