@@ -153,6 +153,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('merchant.payments.split-transactions');
         Route::get('/payments/split-transactions/data', [\App\Http\Controllers\Merchant\SplitTransactionsController::class, 'getData'])
             ->name('merchant.payments.split-transactions.data');
+        Route::get('/payments/split-transactions/{transactionId}/details', [\App\Http\Controllers\Merchant\SplitTransactionsController::class, 'getSplitDetails'])
+            ->name('merchant.payments.split-transactions.details');
         Route::get('/payments/federal-vpa', [\App\Http\Controllers\Merchant\FederalVPAController::class, 'index'])
             ->name('merchant.payments.federal-vpa');
         Route::get('/payments/federal-vpa/data', [\App\Http\Controllers\Merchant\FederalVPAController::class, 'getData'])
@@ -397,6 +399,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.payments.split-transactions');
         Route::get('/payments/split-transactions/data', [SplitTransactionsController::class, 'getData'])
             ->name('admin.payments.split-transactions.data');
+        Route::get('/payments/split-transactions/{transactionId}/details', [SplitTransactionsController::class, 'getSplitDetails'])
+            ->name('admin.payments.split-transactions.details');
         Route::get('/payments/federal-vpa', [FederalVPAController::class, 'index'])
             ->name('admin.payments.federal-vpa');
         Route::get('/payments/federal-vpa/data', [FederalVPAController::class, 'getData'])

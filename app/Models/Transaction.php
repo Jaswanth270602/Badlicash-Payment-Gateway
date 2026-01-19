@@ -158,6 +158,14 @@ class Transaction extends Model
     }
 
     /**
+     * Get split transactions for this transaction.
+     */
+    public function splitTransactions(): HasMany
+    {
+        return $this->hasMany(SplitTransaction::class);
+    }
+
+    /**
      * Generate a unique transaction ID.
      */
     public static function generateTxnId(): string

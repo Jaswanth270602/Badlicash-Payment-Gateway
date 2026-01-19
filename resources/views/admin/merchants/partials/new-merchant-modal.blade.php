@@ -247,7 +247,7 @@
                         <div class="col-md-12">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="createUserLogin" ng-model="amac.merchantForm.create_user_login">
-                                <label class="form-check-label" for="createUserLogin">Create MRM User Login</label>
+                                <label class="form-check-label" for="createUserLogin">Create User Login</label>
                             </div>
                             <small class="text-muted">If checked, below fields are required for User login creation.</small>
                         </div>
