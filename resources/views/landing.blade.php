@@ -431,7 +431,7 @@
                 <div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                         <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height: 72px; width: auto;">
-                        <div class="fw-bold text-white" style="font-size: 28px; font-weight: 700;">{{ config('app.name') }}</div>
+                 
                     </div>
                     <div style="font-size:11px;color:#9ca3af;">Safer payments for ambitious teams</div>
                 </div>

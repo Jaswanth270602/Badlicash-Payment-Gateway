@@ -97,7 +97,7 @@
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(15, 23, 42, 0.1);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
@@ -156,7 +156,7 @@
         
         .sidebar-brand img {
             flex-shrink: 0;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)) brightness(0.9) contrast(1.2);
         }
         
         .sidebar-brand .brand-name {
@@ -715,17 +715,18 @@
         }
 
         .logout-item {
-            color: #dc2626 !important;
+            color: #ef4444 !important;
         }
 
         .logout-item:hover {
-            background: #fef2f2 !important;
-            color: #dc2626 !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
         }
 
         .logout-item i {
-            color: #dc2626 !important;
+            color: #ef4444 !important;
         }
+
     </style>
     @stack('styles')
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
@@ -756,7 +757,7 @@
         <div class="sidebar-header-content">
         <div class="sidebar-brand">
             <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height:42px; width:auto;">
-            <span class="brand-name">{{ config('app.name') }}</span>
+           
         </div>
             @if(auth()->user()->merchant)
                 <div class="mode-badge {{ auth()->user()->merchant->test_mode ? 'bg-warning text-dark' : 'bg-success' }}">
