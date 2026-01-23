@@ -3,6 +3,105 @@
 @section('title', 'Transactions Details - ' . config('app.name'))
 @section('page-title', 'Transactions Details')
 
+@push('styles')
+<style>
+    /* Transactions Page Dark Theme Overrides */
+    .stat-card h2 {
+        color: var(--text-primary);
+    }
+    
+    .stat-card .text-muted {
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Table text colors */
+    .table td {
+        color: var(--text-primary) !important;
+    }
+    
+    .table th {
+        color: var(--text-secondary) !important;
+    }
+    
+    .table th span {
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Button outline styles for dark theme */
+    .btn-outline-secondary {
+        border-color: var(--card-border);
+        color: var(--text-secondary);
+        background: transparent;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: var(--primary-violet);
+        color: var(--primary-violet-light);
+    }
+    
+    .btn-outline-primary {
+        border-color: var(--primary-violet);
+        color: var(--primary-violet-light);
+        background: transparent;
+    }
+    
+    .btn-outline-primary:hover {
+        background: var(--primary-violet);
+        color: #fff;
+    }
+    
+    /* Dropdown menu dark theme */
+    .dropdown-menu {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+    }
+    
+    .dropdown-item {
+        color: var(--text-primary);
+    }
+    
+    .dropdown-item:hover {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary-violet-light);
+    }
+    
+    /* Error text color */
+    .text-danger {
+        color: #ef4444 !important;
+    }
+    
+    /* Success text color */
+    .text-success {
+        color: #22c55e !important;
+    }
+    
+    /* Code elements */
+    code {
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--primary-violet-light);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--card-border);
+    }
+    
+    /* Modal header override */
+    .modal-header.bg-primary {
+        background: linear-gradient(135deg, var(--primary-violet) 0%, var(--primary-violet-dark) 100%) !important;
+    }
+    
+    /* Pagination text */
+    .d-flex.justify-content-between {
+        color: var(--text-secondary);
+    }
+    
+    /* Loading text */
+    .loader-overlay .text-muted {
+        color: var(--text-secondary) !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div ng-app="badlicashApp" ng-controller="MerchantTransactionsController as mtc">
     <div class="row mb-4">
@@ -313,7 +412,7 @@
                     </thead>
                     <tbody>
                         <tr ng-if="mtc.transactions.length === 0">
-                            <td colspan="35" class="text-center text-danger py-4">No matching records found</td>
+                            <td colspan="35" class="text-center py-4" style="color: var(--text-secondary);">No matching records found</td>
                         </tr>
                         <tr ng-repeat="transaction in mtc.transactions track by $index">
                             <td ng-show="mtc.visibleColumns.transaction_initiation_time.visible">@{{ transaction.transaction_initiation_time }}</td>
@@ -330,7 +429,7 @@
                                 }">
                                     @{{ transaction.payment_status | uppercase }}
                                 </span>
-                                <div ng-if="transaction.payment_status === 'failed' && transaction.failure_reason" class="mt-1" style="font-size: 11px; color: #dc3545; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ transaction.failure_reason }}">
+                                <div ng-if="transaction.payment_status === 'failed' && transaction.failure_reason" class="mt-1" style="font-size: 11px; color: #ef4444; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ transaction.failure_reason }}">
                                     <i class="bi bi-exclamation-circle"></i> @{{ transaction.failure_reason }}
                                 </div>
                             </td>
@@ -400,46 +499,47 @@
                     <h5 class="modal-title"><i class="bi bi-receipt"></i> Transaction Details</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="color: var(--text-primary);">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <strong>Transaction ID:</strong><br>
+                            <strong style="color: var(--text-secondary);">Transaction ID:</strong><br>
                             <code>@{{mtc.selectedTransaction.transaction_id}}</code>
                         </div>
                         <div class="col-md-6">
-                            <strong>Amount:</strong><br>
-                            <span class="text-success">@{{mtc.selectedTransaction.currency_code}} @{{mtc.selectedTransaction.amount_paid_by_customer}}</span>
+                            <strong style="color: var(--text-secondary);">Amount:</strong><br>
+                            <span style="color: #22c55e;">@{{mtc.selectedTransaction.currency_code}} @{{mtc.selectedTransaction.amount_paid_by_customer}}</span>
                         </div>
                         <div class="col-md-6">
-                            <strong>Status:</strong><br>
+                            <strong style="color: var(--text-secondary);">Status:</strong><br>
                             <span class="badge" ng-class="{'bg-success': mtc.selectedTransaction.payment_status==='success', 'bg-danger': mtc.selectedTransaction.payment_status==='failed'}">
                                 @{{mtc.selectedTransaction.payment_status | uppercase}}
                             </span>
                         </div>
                         <div class="col-12" ng-if="mtc.selectedTransaction.payment_status === 'failed' && mtc.selectedTransaction.failure_reason">
-                            <div class="alert alert-danger py-2">
+                            <div class="alert alert-danger py-2" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">
                                 <strong><i class="bi bi-exclamation-triangle"></i> Failure Reason:</strong><br>
                                 @{{ mtc.selectedTransaction.failure_reason }}
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <strong>Payment Mode:</strong><br>
-                            @{{mtc.selectedTransaction.payment_mode}}
+                            <strong style="color: var(--text-secondary);">Payment Mode:</strong><br>
+                            <span style="color: var(--text-primary);">@{{mtc.selectedTransaction.payment_mode}}</span>
                         </div>
                         <div class="col-md-6">
-                            <strong>Date:</strong><br>
-                            @{{mtc.selectedTransaction.transaction_datetime}}
+                            <strong style="color: var(--text-secondary);">Date:</strong><br>
+                            <span style="color: var(--text-primary);">@{{mtc.selectedTransaction.transaction_datetime}}</span>
                         </div>
                         <div class="col-md-6">
-                            <strong>TDR Amount:</strong><br>
-                            @{{mtc.selectedTransaction.tdr_amount}}
+                            <strong style="color: var(--text-secondary);">TDR Amount:</strong><br>
+                            <span style="color: var(--text-primary);">@{{mtc.selectedTransaction.tdr_amount}}</span>
                         </div>
                         <div class="col-md-6">
-                            <strong>Net Settlement:</strong><br>
-                            @{{mtc.selectedTransaction.net_settlements_amount}}
+                            <strong style="color: var(--text-secondary);">Net Settlement:</strong><br>
+                            <span style="color: var(--text-primary);">@{{mtc.selectedTransaction.net_settlements_amount}}</span>
                         </div>
                         <div class="col-12" ng-if="mtc.selectedTransaction.card_number !== '-'">
-                            <strong>Card:</strong> @{{mtc.selectedTransaction.card_number}}
+                            <strong style="color: var(--text-secondary);">Card:</strong> 
+                            <span style="color: var(--text-primary);">@{{mtc.selectedTransaction.card_number}}</span>
                         </div>
                     </div>
                 </div>

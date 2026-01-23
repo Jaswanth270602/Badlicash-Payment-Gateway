@@ -8,6 +8,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
+        :root {
+            --bc-primary: #6366f1;
+            --bc-primary-dark: #4f46e5;
+            --bc-bg: #020617;
+        }
+
         body {
             background: radial-gradient(circle at top left, #1d213b 0, #020617 40%, #020617 100%);
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -23,9 +29,9 @@
         .auth-card {
             max-width: 1080px;
             width: 100%;
-            background: rgba(15, 23, 42, 0.98);
+            background: rgba(15, 23, 42, 0.9);
             border-radius: 22px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
+            border: 1px solid rgba(55, 65, 81, 0.9);
             box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
             overflow: hidden;
         }
@@ -40,7 +46,7 @@
             border-radius: 999px;
             padding: 4px 10px;
             background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(75, 85, 99, 0.9);
+            border: 1px solid rgba(55, 65, 81, 0.9);
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.12em;
@@ -51,12 +57,17 @@
         }
         .nav-tabs .nav-link {
             border: none;
-            color: #9ca3af;
+            color: #d1d5db;
             font-size: 13px;
+            font-weight: 500;
             padding: 10px 10px;
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+        .nav-tabs .nav-link:hover {
+            color: #d1d5db;
+            background: rgba(248, 250, 252, 0.05);
         }
         .nav-tabs .nav-link .step-index {
             width: 20px;
@@ -67,10 +78,14 @@
             align-items: center;
             justify-content: center;
             font-size: 11px;
+            font-weight: 600;
+            color: #d1d5db;
         }
         .nav-tabs .nav-link.active {
-            color: #e5e7eb;
+            color: #f9fafb;
             border-bottom: 2px solid #6366f1;
+            font-weight: 600;
+            background: rgba(248, 250, 252, 0.08) !important;
         }
         .nav-tabs .nav-link.active .step-index {
             background: #6366f1;
@@ -82,21 +97,24 @@
             color: #d1d5db;
         }
         .form-control, .form-select {
-            background: #020617;
+            background: #f8fafc;
             border-radius: 10px;
-            border: 1px solid rgba(55, 65, 81, 0.9);
-            color: #e5e7eb;
+            border: 1px solid rgba(55, 65, 81, 0.3);
+            color: #1f2937;
             font-size: 13px;
         }
         .form-control:focus, .form-select:focus {
             border-color: #6366f1;
             box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
-            background: #020617;
-            color: #e5e7eb;
+            background: #ffffff;
+            color: #1f2937;
+        }
+        .form-control::placeholder {
+            color: #9ca3af;
         }
         .btn-primary-pill {
             border-radius: 999px;
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            background: linear-gradient(135deg, var(--bc-primary) 0%, var(--bc-primary-dark) 100%);
             border: none;
             padding: 10px 22px;
             font-size: 14px;
@@ -104,13 +122,21 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            box-shadow: 0 18px 45px rgba(79, 70, 229, 0.5);
+        }
+        .btn-primary-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 55px rgba(79, 70, 229, 0.7);
         }
         .btn-outline-light-pill {
             border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.5);
             padding: 9px 18px;
             font-size: 13px;
             color: #e5e7eb;
+        }
+        .btn-outline-light-pill:hover {
+            background: rgba(15, 23, 42, 0.85);
         }
         .small-muted {
             font-size: 12px;
@@ -119,6 +145,21 @@
         .error-text {
             font-size: 12px;
             color: #fecaca;
+        }
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fecaca;
+            border-radius: 10px;
+        }
+        .link-light {
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .link-light:hover {
+            color: #6366f1;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -134,7 +175,7 @@
                     <div class="ms-2">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
                             <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height: 42px; width: auto;">
-                            <div class="fw-semibold text-white">{{ config('app.name') }}</div>
+                           
                         </div>
                         <div class="small-muted">Merchant onboarding</div>
                     </div>
@@ -431,18 +472,36 @@
         const submitBtn = document.getElementById('submitBtn');
         const stepIndicator = document.getElementById('stepIndicator');
 
-        function updateStep(delta) {
-            currentIndex = Math.min(Math.max(currentIndex + delta, 0), tabs.length - 1);
-            const targetId = 'tab-' + tabs[currentIndex];
-            const tabTriggerEl = document.querySelector('#' + targetId);
-            if (tabTriggerEl) {
-                new bootstrap.Tab(tabTriggerEl).show();
-            }
+        function updateButtonStates(index) {
+            currentIndex = index;
             prevBtn.disabled = currentIndex === 0;
             nextBtn.classList.toggle('d-none', currentIndex === tabs.length - 1);
             submitBtn.classList.toggle('d-none', currentIndex !== tabs.length - 1);
             stepIndicator.textContent = (currentIndex + 1).toString();
         }
+
+        function updateStep(delta) {
+            const newIndex = Math.min(Math.max(currentIndex + delta, 0), tabs.length - 1);
+            const targetId = 'tab-' + tabs[newIndex];
+            const tabTriggerEl = document.querySelector('#' + targetId);
+            if (tabTriggerEl) {
+                new bootstrap.Tab(tabTriggerEl).show();
+            }
+            updateButtonStates(newIndex);
+        }
+
+        // Listen for tab changes from nav bar clicks
+        const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabElements.forEach(function(tabEl, index) {
+            tabEl.addEventListener('shown.bs.tab', function (event) {
+                // Find which tab was shown
+                const tabId = event.target.id;
+                const tabIndex = tabs.findIndex(tab => 'tab-' + tab === tabId);
+                if (tabIndex !== -1) {
+                    updateButtonStates(tabIndex);
+                }
+            });
+        });
 
         prevBtn.addEventListener('click', function () {
             updateStep(-1);
@@ -451,6 +510,9 @@
         nextBtn.addEventListener('click', function () {
             updateStep(1);
         });
+
+        // Initialize button states on page load
+        updateButtonStates(0);
     })();
 </script>
 </body>
