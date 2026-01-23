@@ -472,18 +472,36 @@
         const submitBtn = document.getElementById('submitBtn');
         const stepIndicator = document.getElementById('stepIndicator');
 
-        function updateStep(delta) {
-            currentIndex = Math.min(Math.max(currentIndex + delta, 0), tabs.length - 1);
-            const targetId = 'tab-' + tabs[currentIndex];
-            const tabTriggerEl = document.querySelector('#' + targetId);
-            if (tabTriggerEl) {
-                new bootstrap.Tab(tabTriggerEl).show();
-            }
+        function updateButtonStates(index) {
+            currentIndex = index;
             prevBtn.disabled = currentIndex === 0;
             nextBtn.classList.toggle('d-none', currentIndex === tabs.length - 1);
             submitBtn.classList.toggle('d-none', currentIndex !== tabs.length - 1);
             stepIndicator.textContent = (currentIndex + 1).toString();
         }
+
+        function updateStep(delta) {
+            const newIndex = Math.min(Math.max(currentIndex + delta, 0), tabs.length - 1);
+            const targetId = 'tab-' + tabs[newIndex];
+            const tabTriggerEl = document.querySelector('#' + targetId);
+            if (tabTriggerEl) {
+                new bootstrap.Tab(tabTriggerEl).show();
+            }
+            updateButtonStates(newIndex);
+        }
+
+        // Listen for tab changes from nav bar clicks
+        const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabElements.forEach(function(tabEl, index) {
+            tabEl.addEventListener('shown.bs.tab', function (event) {
+                // Find which tab was shown
+                const tabId = event.target.id;
+                const tabIndex = tabs.findIndex(tab => 'tab-' + tab === tabId);
+                if (tabIndex !== -1) {
+                    updateButtonStates(tabIndex);
+                }
+            });
+        });
 
         prevBtn.addEventListener('click', function () {
             updateStep(-1);
@@ -492,6 +510,9 @@
         nextBtn.addEventListener('click', function () {
             updateStep(1);
         });
+
+        // Initialize button states on page load
+        updateButtonStates(0);
     })();
 </script>
 </body>
