@@ -242,27 +242,24 @@
                         </div>
                     </div>
 
-                    <h6 class="text-primary mb-3 mt-4">CREATE USER LOGIN FOR MERCHANT</h6>
+                    <h6 class="text-primary mb-3 mt-4">USER LOGIN CREDENTIALS</h6>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> A user account will be automatically created for this merchant. The merchant will appear in the Users tab and can only login after admin verifies their email.
+                    </div>
                     <div class="row g-3 mb-3">
-                        <div class="col-md-12">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="createUserLogin" ng-model="amac.merchantForm.create_user_login">
-                                <label class="form-check-label" for="createUserLogin">Create User Login</label>
-                            </div>
-                            <small class="text-muted">If checked, below fields are required for User login creation.</small>
+                        <div class="col-md-6">
+                            <label class="form-label">Login Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" ng-model="amac.merchantForm.login_name" placeholder="Leave empty to use merchant email" ng-required="false">
+                            <small class="text-muted">If left empty, merchant email will be used as login email</small>
                         </div>
-                        <div class="col-md-6" ng-show="amac.merchantForm.create_user_login">
-                            <label class="form-label">* Login Name</label>
-                            <input type="email" class="form-control" ng-model="amac.merchantForm.login_name" ng-required="amac.merchantForm.create_user_login">
+                        <div class="col-md-6">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" ng-model="amac.merchantForm.password" required>
+                            <small class="text-muted">Password must have minimum 12 characters and should include at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character. If left empty, a random password will be generated.</small>
                         </div>
-                        <div class="col-md-6" ng-show="amac.merchantForm.create_user_login">
-                            <label class="form-label">* Password</label>
-                            <input type="password" class="form-control" ng-model="amac.merchantForm.password" ng-required="amac.merchantForm.create_user_login">
-                            <small class="text-muted">Password must have minimum 12 characters and should include at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character.</small>
-                        </div>
-                        <div class="col-md-6" ng-show="amac.merchantForm.create_user_login">
-                            <label class="form-label">* Retype Password</label>
-                            <input type="password" class="form-control" ng-model="amac.merchantForm.retype_password" ng-required="amac.merchantForm.create_user_login">
+                        <div class="col-md-6">
+                            <label class="form-label">Retype Password</label>
+                            <input type="password" class="form-control" ng-model="amac.merchantForm.retype_password">
                         </div>
                     </div>
                 </form>

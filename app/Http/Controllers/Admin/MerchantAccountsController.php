@@ -13,6 +13,7 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class MerchantAccountsController extends Controller
 {
@@ -148,13 +149,11 @@ class MerchantAccountsController extends Controller
                 'account_type' => 'required|string',
                 'bank_branch' => 'required|string',
                 'bank_ifsc_code' => 'required|string',
-                'login_name' => 'required_if:create_user_login,true|string|unique:users,email',
-                'password' => 'required_if:create_user_login,true|string|min:12|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
-                'retype_password' => 'required_if:create_user_login,true|same:password',
+                'login_name' => 'nullable|email|unique:users,email',
+                'password' => 'nullable|string|min:12|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+                'retype_password' => 'nullable|same:password',
             ], [
                 'password.regex' => 'Password must have minimum 12 characters and should include at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character.',
-                'login_name.required_if' => 'Login name is required when creating user login.',
-                'password.required_if' => 'Password is required when creating user login.',
             ]);
 
             if ($validator->fails()) {
@@ -212,7 +211,7 @@ class MerchantAccountsController extends Controller
                 'bank_branch' => $request->bank_branch,
                 'bank_ifsc_code' => $request->bank_ifsc_code,
                 'is_dummy_account' => $request->boolean('is_dummy_account'),
-                'merchant_type' => $request->get('merchant_type', 'merchant'),
+                'merchant_type' => in_array($request->get('merchant_type'), ['merchant', 'vendor_merchant']) ? $request->get('merchant_type') : 'merchant',
                 'approval_status' => 'not_approved',
                 'status' => 'inactive',
                 'registration_date' => now(),
@@ -222,20 +221,50 @@ class MerchantAccountsController extends Controller
                 'settlement_cycle_international' => $request->get('settlement_cycle_international', 7),
             ]);
 
-            // Create user login if requested
-            if ($request->boolean('create_user_login')) {
-                $merchantRole = Role::where('name', 'merchant')->first();
-                if ($merchantRole) {
-                    User::create([
-                        'name' => $request->name,
-                        'email' => $request->login_name,
-                        'password' => Hash::make($request->password),
-                        'role_id' => $merchantRole->id,
-                        'merchant_id' => $merchant->id,
-                        'status' => 'active',
-                    ]);
-                }
+            // Always create user login for merchant
+            $merchantRole = Role::where('name', 'merchant')->first();
+            if (!$merchantRole) {
+                throw new \RuntimeException('Merchant role not found. Please run database seeders.');
             }
+
+            // Use login_name if provided, otherwise use merchant email
+            $userEmail = $request->login_name ?? $request->email;
+            
+            // Check if user with this email already exists
+            $existingUser = User::where('email', $userEmail)->first();
+            if ($existingUser) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A user with this email already exists. Please use a different email.',
+                    'errors' => ['login_name' => ['This email is already taken']],
+                ], 422);
+            }
+
+            // Generate password if not provided
+            $userPassword = $request->password;
+            if (empty($userPassword)) {
+                // Generate a secure random password that meets requirements
+                $userPassword = Str::random(10) . 'A1!'; // Ensure it meets requirements
+            }
+            
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $userEmail,
+                'password' => Hash::make($userPassword),
+                'role_id' => $merchantRole->id,
+                'merchant_id' => $merchant->id,
+                'status' => 'active',
+                'email_verified_at' => null, // Email not verified by default - admin must verify
+                'timezone' => 'Asia/Kolkata', // Default timezone
+            ]);
+            
+            $this->logInfo('User created for merchant', [
+                'user_id' => $user->id,
+                'merchant_id' => $merchant->id,
+                'email' => $user->email,
+                'email_verified' => false,
+            ]);
 
             DB::commit();
 

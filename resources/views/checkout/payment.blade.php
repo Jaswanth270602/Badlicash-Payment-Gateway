@@ -725,6 +725,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Razorpay Checkout.js -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Cashfree PG v3 SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <script>
         const paymentLink = @json($paymentLink);
         let selectedMethod = 'card';
@@ -735,6 +737,84 @@
         const errorAlert = document.getElementById('errorAlert');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
+
+        // CashFree Checkout Initialization Function
+        function initializeCashFreeCheckout(result) {
+            try {
+                console.log('Initializing CashFree checkout...', result);
+                
+                // Check if CashFree SDK is loaded
+                if (typeof Cashfree === 'undefined') {
+                    console.error('CashFree SDK not loaded');
+                    errorMessage.textContent = 'Payment SDK failed to load. Please refresh the page.';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButton.dataset.processing = '';
+                    return;
+                }
+
+                // Initialize CashFree SDK
+                const cashfree = Cashfree({
+                    mode: "{{ $paymentLink->test_mode ? 'sandbox' : 'production' }}",
+                });
+
+                // Prepare checkout options as per CashFree PG v3 documentation
+                const checkoutOptions = {
+                    paymentSessionId: result.payment_session_id,
+                    redirectTarget: "_modal", // Open in modal (or "_self" for redirect)
+                };
+
+                console.log('CashFree checkout options:', checkoutOptions);
+
+                // Open CashFree checkout
+                cashfree.checkout(checkoutOptions).then(function(checkoutResult) {
+                    console.log('CashFree checkout completed:', checkoutResult);
+                    
+                    // Checkout completed - user has finished payment
+                    // Status will be updated via webhook or return URL
+                    payButtonText.innerHTML = '<span class="spinner"></span> Verifying payment...';
+                    
+                    // Don't poll immediately - wait for webhook or return URL
+                    // If return URL is called, handleReturn() will verify status
+                    // If webhook is received, it will update status
+                    
+                }).catch(function(error) {
+                    console.error('CashFree checkout error:', error);
+                    errorMessage.textContent = error.message || 'Payment processing failed';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButton.dataset.processing = '';
+                    @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    @else
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                    @endif
+                });
+
+            } catch (error) {
+                console.error('CashFree checkout initialization error:', error);
+                errorMessage.textContent = 'Failed to initialize payment. Please try again.';
+                errorAlert.style.display = 'flex';
+                payButton.disabled = false;
+                payButton.dataset.processing = '';
+                @if($paymentLink->allow_partial_payment)
+                const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
+                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
+            }
+        }
+
+        // REMOVED: pollCashFreePaymentStatus()
+        // 
+        // CashFree payments should NOT be polled before checkout.
+        // Status updates come from:
+        // 1. Webhook (primary) - real-time updates
+        // 2. Return URL (fallback) - when user returns from checkout
+        // 
+        // Polling before checkout is useless and causes infinite loops.
 
         // Payment method switching
         document.querySelectorAll('.payment-method-btn').forEach(btn => {
@@ -1090,14 +1170,45 @@
                 payment_details: {}
             };
 
-            // For card payments, don't send card details if Razorpay Checkout.js will be used
-            // The backend will determine if Razorpay should be used, and Razorpay will handle card input
+            // For card payments, send card details for CashFree and other acquirers
+            // For Razorpay, card details are collected via Checkout.js, so we don't send them
             if (selectedMethod === 'card') {
-                // Don't send payment_details for card payments - backend/Razorpay will handle card input
-                // Razorpay Checkout.js will collect card details securely on the frontend
-                // Backend validation will allow empty payment_details for Razorpay Checkout.js
-                // If not Razorpay, backend will return error and we'll handle it
-                delete paymentData.payment_details; // Remove it entirely - backend will validate accordingly
+                const cardNumber = document.getElementById('cardNumber')?.value.replace(/\s/g, '') || '';
+                const expiryMonth = document.getElementById('expiryMonth')?.value.trim() || '';
+                const expiryYear = document.getElementById('expiryYear')?.value.trim() || '';
+                const cardCvv = document.getElementById('cvv')?.value.trim() || '';
+                const cardHolder = document.getElementById('cardHolder')?.value.trim() || '';
+                
+                // Format expiry month (ensure 2 digits)
+                const formattedMonth = expiryMonth.padStart(2, '0');
+                // Format expiry year (ensure 4 digits)
+                let formattedYear = expiryYear;
+                if (formattedYear.length === 2) {
+                    formattedYear = '20' + formattedYear;
+                }
+                
+                // Send card details - backend will determine if Razorpay (uses Checkout.js) or CashFree (needs details)
+                // If Razorpay, backend will ignore payment_details and use Checkout.js
+                // If CashFree or other acquirer, backend will use the card details
+                if (cardNumber && formattedMonth && formattedYear && cardCvv && cardHolder) {
+                    paymentData.payment_details = {
+                        card_number: cardNumber,
+                        expiry_month: formattedMonth,
+                        expiry_year: formattedYear,
+                        cvv: cardCvv,
+                        card_holder: cardHolder,
+                    };
+                } else {
+                    // If card details are incomplete, still send what we have
+                    // Backend will validate and return appropriate error
+                    paymentData.payment_details = {
+                        card_number: cardNumber || '',
+                        expiry_month: formattedMonth || '',
+                        expiry_year: formattedYear || '',
+                        cvv: cardCvv || '',
+                        card_holder: cardHolder || '',
+                    };
+                }
             } else if (selectedMethod === 'upi') {
                 paymentData.payment_details = {
                     upi_id: document.getElementById('upiId').value.trim() || null,
@@ -1161,18 +1272,79 @@
                     body: JSON.stringify(paymentData),
                 });
 
-                const result = await response.json();
+                // Check if response is ok before parsing JSON
+                let result;
+                if (!response.ok) {
+                    // Try to parse error response
+                    try {
+                        result = await response.json();
+                    } catch (e) {
+                        // If not JSON, create error result
+                        result = {
+                            success: false,
+                            message: `Payment failed: ${response.status} ${response.statusText}`,
+                        };
+                    }
+                } else {
+                    result = await response.json();
+                }
                 
                 console.log('Payment response:', result);
                 console.log('result.success:', result.success);
-                console.log('result.use_razorpay_checkout:', result.use_razorpay_checkout);
-                console.log('result.razorpay_key:', result.razorpay_key);
-                console.log('result.razorpay_order_id:', result.razorpay_order_id);
+                console.log('result.gateway:', result.gateway);
+                
+                // Remove Razorpay-specific console logs when gateway is cashfree
+                if (result.gateway !== 'cashfree') {
+                    console.log('result.use_razorpay_checkout:', result.use_razorpay_checkout);
+                    console.log('result.razorpay_key:', result.razorpay_key);
+                    console.log('result.razorpay_order_id:', result.razorpay_order_id);
+                }
 
                 if (result.success) {
-                    console.log('Payment response success is true, checking Razorpay Checkout...');
-                    // Check if we need to use Razorpay Checkout.js
-                    if (result.use_razorpay_checkout && result.razorpay_key && result.razorpay_order_id) {
+                    console.log('Payment response success is true, checking payment gateway...');
+                    console.log('Gateway type:', result.gateway || (result.use_razorpay_checkout ? 'razorpay' : 'other'));
+                    
+                    // CASHFREE PAYMENT FLOW
+                    if (result.gateway === 'cashfree') {
+                        console.log('✅ CashFree payment flow initiated', {
+                            payment_session_id: result.payment_session_id,
+                            gateway_order_id: result.gateway_order_id,
+                            transaction_id: result.transaction_id,
+                            status: result.status
+                        });
+                        
+                        // CashFree: Order created, payment_session_id returned
+                        // Status is 'pending' (ACTIVE in CashFree) - this is expected
+                        // Frontend MUST open CashFree checkout
+                        if (result.payment_session_id) {
+                            // Reset button state for checkout
+                            payButton.dataset.processing = '';
+                            payButton.disabled = false;
+                            payButtonText.textContent = 'Opening payment...';
+                            
+                            // Initialize CashFree checkout immediately
+                            initializeCashFreeCheckout(result);
+                        } else {
+                            // Missing payment_session_id - error
+                            console.error('CashFree: payment_session_id missing', result);
+                            errorMessage.textContent = 'Payment session not created. Please try again.';
+                            errorAlert.style.display = 'flex';
+                            payButton.disabled = false;
+                            payButton.dataset.processing = '';
+                            @if($paymentLink->allow_partial_payment)
+                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                            @else
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                            @endif
+                        }
+                        return; // Exit early - don't process Razorpay logic
+                    }
+                    
+                    // RAZORPAY PAYMENT FLOW (only if gateway is razorpay)
+                    // IMPORTANT: Only use Razorpay Checkout.js if gateway is explicitly 'razorpay'
+                    // CashFree and other gateways should NOT trigger Razorpay logic
+                    if (result.gateway === 'razorpay' && result.use_razorpay_checkout && result.razorpay_key && result.razorpay_order_id) {
                         console.log('✅ All conditions met - Opening Razorpay Checkout.js', {
                             key: result.razorpay_key,
                             order_id: result.razorpay_order_id,
@@ -1504,8 +1676,16 @@
                             return false;
                         }
                     } else {
-                        // Normal payment flow (non-Razorpay Checkout.js or non-card payments)
-                        let successMsg = `Order ID: ${result.order_id} | Transaction ID: ${result.transaction_id}`;
+                        // CashFree or other server-side gateway flow (NOT Razorpay)
+                        const gatewayName = result.gateway || 'payment gateway';
+                        console.log(`Payment succeeded through ${gatewayName} (server-side processing)`);
+                        console.log('Transaction ID:', result.transaction_id);
+                        console.log('Gateway Payment ID:', result.gateway_payment_id);
+                        
+                        let successMsg = result.message || 'Payment processed successfully!';
+                        if (result.transaction_id) {
+                            successMsg += `\n\nTransaction ID: ${result.transaction_id}`;
+                        }
                         
                         // Show partial payment info if available
                         @if($paymentLink->allow_partial_payment)
@@ -1527,7 +1707,7 @@
                         payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                         successAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         
-                        // Redirect to merchant test app success page after 2 seconds
+                        // Redirect to success page after 2 seconds
                         if (result.redirect_url) {
                             setTimeout(() => {
                                 window.location.href = result.redirect_url;
@@ -1559,9 +1739,27 @@
                 }
             } catch (error) {
                 console.error('Payment error:', error);
-                errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                
+                // Try to get error message from response if available
+                let errorMsg = 'Network error. Please check your connection and try again.';
+                if (error.response) {
+                    try {
+                        const errorData = await error.response.json();
+                        if (errorData.message) {
+                            errorMsg = errorData.message;
+                        }
+                    } catch (e) {
+                        // If response is not JSON, use default message
+                    }
+                } else if (error.message) {
+                    errorMsg = error.message;
+                }
+                
+                errorMessage.textContent = errorMsg;
                 errorAlert.style.display = 'flex';
+                errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 payButton.disabled = false;
+                payButton.dataset.processing = '';
                 @if($paymentLink->allow_partial_payment)
                     const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
                     payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;

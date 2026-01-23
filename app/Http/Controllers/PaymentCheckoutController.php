@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Traits\LogsConditionally;
 use App\Services\PaymentService;
 use App\Services\PaymentSimulationService;
-use App\Services\Acquirers\AcquirerResolver;
-use App\Services\Acquirers\RazorpayEmbeddedPayment;
+use App\Services\PaymentGateways\GatewayFactory;
+use App\Contracts\PaymentGatewayInterface;
 use Illuminate\Http\Request;
 use App\Models\PaymentLink;
 use App\Models\Order;
@@ -104,74 +104,152 @@ class PaymentCheckoutController extends Controller
                 ], 400);
             }
 
-            // Check if this will use Razorpay Checkout.js (which handles card input on frontend)
-            // We need to check this BEFORE validation to conditionally validate card details
+            // Get merchant and determine gateway requirements
             $merchant = $paymentLink->merchant;
-            $hasAcquirerAccount = $merchant->getActiveAcquirerAccount() !== null;
-            $isRazorpayCard = false;
+            $acquirerAccount = $merchant->getActiveAcquirerAccount();
+            $hasAcquirerAccount = $acquirerAccount !== null;
+            
+            // Determine if payment details are required based on gateway
+            $paymentDetailsRequired = false;
+            $gateway = null;
             
             if ($hasAcquirerAccount && $request->payment_method === 'card') {
-                $acquirerAccount = $merchant->getActiveAcquirerAccount();
-                $isRazorpayCard = stripos($acquirerAccount->acquirer_name, 'razorpay') !== false;
+                try {
+                    $gateway = GatewayFactory::make($merchant, $acquirerAccount);
+                    $gatewayName = $gateway->getGatewayName();
+                    
+                    $this->logInfo('Gateway determined for payment validation', [
+                        'merchant_id' => $merchant->id,
+                        'acquirer_name' => $acquirerAccount->acquirer_name,
+                        'gateway_name' => $gatewayName,
+                        'payment_method' => $request->payment_method,
+                        'requires_frontend_sdk' => $gateway->requiresFrontendSdk(),
+                    ]);
+                    
+                    // CashFree requires payment_details for server-side processing
+                    // Razorpay uses Checkout.js, so payment_details not required
+                    if ($gatewayName === 'cashfree') {
+                        $paymentDetailsRequired = true;
+                    } else {
+                        $paymentDetailsRequired = false;
+                    }
+                } catch (\Exception $e) {
+                    $this->logError('Failed to initialize gateway for validation', [
+                        'merchant_id' => $merchant->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Fallback: if gateway initialization fails, don't require payment details
+                    $paymentDetailsRequired = false;
+                }
             }
 
-            // Validate request - payment_details can be nullable for Razorpay Checkout.js
-            $validator = Validator::make($request->all(), [
+            // Sanitize customer phone number before validation
+            $customerDetails = $request->customer_details ?? [];
+            if (isset($customerDetails['phone'])) {
+                $customerDetails['phone'] = preg_replace('/[^0-9]/', '', $customerDetails['phone']);
+            }
+            
+            $validator = Validator::make(array_merge($request->all(), ['customer_details' => $customerDetails]), [
                 'payment_method' => 'required|in:card,upi,netbanking,wallet',
                 'customer_details' => 'required|array',
                 'customer_details.name' => 'required|string|max:255',
                 'customer_details.email' => 'required|email',
-                'customer_details.phone' => 'required|string|regex:/^[0-9]{10}$/',
-                'payment_details' => $isRazorpayCard ? 'nullable|array' : 'required|array', // Optional for Razorpay Checkout.js
+                'customer_details.phone' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
+                'payment_details' => $paymentDetailsRequired ? 'required|array' : 'nullable|array',
                 'amount' => 'nullable|numeric|min:0.01', // Optional custom amount for partial payment
             ]);
+            
+            // Additional validation for payment_details when required
+            if ($paymentDetailsRequired) {
+                if (!$request->has('payment_details') || empty($request->payment_details)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Card details are required for payment processing',
+                        'errors' => ['payment_details' => ['Card details are required']],
+                    ], 422);
+                }
+                
+                // Sanitize payment details before validation
+                $paymentDetails = $request->payment_details;
+                
+                // Remove spaces and non-numeric characters from card number
+                if (isset($paymentDetails['card_number'])) {
+                    $paymentDetails['card_number'] = preg_replace('/[^0-9]/', '', $paymentDetails['card_number']);
+                }
+                
+                // Remove non-numeric characters from CVV
+                if (isset($paymentDetails['cvv'])) {
+                    $paymentDetails['cvv'] = preg_replace('/[^0-9]/', '', $paymentDetails['cvv']);
+                }
+                
+                // Ensure expiry month is 2 digits
+                if (isset($paymentDetails['expiry_month'])) {
+                    $paymentDetails['expiry_month'] = str_pad(preg_replace('/[^0-9]/', '', $paymentDetails['expiry_month']), 2, '0', STR_PAD_LEFT);
+                }
+                
+                // Ensure expiry year is 4 digits
+                if (isset($paymentDetails['expiry_year'])) {
+                    $expiryYear = preg_replace('/[^0-9]/', '', $paymentDetails['expiry_year']);
+                    if (strlen($expiryYear) == 2) {
+                        $expiryYear = '20' . $expiryYear;
+                    }
+                    $paymentDetails['expiry_year'] = $expiryYear;
+                }
+                
+                // Trim card holder name
+                if (isset($paymentDetails['card_holder'])) {
+                    $paymentDetails['card_holder'] = trim($paymentDetails['card_holder']);
+                }
+                
+                $paymentDetailsValidator = Validator::make($paymentDetails, [
+                    'card_number' => ['required', 'string', 'regex:/^[0-9]{13,19}$/'],
+                    'cvv' => ['required', 'string', 'regex:/^[0-9]{3,4}$/'],
+                    'expiry_month' => ['required', 'string', 'regex:/^(0[1-9]|1[0-2])$/'],
+                    'expiry_year' => ['required', 'string', 'regex:/^[0-9]{4}$/'],
+                    'card_holder' => ['required', 'string', 'max:255'],
+                ]);
+                
+                if ($paymentDetailsValidator->fails()) {
+                    $errorMessages = [];
+                    foreach ($paymentDetailsValidator->errors()->all() as $error) {
+                        $errorMessages[] = $error;
+                    }
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Card details validation failed: ' . implode(', ', $errorMessages),
+                        'errors' => $paymentDetailsValidator->errors(),
+                    ], 422);
+                }
+            }
 
             if ($validator->fails()) {
+                $errorMessages = [];
+                foreach ($validator->errors()->all() as $error) {
+                    $errorMessages[] = $error;
+                }
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation failed',
+                    'message' => 'Validation failed: ' . implode(', ', $errorMessages),
                     'errors' => $validator->errors(),
                 ], 422);
             }
 
             // Validate payment method details
             $paymentMethod = $request->payment_method;
-            $paymentDetails = $request->payment_details ?? [];
-
-            // Only validate card details if NOT using Razorpay Checkout.js
-            // Razorpay Checkout.js handles card input securely on the frontend
-            if ($paymentMethod === 'card' && !$isRazorpayCard && empty($paymentDetails)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Card details are required',
-                    'errors' => ['payment_details' => ['Card details must be provided']],
-                ], 422);
-            }
-
-            if ($paymentMethod === 'card' && !$isRazorpayCard && !empty($paymentDetails)) {
-                $cardValidator = Validator::make($paymentDetails, [
-                    'card_number' => 'required|string',
-                    'card_holder' => 'required|string|max:255',
-                    'expiry_month' => 'required|digits:2',
-                    'expiry_year' => 'required|digits:4',
-                    'cvv' => 'required|digits:3',
-                ]);
-
-                if ($cardValidator->fails()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid card details',
-                        'errors' => $cardValidator->errors(),
-                    ], 422);
-                }
-            } elseif ($paymentMethod === 'card' && $isRazorpayCard) {
-                // For Razorpay Checkout.js, payment_details can be empty
-                // Razorpay will collect card details securely on the frontend
-                $paymentDetails = [];
-            } elseif ($paymentMethod === 'card' && $isRazorpayCard) {
-                // For Razorpay Checkout.js, card details are handled by Razorpay
-                // Just ensure payment_details is an array (can be empty)
-                if (!is_array($paymentDetails)) {
+            
+            // Use sanitized payment details if available (from validation above), otherwise use raw request
+            if ($paymentDetailsRequired && isset($paymentDetails)) {
+                // $paymentDetails is already sanitized from validation above
+                // No need to validate again - already validated
+            } else {
+                $paymentDetails = $request->payment_details ?? [];
+                
+                // For Razorpay Checkout.js or simulation mode, payment_details can be empty
+                if ($paymentMethod === 'card' && ($isRazorpayCard || !$hasAcquirerAccount)) {
+                    // Razorpay will collect card details securely on the frontend
+                    // Simulation service doesn't require real card details
                     $paymentDetails = [];
                 }
             }
@@ -226,39 +304,35 @@ class PaymentCheckoutController extends Controller
                 'description' => $paymentLink->title . ($paymentLink->allow_partial_payment ? ' (Partial Payment)' : ''),
             ];
 
-            // Check if merchant has Razorpay acquirer account - use PaymentService if available
-            // Note: $merchant and $hasAcquirerAccount already set above during validation
-            
-            // Process payment through PaymentService (Razorpay) or SimulationService (fallback)
+            // Process payment through GatewayFactory (clean routing architecture)
             try {
                 if ($hasAcquirerAccount) {
-                    // Use PaymentService which will route to Razorpay adapter
-                    $acquirerAccount = $merchant->getActiveAcquirerAccount();
-                    $this->logInfo('Processing payment through acquirer adapter', [
+                    // Get or create gateway instance
+                    if (!$gateway) {
+                        $gateway = GatewayFactory::make($merchant, $acquirerAccount);
+                    }
+                    
+                    $gatewayName = $gateway->getGatewayName();
+                    
+                    $this->logInfo('Processing payment through gateway', [
                         'merchant_id' => $merchant->id,
-                        'acquirer_account' => $acquirerAccount->acquirer_name,
+                        'gateway' => $gatewayName,
+                        'payment_method' => $paymentMethod,
                     ]);
                     
-                    // Check if this is Razorpay and card payment - use Checkout.js
-                    $isRazorpay = stripos($acquirerAccount->acquirer_name, 'razorpay') !== false;
-                    $isCardPayment = $paymentMethod === 'card';
+                    // Create order first
+                    $order = $this->paymentService->createOrder($merchant, [
+                        'amount' => $paymentAmount,
+                        'currency' => $paymentLink->currency,
+                        'customer_details' => $request->customer_details,
+                        'description' => $paymentLink->title,
+                        'metadata' => ['payment_link_id' => $paymentLink->id],
+                    ]);
                     
-                    if ($isRazorpay && $isCardPayment) {
-                        // For Razorpay card payments, use Checkout.js on frontend
-                        // Create order first
-                        $order = $this->paymentService->createOrder($merchant, [
-                            'amount' => $paymentAmount,
-                            'currency' => $paymentLink->currency,
-                            'customer_details' => $request->customer_details,
-                            'description' => $paymentLink->title,
-                            'metadata' => ['payment_link_id' => $paymentLink->id],
-                        ]);
-                        
-                        // Create Razorpay order using the adapter
-                        $resolver = app(\App\Services\Acquirers\AcquirerResolver::class);
-                        $adapter = $resolver->resolve($acquirerAccount);
-                        
-                        $razorpayOrderResult = $adapter->createOrder([
+                    // Handle CashFree separately - it does NOT support server-side payment initiation
+                    if ($gatewayName === 'cashfree') {
+                        // Step 1: Create CashFree order (returns payment_session_id)
+                        $cashfreeOrderResult = $gateway->createOrder([
                             'order_id' => $order->order_id,
                             'amount' => $paymentAmount,
                             'currency' => $paymentLink->currency,
@@ -267,77 +341,89 @@ class PaymentCheckoutController extends Controller
                             'metadata' => ['payment_link_id' => $paymentLink->id],
                         ]);
                         
-                        // Save Razorpay order ID to our order
-                        if ($razorpayOrderResult['success'] && isset($razorpayOrderResult['gateway_order_id'])) {
-                            $order->gateway_order_id = $razorpayOrderResult['gateway_order_id'];
-                            $order->save();
-                            
-                            $this->logInfo('Razorpay order created and saved', [
-                                'order_id' => $order->order_id,
-                                'gateway_order_id' => $order->gateway_order_id,
-                            ]);
-                        } else {
-                            $this->logError('Failed to create Razorpay order', [
-                                'order_id' => $order->order_id,
-                                'razorpay_result' => $razorpayOrderResult,
-                            ]);
-                            throw new \RuntimeException('Failed to create Razorpay order');
+                        if (!$cashfreeOrderResult['success']) {
+                            throw new \RuntimeException($cashfreeOrderResult['message'] ?? 'Failed to create CashFree order');
                         }
                         
-                        // Get Razorpay API key for frontend
-                        $razorpayKeyId = $acquirerAccount->additional_key_1 ?? $acquirerAccount->secret_key;
+                        // Save gateway order ID
+                        $order->gateway_order_id = $cashfreeOrderResult['gateway_order_id'] ?? null;
+                        $order->save();
                         
-                        // Return Razorpay order details for Checkout.js
-                        $result = [
-                            'success' => true,
-                            'use_razorpay_checkout' => true,
-                            'razorpay_key' => $razorpayKeyId,
-                            'razorpay_order_id' => $order->gateway_order_id,
-                            'amount' => $paymentAmount * 100, // Razorpay expects amount in paise
-                            'currency' => $paymentLink->currency,
-                            'order_id' => $order->order_id,
-                            'customer_details' => $request->customer_details,
-                            'payment_link_id' => $paymentLink->id,
-                            'message' => 'Please complete payment using Razorpay Checkout',
-                        ];
-                    } else {
-                        // For non-card payments or non-Razorpay, process normally
-                        $order = $this->paymentService->createOrder($merchant, [
-                            'amount' => $paymentAmount,
-                            'currency' => $paymentLink->currency,
-                            'customer_details' => $request->customer_details,
-                            'description' => $paymentLink->title,
-                            'metadata' => ['payment_link_id' => $paymentLink->id],
-                        ]);
-                        
-                        // Process payment with card details
+                        // Step 2: Create transaction record (status: pending)
                         $transaction = $this->paymentService->processPayment($order, [
                             'payment_method' => $paymentMethod,
-                            'card_number' => $paymentDetails['card_number'] ?? null,
-                            'cvv' => $paymentDetails['cvv'] ?? null,
-                            'expiry_month' => $paymentDetails['expiry_month'] ?? null,
-                            'expiry_year' => $paymentDetails['expiry_year'] ?? null,
-                            'card_holder' => $paymentDetails['card_holder'] ?? null,
                         ]);
                         
-                        // Update payment link if successful
-                        if ($transaction->status === 'success') {
-                            if ($paymentLink->allow_partial_payment) {
-                                $isFullyPaid = $paymentLink->addPartialPayment($paymentAmount);
-                            } else {
-                                $paymentLink->markAsPaid();
-                            }
-                        }
+                        $transaction->status = 'pending'; // ACTIVE in CashFree = pending
+                        // Note: gateway_order_id is stored on Order model, not Transaction
+                        // Transaction uses gateway_txn_id for payment IDs (will be set via webhook)
+                        $transaction->save();
                         
-                        // Format result similar to simulation service
-                        $result = [
-                            'success' => $transaction->status === 'success',
-                            'message' => $transaction->status === 'success' ? 'Payment successful' : ($transaction->failure_reason ?? 'Payment failed'),
+                        // Step 3: Return payment_session_id for frontend checkout
+                        // CashFree order creation returns payment_session_id directly
+                        // NO server-side payment initiation needed
+                        return response()->json([
+                            'success' => true,
+                            'gateway' => 'cashfree',
                             'order_id' => $order->order_id,
+                            'gateway_order_id' => $order->gateway_order_id,
+                            'payment_session_id' => $cashfreeOrderResult['payment_session_id'] ?? null,
                             'transaction_id' => $transaction->txn_id,
-                            'status' => $transaction->status,
-                            'gateway_txn_id' => $transaction->gateway_txn_id,
-                        ];
+                            'status' => 'pending', // ACTIVE = pending (awaiting checkout)
+                            'amount' => $paymentAmount,
+                            'currency' => $paymentLink->currency,
+                            'customer_details' => $request->customer_details,
+                            'message' => 'Order created. Please complete payment...',
+                            'return_url' => url("/payment/return/{$token}"),
+                            'notify_url' => url("/webhooks/cashfree/{$token}"),
+                        ]);
+                    }
+                    
+                    // For Razorpay and other gateways, use standard flow
+                    // Prepare payment data for gateway
+                    $gatewayPaymentData = [
+                        'order_id' => $order->order_id,
+                        'amount' => $paymentAmount,
+                        'currency' => $paymentLink->currency,
+                        'payment_method' => $paymentMethod,
+                        'customer_details' => $request->customer_details,
+                        'description' => $paymentLink->title,
+                        'metadata' => ['payment_link_id' => $paymentLink->id],
+                    ];
+                    
+                    // Add payment details for server-side processing (Razorpay, etc.)
+                    if ($paymentMethod === 'card' && $gatewayName !== 'cashfree') {
+                        $gatewayPaymentData['card_number'] = $paymentDetails['card_number'] ?? null;
+                        $gatewayPaymentData['cvv'] = $paymentDetails['cvv'] ?? null;
+                        $gatewayPaymentData['expiry_month'] = $paymentDetails['expiry_month'] ?? null;
+                        $gatewayPaymentData['expiry_year'] = $paymentDetails['expiry_year'] ?? null;
+                        $gatewayPaymentData['card_holder'] = $paymentDetails['card_holder'] ?? null;
+                    }
+                    
+                    // Process payment through gateway
+                    $gatewayResult = $gateway->charge($gatewayPaymentData);
+                    
+                    // Handle response based on gateway type
+                    if ($gatewayName === 'razorpay' && $gateway->requiresFrontendSdk()) {
+                        // Razorpay: Return order details for Checkout.js
+                        $order->gateway_order_id = $gatewayResult['razorpay_order_id'] ?? null;
+                        $order->save();
+                        
+                        return response()->json([
+                            'success' => true,
+                            'gateway' => 'razorpay',
+                            'use_razorpay_checkout' => true,
+                            'razorpay_key' => $gatewayResult['razorpay_key'] ?? null,
+                            'razorpay_order_id' => $gatewayResult['razorpay_order_id'] ?? null,
+                            'order_id' => $order->order_id,
+                            'amount' => $gatewayResult['amount'] ?? ($paymentAmount * 100),
+                            'currency' => $paymentLink->currency,
+                            'customer_details' => $request->customer_details,
+                            'message' => 'Please complete payment using Razorpay Checkout',
+                        ]);
+                    } else {
+                        // Other gateways - generic handling
+                        throw new \RuntimeException("Unsupported gateway: {$gatewayName}");
                     }
                 } else {
                     // Fallback to simulation service if no acquirer account
@@ -413,16 +499,26 @@ class PaymentCheckoutController extends Controller
             }
 
         } catch (\Exception $e) {
+            $errorMessage = $e->getMessage() ?: 'An error occurred. Please try again.';
+            
             $this->logError('Payment processing error', [
                 'token' => $token,
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
             
+            // Always return the actual error message for better debugging
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred. Please try again.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
+                'message' => $errorMessage,
+                'error' => config('app.debug') ? [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ] : null,
             ], 500);
         }
     }
@@ -777,6 +873,83 @@ class PaymentCheckoutController extends Controller
     {
         $paymentLink = PaymentLink::where('link_token', $token)->firstOrFail();
         return view('checkout.failed', compact('paymentLink'));
+    }
+
+    /**
+     * Handle CashFree return URL after payment.
+     */
+    public function handleReturn(Request $request, string $token)
+    {
+        try {
+            $paymentLink = PaymentLink::where('link_token', $token)->firstOrFail();
+            
+            // Get order_id and payment_status from query parameters
+            $gatewayOrderId = $request->query('order_id') ?? $request->query('cf_order_id');
+            $paymentStatus = $request->query('payment_status') ?? $request->query('order_status');
+            
+            if (!$gatewayOrderId) {
+                return redirect("/pay/{$token}")->with('error', 'Order ID missing in return URL');
+            }
+
+            // Find order
+            $order = Order::where('gateway_order_id', $gatewayOrderId)
+                ->where('merchant_id', $paymentLink->merchant_id)
+                ->first();
+
+            if (!$order) {
+                return redirect("/pay/{$token}")->with('error', 'Order not found');
+            }
+
+            // Get CashFree adapter and verify payment status
+            $acquirerAccount = $paymentLink->merchant->acquirerAccounts()
+                ->where('acquirer_name', 'cashfree')
+                ->where('is_active', true)
+                ->first();
+
+            if ($acquirerAccount) {
+                $resolver = app(\App\Services\Acquirers\AcquirerResolver::class);
+                $adapter = $resolver->resolve($acquirerAccount);
+                
+                // Verify payment status from CashFree
+                $statusResult = $adapter->getPaymentStatus($gatewayOrderId);
+                
+                if ($statusResult['success']) {
+                    $transaction = $order->transactions()->first();
+                    if ($transaction) {
+                        $transaction->status = $statusResult['status'];
+                        if (isset($statusResult['payment_id'])) {
+                            $transaction->gateway_txn_id = $statusResult['payment_id'];
+                            $transaction->gateway_transaction_id = $statusResult['payment_id'];
+                        }
+                        $transaction->save();
+                        
+                        // Update payment link if successful
+                        if ($statusResult['status'] === 'success') {
+                            if ($paymentLink->allow_partial_payment) {
+                                $paymentLink->addPartialPayment($transaction->amount);
+                            } else {
+                                $paymentLink->markAsPaid();
+                            }
+                            
+                            return redirect("/payment/success/{$token}")->with('transaction_id', $transaction->txn_id);
+                        } elseif ($statusResult['status'] === 'failed') {
+                            return redirect("/payment/failed/{$token}")->with('error', 'Payment failed');
+                        }
+                    }
+                }
+            }
+
+            // If status is still pending, redirect back to payment page with message
+            return redirect("/pay/{$token}")->with('info', 'Payment is being processed. Please wait...');
+
+        } catch (\Exception $e) {
+            $this->logError('Error handling CashFree return', [
+                'token' => $token,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect("/pay/{$token}")->with('error', 'Payment verification error. Please try again.');
+        }
     }
 }
 

@@ -48,6 +48,7 @@ use App\Http\Controllers\DisputesController;
 use App\Http\Controllers\PaymentCheckoutController;
 use App\Http\Controllers\Admin\SubscriptionsController;
 use App\Http\Controllers\Admin\RiskManagementController;
+use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AcquirerAccountsController;
 use App\Http\Controllers\Admin\AcquirerAccountUploadController;
@@ -74,6 +75,12 @@ Route::post('/pay/{token}/verify-razorpay', [PaymentCheckoutController::class, '
 Route::get('/pay/{token}/callback', [PaymentCheckoutController::class, 'handleEmbeddedCallback'])->name('payment.embedded.callback');
 Route::get('/payment/success/{token}', [PaymentCheckoutController::class, 'success'])->name('payment.success');
 Route::get('/payment/failed/{token}', [PaymentCheckoutController::class, 'failed'])->name('payment.failed');
+Route::get('/payment/return/{token}', [PaymentCheckoutController::class, 'handleReturn'])->name('payment.return');
+
+// CashFree webhooks and verification
+use App\Http\Controllers\CashFreeWebhookController;
+Route::post('/webhooks/cashfree/{token}', [CashFreeWebhookController::class, 'handleWebhook'])->name('webhooks.cashfree');
+Route::post('/pay/{token}/verify-cashfree', [CashFreeWebhookController::class, 'verifyOrder'])->name('payment.verify.cashfree');
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -721,6 +728,32 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.acquirer.rates.destroy');
         Route::post('/acquirer-rates/{id}/duplicate', [AcquirerRatesController::class, 'duplicate'])
             ->name('admin.acquirer.rates.duplicate');
+
+        // User Settings Module
+        Route::get('/users', [UsersController::class, 'index'])
+            ->name('admin.users.index');
+        Route::get('/users/data', [UsersController::class, 'getData'])
+            ->name('admin.users.data');
+        Route::post('/users', [UsersController::class, 'store'])
+            ->name('admin.users.store');
+        Route::put('/users/{id}', [UsersController::class, 'update'])
+            ->name('admin.users.update');
+        Route::delete('/users/{id}', [UsersController::class, 'destroy'])
+            ->name('admin.users.destroy');
+        Route::post('/users/{id}/toggle-email-verification', [UsersController::class, 'toggleEmailVerification'])
+            ->name('admin.users.toggle-email-verification');
+        Route::post('/users/{id}/toggle-2fa', [UsersController::class, 'toggle2FA'])
+            ->name('admin.users.toggle-2fa');
+        Route::post('/users/{id}/update-status', [UsersController::class, 'updateStatus'])
+            ->name('admin.users.update-status');
+        Route::get('/users/{id}', [UsersController::class, 'show'])
+            ->name('admin.users.show');
+        Route::get('/users/roles', [UsersController::class, 'getRoles'])
+            ->name('admin.users.roles');
+        Route::get('/users/merchants', [UsersController::class, 'getMerchants'])
+            ->name('admin.users.merchants');
+        Route::get('/users/teams', [UsersController::class, 'getTeams'])
+            ->name('admin.users.teams');
     });
 });
 

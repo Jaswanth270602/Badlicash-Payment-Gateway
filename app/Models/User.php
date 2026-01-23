@@ -20,6 +20,11 @@ class User extends Authenticatable
         'role_id',
         'merchant_id',
         'status',
+        'timezone',
+        'last_login_at',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
@@ -29,6 +34,9 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
+        'two_factor_enabled' => 'boolean',
+        'two_factor_confirmed_at' => 'datetime',
         'password' => 'hashed',
     ];
 

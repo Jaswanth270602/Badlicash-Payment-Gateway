@@ -184,7 +184,7 @@ class PaymentSimulationService
     protected function simulatePaymentGateway(array $paymentData): array
     {
         $paymentMethod = $paymentData['payment_method'];
-        $paymentDetails = $paymentData['payment_details'];
+        $paymentDetails = $paymentData['payment_details'] ?? []; // Handle missing payment_details
         $testMode = $paymentData['test_mode'] ?? false;
 
         // In test mode, simulate based on test data
@@ -200,7 +200,7 @@ class PaymentSimulationService
     /**
      * Simulate test payment based on test card numbers and UPI IDs.
      */
-    protected function simulateTestPayment(string $paymentMethod, array $paymentDetails): array
+    protected function simulateTestPayment(string $paymentMethod, array $paymentDetails = []): array
     {
         // Check for explicit simulation result (from test mode buttons)
         if (isset($paymentDetails['simulate']) && isset($paymentDetails['simulate_result'])) {
@@ -221,7 +221,19 @@ class PaymentSimulationService
         }
 
         if ($paymentMethod === 'card') {
+            // Handle case where payment_details might be empty (test mode simulation)
             $cardNumber = str_replace(' ', '', $paymentDetails['card_number'] ?? '');
+
+            // If no card number provided (test mode without card details), default to success
+            if (empty($cardNumber)) {
+                return [
+                    'success' => true,
+                    'gateway_txn_id' => 'TEST_' . strtoupper(uniqid()),
+                    'message' => 'Payment successful (test mode)',
+                    'payment_method' => 'card',
+                    'card_last4' => '0000',
+                ];
+            }
 
             // Test card numbers
             $successCards = ['4242424242424242', '4111111111111111', '5555555555554444'];

@@ -141,6 +141,8 @@ class RegistrationController extends Controller
                 'role_id' => $merchantRole ? $merchantRole->id : null,
                 'merchant_id' => $merchant->id,
                 'status' => 'active',
+                'email_verified_at' => null, // Email not verified by default - admin must verify
+                'timezone' => 'Asia/Kolkata', // Default timezone
             ]);
 
             DB::commit();

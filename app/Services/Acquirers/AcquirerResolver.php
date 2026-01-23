@@ -29,6 +29,9 @@ class AcquirerResolver
             'razorpay' => RazorpayAcquirerAdapter::class,
             'razorpay_test' => RazorpayAcquirerAdapter::class,
             'razorpay_live' => RazorpayAcquirerAdapter::class,
+            'cashfree' => CashFreeAcquirerAdapter::class,
+            'cashfree_test' => CashFreeAcquirerAdapter::class,
+            'cashfree_live' => CashFreeAcquirerAdapter::class,
             // Add more acquirers here as they are implemented
             // 'paytm' => PaytmAcquirerAdapter::class,
             // 'hdfc' => HdfcAcquirerAdapter::class,

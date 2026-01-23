@@ -1183,6 +1183,27 @@
                 <span>Acquirer Rates</span>
             </a>
         </div>
+
+        <!-- User Settings Dropdown -->
+        <div class="sidebar-menu-item sidebar-menu-dropdown {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'active' : '' }}" onclick="toggleDropdown(this)">
+            <i class="bi bi-people"></i>
+            <span>User Settings</span>
+            <i class="bi bi-chevron-down ms-auto" style="font-size: 12px;"></i>
+        </div>
+        <div class="sidebar-submenu" style="display: {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'block' : 'none' }};">
+            <a href="{{ route('admin.users.index') }}" class="sidebar-menu-item sidebar-submenu-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" style="padding-left: 50px;">
+                <i class="bi bi-person"></i>
+                <span>Users</span>
+            </a>
+            <a href="#" class="sidebar-menu-item sidebar-submenu-item" style="padding-left: 50px;">
+                <i class="bi bi-person-badge"></i>
+                <span>Roles</span>
+            </a>
+            <a href="#" class="sidebar-menu-item sidebar-submenu-item" style="padding-left: 50px;">
+                <i class="bi bi-shield-check"></i>
+                <span>Permissions</span>
+            </a>
+        </div>
         @endif
     </nav>
 </div>

@@ -256,7 +256,7 @@
                         login_name: '',
                         password: '',
                         retype_password: '',
-                        merchant_type: vm.filters.merchant_type,
+                        merchant_type: (vm.filters.merchant_type && vm.filters.merchant_type !== 'all') ? vm.filters.merchant_type : 'merchant',
                         settlement_cycle_domestic: 1,
                         settlement_cycle_international: 7
                     };
@@ -295,6 +295,11 @@
                             alert('Password must have minimum 12 characters and should include at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character.');
                             return;
                         }
+                    }
+
+                    // Ensure merchant_type is valid
+                    if (!vm.merchantForm.merchant_type || !['merchant', 'vendor_merchant'].includes(vm.merchantForm.merchant_type)) {
+                        vm.merchantForm.merchant_type = 'merchant';
                     }
 
                     vm.submitting = true;
