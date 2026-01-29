@@ -759,24 +759,26 @@
                 });
 
                 // Prepare checkout options as per CashFree PG v3 documentation
+                // Use "_modal" to open in overlay modal (stays within BadliCash page)
                 const checkoutOptions = {
                     paymentSessionId: result.payment_session_id,
-                    redirectTarget: "_modal", // Open in modal (or "_self" for redirect)
+                    redirectTarget: "_modal", // Modal overlay - NO page redirect
                 };
 
                 console.log('CashFree checkout options:', checkoutOptions);
+                console.log('Opening CashFree modal (no redirect)...');
 
-                // Open CashFree checkout
+                // Open CashFree checkout in modal
                 cashfree.checkout(checkoutOptions).then(function(checkoutResult) {
                     console.log('CashFree checkout completed:', checkoutResult);
                     
-                    // Checkout completed - user has finished payment
-                    // Status will be updated via webhook or return URL
+                    // Modal closed - user completed payment
+                    // Verify payment status immediately
                     payButtonText.innerHTML = '<span class="spinner"></span> Verifying payment...';
+                    payButton.disabled = true;
                     
-                    // Don't poll immediately - wait for webhook or return URL
-                    // If return URL is called, handleReturn() will verify status
-                    // If webhook is received, it will update status
+                    // Verify payment status from backend
+                    verifyCashFreePayment(result.gateway_order_id, result.transaction_id);
                     
                 }).catch(function(error) {
                     console.error('CashFree checkout error:', error);
@@ -807,14 +809,103 @@
             }
         }
 
-        // REMOVED: pollCashFreePaymentStatus()
-        // 
-        // CashFree payments should NOT be polled before checkout.
-        // Status updates come from:
-        // 1. Webhook (primary) - real-time updates
-        // 2. Return URL (fallback) - when user returns from checkout
-        // 
-        // Polling before checkout is useless and causes infinite loops.
+        // Verify CashFree payment status after modal closes
+        async function verifyCashFreePayment(gatewayOrderId, transactionId) {
+            try {
+                console.log('Verifying CashFree payment status...', { gatewayOrderId, transactionId });
+                
+                const verifyResponse = await fetch(`/pay/{{ $paymentLink->link_token }}/verify-cashfree`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        gateway_order_id: gatewayOrderId,
+                        transaction_id: transactionId,
+                    }),
+                });
+
+                const verifyResult = await verifyResponse.json();
+                console.log('CashFree payment verification result:', verifyResult);
+
+                if (verifyResult.success) {
+                    if (verifyResult.status === 'success') {
+                        // Payment successful
+                        successMessage.textContent = `Payment successful! Transaction ID: ${verifyResult.transaction_id || transactionId}`;
+                        successAlert.style.display = 'flex';
+                        payButtonText.textContent = 'Payment Successful!';
+                        payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                        payButton.disabled = false;
+                        payButton.dataset.processing = '';
+                        
+                        // Redirect to success page after 2 seconds
+                        setTimeout(() => {
+                            window.location.href = '/payment/success/{{ $paymentLink->link_token }}';
+                        }, 2000);
+                    } else if (verifyResult.status === 'failed') {
+                        // Payment failed
+                        errorMessage.textContent = verifyResult.message || 'Payment processing failed';
+                        errorAlert.style.display = 'flex';
+                        payButton.disabled = false;
+                        payButton.dataset.processing = '';
+                        @if($paymentLink->allow_partial_payment)
+                        const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                        @else
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                        @endif
+                    } else {
+                        // Still pending - wait a bit and check again (max 5 attempts)
+                        let attempts = verifyCashFreePayment.attempts || 0;
+                        verifyCashFreePayment.attempts = attempts + 1;
+                        
+                        if (attempts < 5) {
+                            console.log(`Payment still pending, checking again in 2 seconds... (attempt ${attempts + 1}/5)`);
+                            setTimeout(() => {
+                                verifyCashFreePayment(gatewayOrderId, transactionId);
+                            }, 2000);
+                        } else {
+                            // Max attempts reached - show message
+                            errorMessage.textContent = 'Payment is being processed. Please check your dashboard for status.';
+                            errorAlert.style.display = 'flex';
+                            payButton.disabled = false;
+                            payButton.dataset.processing = '';
+                            @if($paymentLink->allow_partial_payment)
+                            const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                            @else
+                            payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                            @endif
+                        }
+                    }
+                } else {
+                    // Verification failed - show error
+                    errorMessage.textContent = verifyResult.message || 'Failed to verify payment status';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButton.dataset.processing = '';
+                    @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    @else
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                    @endif
+                }
+            } catch (error) {
+                console.error('Error verifying CashFree payment:', error);
+                errorMessage.textContent = 'Failed to verify payment. Please check your dashboard.';
+                errorAlert.style.display = 'flex';
+                payButton.disabled = false;
+                payButton.dataset.processing = '';
+                @if($paymentLink->allow_partial_payment)
+                const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                @else
+                payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                @endif
+            }
+        }
 
         // Payment method switching
         document.querySelectorAll('.payment-method-btn').forEach(btn => {

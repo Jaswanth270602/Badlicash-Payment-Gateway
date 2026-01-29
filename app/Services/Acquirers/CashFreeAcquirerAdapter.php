@@ -107,6 +107,14 @@ class CashFreeAcquirerAdapter implements AcquirerInterface
                 'order_note' => $orderData['description'] ?? 'Payment',
             ];
 
+            // Add return URLs for proper modal behavior (required for _modal redirectTarget)
+            if (isset($orderData['return_url'])) {
+                $requestData['return_url'] = $orderData['return_url'];
+            }
+            if (isset($orderData['notify_url'])) {
+                $requestData['notify_url'] = $orderData['notify_url'];
+            }
+
             // Add customer details if provided
             if (isset($orderData['customer_details'])) {
                 $customer = $orderData['customer_details'];

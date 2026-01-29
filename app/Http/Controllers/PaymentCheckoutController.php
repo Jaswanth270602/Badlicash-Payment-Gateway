@@ -332,6 +332,8 @@ class PaymentCheckoutController extends Controller
                     // Handle CashFree separately - it does NOT support server-side payment initiation
                     if ($gatewayName === 'cashfree') {
                         // Step 1: Create CashFree order (returns payment_session_id)
+                        // Include return URLs for proper modal behavior
+                        $baseUrl = $request->getSchemeAndHttpHost();
                         $cashfreeOrderResult = $gateway->createOrder([
                             'order_id' => $order->order_id,
                             'amount' => $paymentAmount,
@@ -339,6 +341,8 @@ class PaymentCheckoutController extends Controller
                             'customer_details' => $request->customer_details,
                             'description' => $paymentLink->title,
                             'metadata' => ['payment_link_id' => $paymentLink->id],
+                            'return_url' => rtrim($baseUrl, '/') . "/payment/return/{$token}",
+                            'notify_url' => rtrim($baseUrl, '/') . "/webhooks/cashfree/{$token}",
                         ]);
                         
                         if (!$cashfreeOrderResult['success']) {
@@ -877,6 +881,7 @@ class PaymentCheckoutController extends Controller
 
     /**
      * Handle CashFree return URL after payment.
+     * For modal flow, this may be called via iframe, so we handle both redirect and JSON responses.
      */
     public function handleReturn(Request $request, string $token)
     {
@@ -888,6 +893,13 @@ class PaymentCheckoutController extends Controller
             $paymentStatus = $request->query('payment_status') ?? $request->query('order_status');
             
             if (!$gatewayOrderId) {
+                // Check if this is an AJAX request (modal flow)
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Order ID missing in return URL',
+                    ], 400);
+                }
                 return redirect("/pay/{$token}")->with('error', 'Order ID missing in return URL');
             }
 
@@ -897,6 +909,12 @@ class PaymentCheckoutController extends Controller
                 ->first();
 
             if (!$order) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Order not found',
+                    ], 404);
+                }
                 return redirect("/pay/{$token}")->with('error', 'Order not found');
             }
 
@@ -931,15 +949,38 @@ class PaymentCheckoutController extends Controller
                                 $paymentLink->markAsPaid();
                             }
                             
+                            // For modal flow, return JSON; otherwise redirect
+                            if ($request->wantsJson() || $request->ajax()) {
+                                return response()->json([
+                                    'success' => true,
+                                    'status' => 'success',
+                                    'transaction_id' => $transaction->txn_id,
+                                    'message' => 'Payment successful',
+                                ]);
+                            }
                             return redirect("/payment/success/{$token}")->with('transaction_id', $transaction->txn_id);
                         } elseif ($statusResult['status'] === 'failed') {
+                            if ($request->wantsJson() || $request->ajax()) {
+                                return response()->json([
+                                    'success' => false,
+                                    'status' => 'failed',
+                                    'message' => 'Payment failed',
+                                ]);
+                            }
                             return redirect("/payment/failed/{$token}")->with('error', 'Payment failed');
                         }
                     }
                 }
             }
 
-            // If status is still pending, redirect back to payment page with message
+            // If status is still pending
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'status' => 'pending',
+                    'message' => 'Payment is being processed. Please wait...',
+                ]);
+            }
             return redirect("/pay/{$token}")->with('info', 'Payment is being processed. Please wait...');
 
         } catch (\Exception $e) {
@@ -948,6 +989,12 @@ class PaymentCheckoutController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment processing error. Please try again.',
+                ], 500);
+            }
             return redirect("/pay/{$token}")->with('error', 'Payment verification error. Please try again.');
         }
     }

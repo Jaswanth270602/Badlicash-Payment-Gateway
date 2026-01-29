@@ -354,11 +354,10 @@
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white;">
                 <h5 class="modal-title" id="editUserModalLabel">Edit entry</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" ng-click="auc.updating = false; auc.editForm = {}"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" ng-click="auc.cancelEdit()"></button>
             </div>
             <div class="modal-body">
-                <form id="editUserForm" ng-submit="auc.updateUser($event); return false;" novalidate>
-                    <div class="row g-3">
+                <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" ng-model="auc.editForm.name" required>
@@ -422,11 +421,10 @@
                             </small>
                         </div>
                     </div>
-                </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ng-click="auc.updating = false; auc.editForm = {}">Cancel</button>
-                <button type="button" class="btn btn-primary" ng-click="auc.updateUser($event)" ng-disabled="auc.updating" id="updateUserBtn" style="min-width: 100px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ng-click="auc.cancelEdit()">Cancel</button>
+                <button type="button" class="btn btn-primary" ng-click="auc.updateUser()" ng-disabled="auc.updating" id="updateUserBtn" style="min-width: 100px;">
                     <span ng-if="!auc.updating">Update</span>
                     <span ng-if="auc.updating">
                         <span class="spinner-border spinner-border-sm me-2"></span>Updating...
@@ -450,6 +448,8 @@
             var app = angular.module('badlicashApp');
             app.controller('AdminUsersController', ['$http', '$scope', '$timeout', function($http, $scope, $timeout) {
                 var vm = this;
+                // CSRF token for all state-changing admin user requests
+                var csrf = document.querySelector('meta[name="csrf-token"]').content;
                 vm.users = [];
                 vm.selectedUser = null;
                 vm.pagination = { current_page: 1, per_page: 5, total: 0, last_page: 1 };
@@ -606,7 +606,9 @@
                         return;
                     }
 
-                    $http.post('/admin/users/' + user.id + '/toggle-email-verification').then(function(response) {
+                    $http.post('/admin/users/' + user.id + '/toggle-email-verification', {}, {
+                        headers: { 'X-CSRF-TOKEN': csrf }
+                    }).then(function(response) {
                         if (response.data.success) {
                             user.email_verified = response.data.email_verified;
                             user.email_verified_at = response.data.email_verified_at;
@@ -685,12 +687,7 @@
                     }
                 };
 
-                vm.updateUser = function(event) {
-                    if (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    
+                vm.updateUser = function() {
                     console.log('updateUser called', {
                         id: vm.editForm.id,
                         form: vm.editForm,
@@ -723,25 +720,9 @@
 
                     vm.updating = true;
                     
-                    // Ensure boolean values are properly set (handle undefined, null, false, true, strings)
-                    var activeValue = false;
-                    if (vm.editForm.active !== undefined && vm.editForm.active !== null) {
-                        if (typeof vm.editForm.active === 'string') {
-                            activeValue = vm.editForm.active === 'true' || vm.editForm.active === '1';
-                        } else {
-                            activeValue = vm.editForm.active === true || vm.editForm.active === 1;
-                        }
-                    }
-                    
-                    // Handle email verified checkbox - always send boolean value
-                    var emailVerifiedValue = false;
-                    if (vm.editForm.email_verified !== undefined && vm.editForm.email_verified !== null) {
-                        if (typeof vm.editForm.email_verified === 'string') {
-                            emailVerifiedValue = vm.editForm.email_verified === 'true' || vm.editForm.email_verified === '1';
-                        } else {
-                            emailVerifiedValue = Boolean(vm.editForm.email_verified);
-                        }
-                    }
+                    // Simplified boolean handling
+                    var activeValue = Boolean(vm.editForm.active);
+                    var emailVerifiedValue = Boolean(vm.editForm.email_verified);
                     
                     var updateData = {
                         name: vm.editForm.name,
@@ -760,7 +741,9 @@
                         updateData.password = vm.editForm.password;
                     }
 
-                    $http.put('/admin/users/' + vm.editForm.id, updateData).then(function(response) {
+                    $http.put('/admin/users/' + vm.editForm.id, updateData, {
+                        headers: { 'X-CSRF-TOKEN': csrf }
+                    }).then(function(response) {
                         vm.updating = false;
                         
                         if (response.data.success) {
@@ -794,6 +777,11 @@
                     });
                 };
 
+                vm.cancelEdit = function() {
+                    vm.updating = false;
+                    vm.editForm = {};
+                };
+
                 vm.deleteSelected = function() {
                     if (!vm.selectedUser) {
                         alert('Please select a user to delete');
@@ -803,7 +791,9 @@
                         return;
                     }
 
-                    $http.delete('/admin/users/' + vm.selectedUser.id).then(function(response) {
+                    $http.delete('/admin/users/' + vm.selectedUser.id, {
+                        headers: { 'X-CSRF-TOKEN': csrf }
+                    }).then(function(response) {
                         if (response.data.success) {
                             alert('User deleted successfully');
                             vm.loadUsers();
@@ -841,7 +831,9 @@
                         return;
                     }
 
-                    $http.post('/admin/users/' + user.id + '/toggle-2fa').then(function(response) {
+                    $http.post('/admin/users/' + user.id + '/toggle-2fa', {}, {
+                        headers: { 'X-CSRF-TOKEN': csrf }
+                    }).then(function(response) {
                         if (response.data.success) {
                             user.two_factor_enabled = response.data.two_factor_enabled;
                             user.two_factor_auth = response.data.two_factor_auth;
