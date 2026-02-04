@@ -632,6 +632,13 @@
                             <div class="method-label">Wallets</div>
                             <div class="method-desc">Paytm, PhonePe</div>
                         </div>
+                        @if(!empty($yapilySandboxEnabled))
+                        <div class="payment-method-btn" data-method="yapily">
+                            <i class="bi bi-bank2"></i>
+                            <div class="method-label">Bank (Yapily)</div>
+                            <div class="method-desc">Open Banking Sandbox</div>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -713,6 +720,16 @@
                         </select>
                     </div>
                 </div>
+
+                @if(!empty($yapilySandboxEnabled))
+                <!-- YAPILY SANDBOX FORM -->
+                <div class="payment-form" id="yapilyForm">
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Pay via <strong>Yapily Sandbox</strong> (dummy bank). No real money. Click Pay below to complete.
+                    </div>
+                </div>
+                @endif
 
                 <!-- PAY BUTTON -->
                 <button class="pay-button" id="payButton" disabled>
@@ -916,7 +933,8 @@
                 const method = btn.dataset.method;
                 selectedMethod = method;
                 document.querySelectorAll('.payment-form').forEach(f => f.classList.remove('active'));
-                document.getElementById(method + 'Form').classList.add('active');
+                const formEl = document.getElementById(method + 'Form');
+                if (formEl) formEl.classList.add('active');
                 
                 validateForm();
             });
@@ -1191,6 +1209,8 @@
                     methodValid = !!document.getElementById('bankCode')?.value;
                 } else if (selectedMethod === 'wallet') {
                     methodValid = !!document.getElementById('walletProvider')?.value;
+                } else if (selectedMethod === 'yapily') {
+                    methodValid = true;
                 }
 
                 if (methodValid && payButton && payButtonText) {
@@ -1313,6 +1333,8 @@
                 paymentData.payment_details = {
                     wallet_provider: document.getElementById('walletProvider').value,
                 };
+            } else if (selectedMethod === 'yapily') {
+                paymentData.payment_details = {};
             }
 
             // Add custom amount if partial payment is enabled

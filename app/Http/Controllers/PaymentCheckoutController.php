@@ -69,7 +69,8 @@ class PaymentCheckoutController extends Controller
 
             // Don't use embedded iframe - use our own payment forms with Razorpay Checkout.js
             // This keeps our UI visible and processes payments through Razorpay API
-            return view('checkout.payment', compact('paymentLink'));
+            $yapilySandboxEnabled = config('yapily.enabled', false);
+            return view('checkout.payment', compact('paymentLink', 'yapilySandboxEnabled'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             $this->logError('Payment link not found', [
                 'token' => $token
@@ -108,12 +109,15 @@ class PaymentCheckoutController extends Controller
             $merchant = $paymentLink->merchant;
             $acquirerAccount = $merchant->getActiveAcquirerAccount();
             $hasAcquirerAccount = $acquirerAccount !== null;
-            
+            $useYapilySandbox = $request->payment_method === 'yapily' && config('yapily.enabled', false);
+            // When customer chooses Yapily Sandbox, do not use Razorpay/Cashfree
+            $useAcquirerGateway = $hasAcquirerAccount && !$useYapilySandbox;
+
             // Determine if payment details are required based on gateway
             $paymentDetailsRequired = false;
             $gateway = null;
-            
-            if ($hasAcquirerAccount && $request->payment_method === 'card') {
+
+            if ($useAcquirerGateway && $request->payment_method === 'card') {
                 try {
                     $gateway = GatewayFactory::make($merchant, $acquirerAccount);
                     $gatewayName = $gateway->getGatewayName();
@@ -149,8 +153,12 @@ class PaymentCheckoutController extends Controller
                 $customerDetails['phone'] = preg_replace('/[^0-9]/', '', $customerDetails['phone']);
             }
             
+            $allowedMethods = ['card', 'upi', 'netbanking', 'wallet'];
+            if (config('yapily.enabled', false)) {
+                $allowedMethods[] = 'yapily';
+            }
             $validator = Validator::make(array_merge($request->all(), ['customer_details' => $customerDetails]), [
-                'payment_method' => 'required|in:card,upi,netbanking,wallet',
+                'payment_method' => ['required', 'in:' . implode(',', $allowedMethods)],
                 'customer_details' => 'required|array',
                 'customer_details.name' => 'required|string|max:255',
                 'customer_details.email' => 'required|email',
@@ -306,7 +314,7 @@ class PaymentCheckoutController extends Controller
 
             // Process payment through GatewayFactory (clean routing architecture)
             try {
-                if ($hasAcquirerAccount) {
+                if ($useAcquirerGateway) {
                     // Get or create gateway instance
                     if (!$gateway) {
                         $gateway = GatewayFactory::make($merchant, $acquirerAccount);

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\SettlementController;
 use App\Http\Controllers\Api\StatusController;
+use App\Http\Controllers\Sandbox\YapilyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,6 +21,15 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// -------------------------------------------------------------------------
+// Sandbox: Yapily (dummy bank / open-banking). Feature-flagged.
+// When ENABLE_YAPILY_SANDBOX=false, endpoints return 403 Sandbox Disabled.
+// -------------------------------------------------------------------------
+Route::prefix('sandbox/yapily')->group(function () {
+    Route::get('/institutions', [YapilyController::class, 'institutions'])
+        ->name('api.sandbox.yapily.institutions');
+});
 
 // Public webhook receiver (no auth required)
 Route::post('/webhooks/receive', [WebhookController::class, 'receive'])
