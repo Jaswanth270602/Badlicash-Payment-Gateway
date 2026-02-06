@@ -33,14 +33,6 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
-            // Check if user is merchant and email is not verified by admin
-            if ($user->merchant_id && !$user->email_verified_at) {
-                Auth::logout();
-                return back()->withErrors([
-                    'email' => 'Your email has not been verified by admin. Please contact support.',
-                ])->onlyInput('email');
-            }
-
             // Update last login time
             $user->last_login_at = now();
             $user->save();

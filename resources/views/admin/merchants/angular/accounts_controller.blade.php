@@ -325,11 +325,14 @@
                     }, function(error) {
                         vm.submitting = false;
                         var errorMsg = 'Failed to create merchant account';
-                        if (error.data && error.data.message) {
-                            errorMsg = error.data.message;
-                        } else if (error.data && error.data.errors) {
+                        // Prefer detailed validation errors over generic message
+                        if (error.data && error.data.errors) {
                             var errors = Object.values(error.data.errors).flat();
-                            errorMsg = errors.join(', ');
+                            if (errors.length > 0) {
+                                errorMsg = errors.join(', ');
+                            }
+                        } else if (error.data && error.data.message) {
+                            errorMsg = error.data.message;
                         }
                         alert(errorMsg);
                     });

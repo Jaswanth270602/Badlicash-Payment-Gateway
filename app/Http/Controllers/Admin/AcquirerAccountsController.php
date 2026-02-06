@@ -316,10 +316,12 @@ class AcquirerAccountsController extends Controller
             ->filter()
             ->values();
         
-        // Add common acquirer names (including Razorpay)
+        // Add common acquirer names (including Razorpay and Yapily)
         $commonNames = collect([
-            'A2Pay', 'Paytm', 'Switch', 'HDFC', 'ICICI', 'Axis', 'SBI', 
-            'Razorpay', 'razorpay', 'razorpay_test', 'razorpay_live', 'PayU'
+            'A2Pay', 'Paytm', 'Switch', 'HDFC', 'ICICI', 'Axis', 'SBI',
+            'Razorpay', 'razorpay', 'razorpay_test', 'razorpay_live', 'PayU',
+            // Yapily sandbox acquirer entries
+            'Yapily', 'yapily', 'YapilyTest', 'yapily_test', 'YapilyLive', 'yapily_live',
         ]);
         
         // Merge and ensure Razorpay variants are included

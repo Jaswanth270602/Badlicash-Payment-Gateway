@@ -19,12 +19,23 @@ class YapilyService
     protected string $appSecret;
     protected int $timeout;
 
-    public function __construct()
+    /**
+     * Optionally accept per-acquirer overrides.
+     *
+     * If no overrides are provided, falls back to config('yapily.*') which
+     * is driven from .env and the global sandbox credentials.
+     */
+    public function __construct(
+        ?string $baseUrl = null,
+        ?string $appId = null,
+        ?string $appSecret = null,
+        ?int $timeout = null
+    )
     {
-        $this->baseUrl = rtrim(config('yapily.base_url', 'https://api.yapily.com'), '/');
-        $this->appId = config('yapily.app_id', '');
-        $this->appSecret = config('yapily.app_secret', '');
-        $this->timeout = (int) config('yapily.timeout', 15);
+        $this->baseUrl = rtrim($baseUrl ?? config('yapily.base_url', 'https://api.yapily.com'), '/');
+        $this->appId = $appId ?? config('yapily.app_id', '');
+        $this->appSecret = $appSecret ?? config('yapily.app_secret', '');
+        $this->timeout = $timeout ?? (int) config('yapily.timeout', 15);
     }
 
     /**

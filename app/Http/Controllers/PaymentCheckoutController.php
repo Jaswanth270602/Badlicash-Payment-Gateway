@@ -109,9 +109,19 @@ class PaymentCheckoutController extends Controller
             $merchant = $paymentLink->merchant;
             $acquirerAccount = $merchant->getActiveAcquirerAccount();
             $hasAcquirerAccount = $acquirerAccount !== null;
+
+            // Detect Yapily acquirer configured at merchant level
+            $acquirerName = $acquirerAccount ? strtolower(trim($acquirerAccount->acquirer_name ?? '')) : '';
+            // Treat any acquirer whose name contains "yapily" (e.g. Yapily, YapilyTest, YapilyLive) as Yapily
+            $isYapilyAcquirer = $acquirerName !== '' && str_contains($acquirerName, 'yapily');
+
+            // Legacy Yapily sandbox payment-method toggle (now deprecated in favour of acquirer-based Yapily)
             $useYapilySandbox = $request->payment_method === 'yapily' && config('yapily.enabled', false);
-            // When customer chooses Yapily Sandbox, do not use Razorpay/Cashfree
-            $useAcquirerGateway = $hasAcquirerAccount && !$useYapilySandbox;
+
+            // When customer chooses Yapily Sandbox method OR merchant uses Yapily acquirer,
+            // do NOT go through Razorpay/Cashfree gateway path. Instead, fall back to the
+            // internal simulation flow, which keeps existing codepaths safe.
+            $useAcquirerGateway = $hasAcquirerAccount && !$useYapilySandbox && !$isYapilyAcquirer;
 
             // Determine if payment details are required based on gateway
             $paymentDetailsRequired = false;
@@ -449,10 +459,18 @@ class PaymentCheckoutController extends Controller
                         throw new \RuntimeException("Unsupported gateway: {$gatewayName}");
                     }
                 } else {
-                    // Fallback to simulation service if no acquirer account
-                    $this->logInfo('No acquirer account found, using simulation service', [
-                        'merchant_id' => $merchant->id,
-                    ]);
+                    // Fallback to simulation service if no acquirer account OR when using Yapily acquirer
+                    if ($hasAcquirerAccount && $isYapilyAcquirer) {
+                        $this->logInfo('Yapily acquirer configured – using internal simulation service (sandbox flow)', [
+                            'merchant_id' => $merchant->id,
+                            'acquirer_name' => $acquirerAccount->acquirer_name,
+                        ]);
+                    } else {
+                        $this->logInfo('No acquirer account found, using simulation service', [
+                            'merchant_id' => $merchant->id,
+                        ]);
+                    }
+
                     $result = $this->simulationService->processPayment($paymentData);
                 }
                 
