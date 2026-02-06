@@ -147,6 +147,8 @@ class PaymentCheckoutController extends Controller
                 }
             }
 
+            $isRazorpayCard = $gateway !== null && $gateway->getGatewayName() === 'razorpay';
+
             // Sanitize customer phone number before validation
             $customerDetails = $request->customer_details ?? [];
             if (isset($customerDetails['phone'])) {
