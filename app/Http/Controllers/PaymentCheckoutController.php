@@ -300,12 +300,21 @@ class PaymentCheckoutController extends Controller
             }
 
             // Prepare payment data
+            // IMPORTANT: Do not introduce new DB enum values for payment_method.
+            // Map Yapily sandbox method to an existing DB-safe method (netbanking)
+            // while preserving the original method in payment_details for auditing.
+            $storagePaymentMethod = $paymentMethod;
+            if ($paymentMethod === 'yapily') {
+                $storagePaymentMethod = 'netbanking';
+                $paymentDetails['original_payment_method'] = 'yapily';
+            }
+
             $paymentData = [
                 'merchant_id' => $paymentLink->merchant_id,
                 'payment_link_id' => $paymentLink->id,
                 'amount' => $paymentAmount,
                 'currency' => $paymentLink->currency,
-                'payment_method' => $paymentMethod,
+                'payment_method' => $storagePaymentMethod,
                 'payment_details' => $paymentDetails,
                 'customer_details' => $request->customer_details,
                 'test_mode' => $paymentLink->test_mode,
