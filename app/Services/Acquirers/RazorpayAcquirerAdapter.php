@@ -265,6 +265,8 @@ class RazorpayAcquirerAdapter implements AcquirerInterface
             $payment = $this->razorpay->payment->fetch($paymentId);
 
             return [
+                // Align with controller expectation: use `success` as primary flag
+                'success' => true,
                 'verified' => true,
                 'payment_id' => $payment['id'],
                 'gateway_payment_id' => $payment['id'],
@@ -283,6 +285,7 @@ class RazorpayAcquirerAdapter implements AcquirerInterface
             ]);
 
             return [
+                'success' => false,
                 'verified' => false,
                 'error_code' => 'SIGNATURE_VERIFICATION_FAILED',
                 'message' => $e->getMessage(),
@@ -295,6 +298,7 @@ class RazorpayAcquirerAdapter implements AcquirerInterface
             ]);
 
             return [
+                'success' => false,
                 'verified' => false,
                 'error_code' => 'VERIFICATION_ERROR',
                 'message' => $e->getMessage(),

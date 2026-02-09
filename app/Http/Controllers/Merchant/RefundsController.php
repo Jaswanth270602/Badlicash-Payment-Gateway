@@ -84,11 +84,11 @@ class RefundsController extends Controller
         try {
             $merchant = $request->user()->merchant;
             
-            // Check if merchant is in LIVE mode without proper credentials
-            if (!$merchant->test_mode && !$merchant->hasLiveCredentials()) {
+            // Live (merchant) mode: allow when merchant has an active acquirer (aggregator) or full live credentials
+            if (!$merchant->test_mode && !$merchant->canUseLiveMode()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Live mode is not configured. Please configure your live API credentials before processing refunds in LIVE mode.',
+                    'message' => 'Live mode requires an active acquirer or full live credentials. Please assign an acquirer in Settings or configure live API credentials before processing refunds in LIVE mode.',
                     'error_code' => 'LIVE_MODE_NOT_CONFIGURED',
                 ], 403);
             }
@@ -121,9 +121,17 @@ class RefundsController extends Controller
                 $request->reason
             );
 
+            // Align API response with actual refund status so that
+            // the UI toast and the refunds grid don't contradict each other.
+            $wasSuccessful = $refund->status === 'completed';
+
+            $message = $wasSuccessful
+                ? 'Refund created successfully'
+                : ($refund->gateway_response['message'] ?? $refund->gateway_response['error'] ?? 'Refund could not be processed. Please check gateway logs for details.');
+
             return response()->json([
-                'success' => true,
-                'message' => 'Refund created successfully',
+                'success' => $wasSuccessful,
+                'message' => $message,
                 'data' => [
                     'refund_id' => $refund->refund_id,
                     'transaction_id' => $transaction->txn_id,
@@ -133,7 +141,7 @@ class RefundsController extends Controller
                     'is_partial' => $refund->is_partial,
                     'created_at' => $refund->created_at->toIso8601String(),
                 ],
-            ]);
+            ], $wasSuccessful ? 200 : 400);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,

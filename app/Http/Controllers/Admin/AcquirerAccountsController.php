@@ -157,8 +157,6 @@ class AcquirerAccountsController extends Controller
             'test_query_url' => 'nullable|url|max:500',
             'test_refund_url' => 'nullable|url|max:500',
             'nodal_account' => 'nullable|string|max:255',
-            'merchant_ids' => 'nullable|array',
-            'merchant_ids.*' => 'exists:merchants,id',
         ]);
 
         if ($validator->fails()) {
@@ -172,7 +170,6 @@ class AcquirerAccountsController extends Controller
         try {
             DB::beginTransaction();
 
-            // Log what's being saved for debugging
             \Log::debug('Creating acquirer account', [
                 'account_id' => $request->account_id,
                 'acquirer_name' => $request->acquirer_name,
@@ -181,11 +178,7 @@ class AcquirerAccountsController extends Controller
             ]);
 
             $account = AcquirerAccount::create($validator->validated());
-
-            // Attach merchants if provided
-            if ($request->has('merchant_ids') && is_array($request->merchant_ids)) {
-                $account->merchants()->sync($request->merchant_ids);
-            }
+            // Merchants are assigned from Merchant module (many-to-one: one acquirer, many merchants)
 
             DB::commit();
 
@@ -238,8 +231,6 @@ class AcquirerAccountsController extends Controller
             'test_query_url' => 'nullable|url|max:500',
             'test_refund_url' => 'nullable|url|max:500',
             'nodal_account' => 'nullable|string|max:255',
-            'merchant_ids' => 'nullable|array',
-            'merchant_ids.*' => 'exists:merchants,id',
         ]);
 
         if ($validator->fails()) {
@@ -253,7 +244,6 @@ class AcquirerAccountsController extends Controller
         try {
             DB::beginTransaction();
 
-            // Log what's being updated for debugging
             \Log::debug('Updating acquirer account', [
                 'account_id' => $account->id,
                 'has_additional_key_1' => !empty($request->additional_key_1),
@@ -261,11 +251,7 @@ class AcquirerAccountsController extends Controller
             ]);
 
             $account->update($validator->validated());
-
-            // Sync merchants if provided
-            if ($request->has('merchant_ids')) {
-                $account->merchants()->sync($request->merchant_ids ?? []);
-            }
+            // Merchants are assigned from Merchant module
 
             DB::commit();
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 
@@ -89,6 +90,7 @@ class Merchant extends Model
         'merchant_type',
         'approval_status',
         'registration_date',
+        'acquirer_account_id',
     ];
 
     protected $casts = [
@@ -160,7 +162,15 @@ class Merchant extends Model
     }
 
     /**
-     * Get acquirer accounts associated with this merchant.
+     * Single assigned acquirer (many-to-one: one merchant -> one acquirer).
+     */
+    public function acquirerAccount(): BelongsTo
+    {
+        return $this->belongsTo(AcquirerAccount::class, 'acquirer_account_id');
+    }
+
+    /**
+     * Legacy pivot: acquirer accounts associated via pivot (kept for sync when assigning from merchant form).
      */
     public function acquirerAccounts(): BelongsToMany
     {
@@ -169,16 +179,65 @@ class Merchant extends Model
     }
 
     /**
-     * Get active acquirer account for this merchant (matching mode).
+     * Whether the merchant is approved to use acquirer (test or live).
+     * Acquirer is only used when merchant is at least test_approved or approved.
+     */
+    public function isApprovedForAcquirer(): bool
+    {
+        return in_array($this->approval_status ?? '', ['test_approved', 'approved'], true);
+    }
+
+    /**
+     * Whether this merchant has any active acquirer (any mode).
+     * Returns true only if merchant is approved (test_approved or approved) and has an active acquirer.
+     */
+    public function hasAnyActiveAcquirer(): bool
+    {
+        if (!$this->isApprovedForAcquirer()) {
+            return false;
+        }
+        if ($this->acquirer_account_id) {
+            $acquirer = $this->acquirerAccount;
+            return $acquirer && $acquirer->is_active;
+        }
+        return $this->acquirerAccounts()->where('is_active', true)->exists();
+    }
+
+    /**
+     * Get active acquirer account for this merchant.
+     * Uses single assigned acquirer (acquirer_account_id) when set; else fallback to pivot (legacy).
+     * Returns null if merchant is not approved (test_approved or approved) so acquirer is not used until then.
      */
     public function getActiveAcquirerAccount(): ?AcquirerAccount
     {
+        if (!$this->isApprovedForAcquirer()) {
+            return null;
+        }
+        if ($this->acquirer_account_id) {
+            $acquirer = $this->acquirerAccount;
+            if ($acquirer && $acquirer->is_active) {
+                return $acquirer;
+            }
+        }
+        // Fallback: pivot-based (legacy)
         $mode = $this->test_mode ? 'TEST' : 'LIVE';
-        
-        return $this->acquirerAccounts()
+        $candidates = $this->acquirerAccounts()
             ->where('mode', $mode)
             ->where('is_active', true)
-            ->first();
+            ->get();
+        if ($candidates->isEmpty() && !$this->test_mode) {
+            $candidates = $this->acquirerAccounts()
+                ->where('mode', 'TEST')
+                ->where('is_active', true)
+                ->get();
+        }
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+        $preferred = $candidates->first(function (AcquirerAccount $a) {
+            return stripos($a->acquirer_name ?? '', 'razorpay') !== false;
+        });
+        return $preferred ?? $candidates->first();
     }
 
     /**
@@ -233,8 +292,22 @@ class Merchant extends Model
     }
 
     /**
-     * Check if merchant has live credentials configured.
-     * Live mode requires proper API keys and bank account details.
+     * Check if merchant can use Live (merchant) mode.
+     * Live mode as payment aggregator: allowed when merchant has an active acquirer
+     * (e.g. Razorpay Test, Razorpay Live, Cashfree) — no bank account required.
+     * Alternatively, full live credentials (API key + bank + production gateway) also allow live mode.
+     */
+    public function canUseLiveMode(): bool
+    {
+        if ($this->hasAnyActiveAcquirer()) {
+            return true;
+        }
+        return $this->hasLiveCredentials();
+    }
+
+    /**
+     * Check if merchant has full live credentials configured (API key, bank account, production gateway).
+     * Used for flows that require payouts/settlements; not required for aggregator payments.
      */
     public function hasLiveCredentials(): bool
     {
@@ -245,17 +318,17 @@ class Merchant extends Model
             ->exists();
 
         // Check if bank account details are configured
-        $hasBankDetails = !empty($this->bank_account_number) 
-            && !empty($this->bank_ifsc_code) 
+        $hasBankDetails = !empty($this->bank_account_number)
+            && !empty($this->bank_ifsc_code)
             && !empty($this->bank_account_holder_name);
 
         // Check if live payment provider credentials are configured in settings
-        $hasLiveProviderSettings = isset($this->settings['production_api_key']) 
+        $hasLiveProviderSettings = isset($this->settings['production_api_key'])
             && isset($this->settings['production_api_secret'])
             && !empty($this->settings['production_api_key'])
             && !empty($this->settings['production_api_secret']);
 
-        // All three conditions must be met for live mode
+        // All three conditions must be met for full live credentials
         return $hasLiveApiKey && $hasBankDetails && $hasLiveProviderSettings;
     }
 

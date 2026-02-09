@@ -266,8 +266,14 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.merchant-accounts.index');
         Route::get('/merchant-accounts/data', [MerchantAccountsController::class, 'getData'])
             ->name('admin.merchant-accounts.data');
+        Route::get('/merchant-accounts/acquirers', [MerchantAccountsController::class, 'getAcquirersForSelect'])
+            ->name('admin.merchant-accounts.acquirers');
+        Route::get('/merchant-accounts/{id}', [MerchantAccountsController::class, 'show'])
+            ->name('admin.merchant-accounts.show');
         Route::post('/merchant-accounts', [MerchantAccountsController::class, 'store'])
             ->name('admin.merchant-accounts.store');
+        Route::put('/merchant-accounts/{id}', [MerchantAccountsController::class, 'update'])
+            ->name('admin.merchant-accounts.update');
         Route::post('/merchant-accounts/{id}/update-status', [MerchantAccountsController::class, 'updateStatus'])
             ->name('admin.merchant-accounts.update-status');
         Route::post('/merchant-accounts/{id}/update-approval-status', [MerchantAccountsController::class, 'updateStatus'])

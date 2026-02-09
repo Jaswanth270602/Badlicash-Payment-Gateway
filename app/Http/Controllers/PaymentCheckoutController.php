@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Traits\LogsConditionally;
 use App\Services\PaymentService;
 use App\Services\PaymentSimulationService;
+use App\Services\GatewayModeService;
 use App\Services\PaymentGateways\GatewayFactory;
 use App\Contracts\PaymentGatewayInterface;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class PaymentCheckoutController extends Controller
 {
@@ -110,6 +112,15 @@ class PaymentCheckoutController extends Controller
             $acquirerAccount = $merchant->getActiveAcquirerAccount();
             $hasAcquirerAccount = $acquirerAccount !== null;
 
+            if ($acquirerAccount) {
+                $this->logInfo('Active acquirer selected for checkout', [
+                    'merchant_id' => $merchant->id,
+                    'acquirer_account_id' => $acquirerAccount->id,
+                    'acquirer_name' => $acquirerAccount->acquirer_name,
+                    'acquirer_mode' => $acquirerAccount->mode,
+                ]);
+            }
+
             // Detect Yapily acquirer configured at merchant level
             $acquirerName = $acquirerAccount ? strtolower(trim($acquirerAccount->acquirer_name ?? '')) : '';
             // Treat any acquirer whose name contains "yapily" (e.g. Yapily, YapilyTest, YapilyLive) as Yapily
@@ -121,7 +132,24 @@ class PaymentCheckoutController extends Controller
             // When customer chooses Yapily Sandbox method OR merchant uses Yapily acquirer,
             // do NOT go through Razorpay/Cashfree gateway path. Instead, fall back to the
             // internal simulation flow, which keeps existing codepaths safe.
-            $useAcquirerGateway = $hasAcquirerAccount && !$useYapilySandbox && !$isYapilyAcquirer;
+            // Acquirers (Razorpay, Cashfree) only when BOTH gateway and merchant are LIVE.
+            // Gateway TEST = internal only. Merchant TEST = internal only (no Razorpay even if gateway is live).
+            $gatewayModeIsLive = GatewayModeService::isLive();
+            $merchantIsLive = !$merchant->test_mode;
+            $useAcquirerGateway = $hasAcquirerAccount && !$useYapilySandbox && !$isYapilyAcquirer && $gatewayModeIsLive && $merchantIsLive;
+
+            if ($hasAcquirerAccount && $gatewayModeIsLive && !$merchantIsLive) {
+                $this->logInfo('Merchant is in Test mode – using internal simulation only (acquirer not called). Switch merchant to Live to use Razorpay/Cashfree.', [
+                    'merchant_id' => $merchant->id,
+                    'acquirer_name' => $acquirerAccount->acquirer_name,
+                ]);
+            }
+            if ($hasAcquirerAccount && !$gatewayModeIsLive) {
+                $this->logInfo('Gateway mode is TEST – using internal simulation only (acquirer not called). Set APP_PAYMENT_MODE=live to use Razorpay/Cashfree.', [
+                    'merchant_id' => $merchant->id,
+                    'acquirer_name' => $acquirerAccount->acquirer_name,
+                ]);
+            }
 
             // Determine if payment details are required based on gateway
             $paymentDetailsRequired = false;
@@ -379,8 +407,16 @@ class PaymentCheckoutController extends Controller
                         }
                         
                         // Save gateway order ID
-                        $order->gateway_order_id = $cashfreeOrderResult['gateway_order_id'] ?? null;
+                        $gatewayOrderId = $cashfreeOrderResult['gateway_order_id'] ?? null;
+                        $order->gateway_order_id = $gatewayOrderId;
                         $order->save();
+                        
+                        $this->logInfo('CashFree order: gateway_order_id saved', [
+                            'order_id' => $order->order_id,
+                            'gateway_order_id' => $gatewayOrderId,
+                            'gateway_order_id_type' => gettype($gatewayOrderId),
+                            'cashfree_order_result' => $cashfreeOrderResult,
+                        ]);
                         
                         // Step 2: Create transaction record (status: pending)
                         $transaction = $this->paymentService->processPayment($order, [
@@ -393,14 +429,16 @@ class PaymentCheckoutController extends Controller
                         $transaction->save();
                         
                         // Step 3: Return payment_session_id for frontend checkout
-                        // CashFree order creation returns payment_session_id directly
-                        // NO server-side payment initiation needed
+                        // CashFree SDK mode must match where the order was created (acquirer test vs live)
+                        $acquirerMode = strtoupper($acquirerAccount->mode ?? 'TEST');
+                        $cashfreeSdkMode = ($acquirerMode === 'LIVE') ? 'production' : 'sandbox';
                         return response()->json([
                             'success' => true,
                             'gateway' => 'cashfree',
                             'order_id' => $order->order_id,
                             'gateway_order_id' => $order->gateway_order_id,
                             'payment_session_id' => $cashfreeOrderResult['payment_session_id'] ?? null,
+                            'cashfree_mode' => $cashfreeSdkMode,
                             'transaction_id' => $transaction->txn_id,
                             'status' => 'pending', // ACTIVE = pending (awaiting checkout)
                             'amount' => $paymentAmount,
@@ -667,7 +705,16 @@ class PaymentCheckoutController extends Controller
 
                 if (!$transaction) {
                     // Store gateway_order_id in gateway_response JSON
-                    $gatewayResponse = array_merge($verifyResult['raw_response'] ?? [], [
+                    // NOTE: Razorpay SDK returns Razorpay\Api\Payment (Entity), not a plain array.
+                    // Normalize raw_response into an array before merging to avoid type errors.
+                    $rawResponse = $verifyResult['raw_response'] ?? [];
+                    if ($rawResponse instanceof \Razorpay\Api\Entity) {
+                        $rawResponse = $rawResponse->toArray();
+                    } elseif (!is_array($rawResponse)) {
+                        $rawResponse = [];
+                    }
+
+                    $gatewayResponse = array_merge($rawResponse, [
                         'gateway_order_id' => $request->razorpay_order_id,
                         'order_id' => $request->razorpay_order_id,
                     ]);

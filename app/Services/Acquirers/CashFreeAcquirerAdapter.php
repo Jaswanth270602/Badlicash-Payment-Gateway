@@ -94,15 +94,15 @@ class CashFreeAcquirerAdapter implements AcquirerInterface
     {
         try {
             $orderId = $orderData['order_id'] ?? 'order_' . uniqid();
-            $amount = $orderData['amount'] ?? 0;
+            $amount = (float) ($orderData['amount'] ?? 0);
             $currency = $orderData['currency'] ?? 'INR';
 
-            // CashFree expects amount in smallest currency unit (paise for INR)
-            $amountInPaise = $this->convertToPaise($amount);
+            // CashFree PG v2023-08-01: order_amount is in rupees (decimal), e.g. 110.00 for INR 110
+            $orderAmountRupees = round($amount, 2);
 
             $requestData = [
                 'order_id' => $orderId,
-                'order_amount' => $amountInPaise,
+                'order_amount' => $orderAmountRupees,
                 'order_currency' => $currency,
                 'order_note' => $orderData['description'] ?? 'Payment',
             ];
@@ -140,8 +140,34 @@ class CashFreeAcquirerAdapter implements AcquirerInterface
             ])->post($this->baseUrl . '/orders', $requestData);
 
             $responseData = $response->json();
+            // Support wrapped response (e.g. array of orders or data key)
+            if (isset($responseData[0]) && is_array($responseData[0])) {
+                $responseData = $responseData[0];
+            }
+            if (isset($responseData['data']) && is_array($responseData['data'])) {
+                $responseData = array_merge($responseData, $responseData['data']);
+            }
 
-            if (!$response->successful() || !isset($responseData['order_id'])) {
+            // CashFree returns:
+            // - order_id: the ID WE sent in the create request (our own order reference)
+            // - cf_order_id: CashFree's internal numeric order reference
+            //
+            // IMPORTANT:
+            // The /orders/{order_id} and /orders/{order_id}/payments APIs expect the ORIGINAL
+            // order_id that we sent (e.g. "ORD_ABC123..."), NOT the numeric cf_order_id.
+            //
+            // So we:
+            // - keep $orderId (our original order_id) as the identifier to use for all future
+            //   status/verification calls and store it as gateway_order_id
+            // - expose cf_order_id only as additional metadata (for logging/debugging)
+            $cfOrderId = $responseData['cf_order_id'] ?? null;
+            $paymentSessionId = $responseData['payment_session_id'] ?? $responseData['payment_sessions_id'] ?? null;
+            $paymentSessionId = is_string($paymentSessionId) ? trim($paymentSessionId) : null;
+            if ($paymentSessionId === '') {
+                $paymentSessionId = null;
+            }
+
+            if (!$response->successful() || !$cfOrderId) {
                 Log::error('CashFree order creation failed', [
                     'response' => $responseData,
                     'status' => $response->status(),
@@ -155,21 +181,42 @@ class CashFreeAcquirerAdapter implements AcquirerInterface
                 ];
             }
 
+            if (empty($paymentSessionId)) {
+                Log::error('CashFree order created but payment_session_id missing', [
+                    'response' => $responseData,
+                    'acquirer_account_id' => $this->acquirerAccount->id,
+                ]);
+                return [
+                    'success' => false,
+                    'error_code' => 'CASHFREE_SESSION_MISSING',
+                    'message' => 'CashFree did not return a payment session. Please try again.',
+                ];
+            }
+
             Log::info('CashFree order created successfully', [
-                'cashfree_order_id' => $responseData['order_id'],
+                'our_order_id' => $orderId,
+                'cf_order_id' => $cfOrderId,
+                'cf_order_id_type' => gettype($cfOrderId),
+                'cf_order_id_length' => is_string($cfOrderId) ? strlen($cfOrderId) : null,
                 'acquirer_account_id' => $this->acquirerAccount->id,
                 'amount' => $amount,
                 'currency' => $currency,
+                'payment_session_id_present' => true,
+                'full_response' => $responseData, // Log full response for debugging
             ]);
 
             return [
                 'success' => true,
-                'order_id' => $responseData['order_id'],
-                'gateway_order_id' => $responseData['order_id'],
-                'amount' => $this->convertFromPaise($responseData['order_amount'] ?? $amountInPaise),
+                // Our original order_id (e.g. "ORD_ABC123...") – this is what CashFree
+                // expects in /orders/{order_id} & /orders/{order_id}/payments
+                'order_id' => $orderId,
+                'gateway_order_id' => $orderId,
+                // Expose CashFree's internal cf_order_id only as metadata
+                'cf_order_id' => $cfOrderId,
+                'amount' => (float) ($responseData['order_amount'] ?? $orderAmountRupees),
                 'currency' => $responseData['order_currency'] ?? $currency,
                 'status' => 'created',
-                'payment_session_id' => $responseData['payment_session_id'] ?? null,
+                'payment_session_id' => $paymentSessionId,
                 'raw_response' => $responseData,
             ];
 
@@ -359,6 +406,15 @@ class CashFreeAcquirerAdapter implements AcquirerInterface
             // Use /orders/{order_id} endpoint to get order details with payment status
             $endpoint = $this->baseUrl . '/orders/' . $paymentId;
             
+            Log::info('CashFree getPaymentStatus: Querying order', [
+                'payment_id' => $paymentId,
+                'payment_id_type' => gettype($paymentId),
+                'payment_id_length' => is_string($paymentId) ? strlen($paymentId) : null,
+                'endpoint' => $endpoint,
+                'acquirer_account_id' => $this->acquirerAccount->id,
+                'base_url' => $this->baseUrl,
+            ]);
+            
             $response = Http::withOptions([
                 'timeout' => 30, // 30 seconds timeout
                 'verify' => true, // Verify SSL certificate
@@ -387,16 +443,98 @@ class CashFreeAcquirerAdapter implements AcquirerInterface
             }
 
             if (!$response->successful()) {
+                // If order endpoint returns 404, try the payments endpoint as fallback
+                // Sometimes orders exist but the order endpoint might not be immediately available
+                if ($response->status() === 404) {
+                    Log::info('CashFree getPaymentStatus: Order endpoint returned 404, trying payments endpoint', [
+                        'payment_id' => $paymentId,
+                        'acquirer_account_id' => $this->acquirerAccount->id,
+                    ]);
+                    
+                    $paymentsEndpoint = $this->baseUrl . '/orders/' . $paymentId . '/payments';
+                    $paymentsResponse = Http::withOptions([
+                        'timeout' => 30,
+                        'verify' => true,
+                        'connect_timeout' => 10,
+                    ])->withHeaders([
+                        'x-client-id' => $this->appId,
+                        'x-client-secret' => $this->secretKey,
+                        'x-api-version' => '2023-08-01',
+                    ])->get($paymentsEndpoint);
+                    
+                    $paymentsData = $paymentsResponse->json() ?? [];
+                    
+                    Log::info('CashFree getPaymentStatus: Payments endpoint response', [
+                        'payment_id' => $paymentId,
+                        'http_status' => $paymentsResponse->status(),
+                        'response_data' => $paymentsData,
+                        'is_array' => is_array($paymentsData),
+                        'count' => is_array($paymentsData) ? count($paymentsData) : 0,
+                        'acquirer_account_id' => $this->acquirerAccount->id,
+                    ]);
+                    
+                    // If payments endpoint succeeds, extract payment status from first payment
+                    if ($paymentsResponse->successful() && is_array($paymentsData) && count($paymentsData) > 0) {
+                        $firstPayment = $paymentsData[0] ?? null;
+                        if ($firstPayment && is_array($firstPayment)) {
+                            $paymentStatus = $firstPayment['payment_status'] 
+                                ?? $firstPayment['txStatus'] 
+                                ?? $firstPayment['tx_status']
+                                ?? $firstPayment['status']
+                                ?? 'unknown';
+                            
+                            $paymentIdFromResponse = $firstPayment['cf_payment_id'] 
+                                ?? $firstPayment['payment_id'] 
+                                ?? $firstPayment['id']
+                                ?? $paymentId;
+                            
+                            Log::info('CashFree getPaymentStatus: Successfully retrieved from payments endpoint', [
+                                'payment_id' => $paymentId,
+                                'payment_status' => $paymentStatus,
+                                'normalized_status' => $this->normalizeStatus($paymentStatus),
+                            ]);
+                            
+                            return [
+                                'success' => true,
+                                'payment_id' => $paymentIdFromResponse,
+                                'status' => $this->normalizeStatus($paymentStatus),
+                                'amount' => isset($firstPayment['payment_amount']) ? $this->convertFromPaise($firstPayment['payment_amount']) : null,
+                                'currency' => $firstPayment['payment_currency'] ?? null,
+                                'raw_response' => $firstPayment,
+                            ];
+                        }
+                    }
+                }
+                
+                $errorMessage = $responseData['message'] ?? 
+                               $responseData['error'] ?? 
+                               $responseData['error_description'] ?? 
+                               'Failed to get payment status';
+                
                 Log::warning('CashFree getPaymentStatus failed', [
                     'payment_id' => $paymentId,
-                    'status' => $response->status(),
+                    'http_status' => $response->status(),
                     'response' => $responseData,
+                    'error_message' => $errorMessage,
                     'acquirer_account_id' => $this->acquirerAccount->id,
+                    'base_url' => $this->baseUrl,
                 ]);
+                
+                // Determine error code based on HTTP status
+                $errorCode = null;
+                if ($response->status() === 404) {
+                    $errorCode = 'ORDER_NOT_FOUND';
+                } elseif ($response->status() === 401 || $response->status() === 403) {
+                    $errorCode = 'AUTHENTICATION_FAILED';
+                } elseif ($response->status() >= 500) {
+                    $errorCode = 'CASHFREE_SERVER_ERROR';
+                }
                 
                 return [
                     'success' => false,
-                    'message' => 'Failed to get payment status',
+                    'message' => $errorMessage,
+                    'error_code' => $errorCode,
+                    'http_status' => $response->status(),
                 ];
             }
 

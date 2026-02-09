@@ -15,14 +15,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Payment Gateway Mode
+    | Payment Gateway Mode (Gateway = PG + Aggregator)
     |--------------------------------------------------------------------------
     |
-    | This value determines the mode of operation.
-    | Options: 'test' or 'live'
+    | TEST = Acquirer-independent. Only inbuilt dummy/sandbox APIs for payment
+    |        simulation. No Razorpay/Cashfree/etc. calls regardless of merchant.
+    | LIVE = Payment aggregator: use acquirer adapters (Razorpay, Cashfree, etc.).
+    |        Same library per acquirer; test vs live keys only (e.g. Razorpay Test
+    |        and Razorpay Live both use the same Razorpay adapter).
+    | Set BADLICASH_MODE=live to enable acquirers.
     |
     */
-    'mode' => env('BADLICASH_MODE', 'test'),
+    // Prefer APP_PAYMENT_MODE; fall back to legacy BADLICASH_MODE for backwards compatibility
+    'mode' => env('APP_PAYMENT_MODE', env('BADLICASH_MODE', 'test')),
 
     /*
     |--------------------------------------------------------------------------
@@ -32,7 +37,8 @@ return [
     | The current API version.
     |
     */
-    'api_version' => env('BADLICASH_API_VERSION', 'v1'),
+    // API version for the payment gateway
+    'api_version' => env('APP_PAYMENT_API_VERSION', 'v1'),
 
     /*
     |--------------------------------------------------------------------------
@@ -45,8 +51,8 @@ return [
     |
     */
     'fee' => [
-        'percentage' => env('BADLICASH_FEE_PERCENTAGE', 2.5),
-        'flat' => env('BADLICASH_FEE_FLAT', 0.30),
+        'percentage' => env('APP_PAYMENT_FEE_PERCENTAGE', 2.5),
+        'flat' => env('APP_PAYMENT_FEE_FLAT', 0.30),
     ],
 
     /*
@@ -57,7 +63,7 @@ return [
     | The default currency for transactions.
     |
     */
-    'default_currency' => env('BADLICASH_DEFAULT_CURRENCY', 'USD'),
+    'default_currency' => env('APP_PAYMENT_DEFAULT_CURRENCY', 'USD'),
 
     /*
     |--------------------------------------------------------------------------

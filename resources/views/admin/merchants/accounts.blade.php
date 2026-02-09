@@ -202,6 +202,9 @@
                                     <option value="Govt E-Tendering">Govt E-Tendering</option>
                                 </select>
                             </th>
+                            <th ng-show="amac.visibleColumns.acquirer.visible">
+                                <span>Acquirer</span>
+                            </th>
                             <th ng-show="amac.visibleColumns.registration_date.visible">
                                 <div class="d-flex align-items-center gap-2">
                                     <span>Registration Date</span>
@@ -259,10 +262,14 @@
                             <td ng-show="amac.visibleColumns.partner.visible">@{{ merchant.partner_name || '-' }}</td>
                             <td ng-show="amac.visibleColumns.organization.visible">@{{ merchant.organization_name || merchant.company_name || '-' }}</td>
                             <td ng-show="amac.visibleColumns.category.visible">@{{ merchant.merchant_category || '-' }}</td>
+                            <td ng-show="amac.visibleColumns.acquirer.visible">@{{ (merchant.acquirer_account && merchant.acquirer_account.acquirer_name) ? merchant.acquirer_account.acquirer_name : '—' }}</td>
                             <td ng-show="amac.visibleColumns.registration_date.visible">@{{ merchant.registration_date | date:'MM/dd/yyyy' }}</td>
                             <td ng-show="amac.visibleColumns.challan_urn.visible">@{{ merchant.challan_urn || '-' }}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary" ng-click="amac.viewMerchant(merchant); $event.stopPropagation();">
+                                <button class="btn btn-sm btn-outline-secondary me-1" ng-click="amac.openEditModal(merchant); $event.stopPropagation();" title="Edit merchant">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" ng-click="amac.viewMerchant(merchant); $event.stopPropagation();" title="View">
                                     <i class="bi bi-eye"></i>
                                 </button>
                             </td>

@@ -45,13 +45,18 @@
                     partner: { visible: true, label: 'Partner Names' },
                     organization: { visible: true, label: 'Organization Name' },
                     category: { visible: true, label: 'Merchant Category' },
+                    acquirer: { visible: true, label: 'Acquirer' },
                     registration_date: { visible: true, label: 'Registration Date' },
                     challan_urn: { visible: true, label: 'Challan URN' },
                     merchant_unique_id: { visible: true, label: 'Merchant Unique ID' }
                 };
 
+                vm.acquirers = [];
+                vm.editingMerchantId = null;
+
                 // Merchant form
                 vm.merchantForm = {
+                    acquirer_account_id: '',
                     is_partner_merchant: false,
                     partner_id: '',
                     partner_name: '',
@@ -213,9 +218,18 @@
                     vm.clearFilters();
                 };
 
+                vm.loadAcquirers = function() {
+                    $http.get('/admin/merchant-accounts/acquirers').then(function(res) {
+                        if (res.data.success && res.data.data) {
+                            vm.acquirers = res.data.data;
+                        }
+                    });
+                };
+
                 vm.openNewModal = function() {
-                    // Reset form
+                    vm.editingMerchantId = null;
                     vm.merchantForm = {
+                        acquirer_account_id: '',
                         is_partner_merchant: false,
                         partner_id: '',
                         partner_name: '',
@@ -260,8 +274,68 @@
                         settlement_cycle_domestic: 1,
                         settlement_cycle_international: 7
                     };
+                    vm.loadAcquirers();
                     var modal = new bootstrap.Modal(document.getElementById('newMerchantModal'));
                     modal.show();
+                };
+
+                vm.openEditModal = function(merchant) {
+                    vm.editingMerchantId = merchant.id;
+                    vm.loadAcquirers();
+                    $http.get('/admin/merchant-accounts/' + merchant.id).then(function(res) {
+                        if (!res.data.success || !res.data.data) return;
+                        var m = res.data.data;
+                        vm.merchantForm = {
+                            acquirer_account_id: m.acquirer_account_id ? String(m.acquirer_account_id) : '',
+                            is_partner_merchant: !!m.is_partner_merchant,
+                            partner_id: m.partner_id || '',
+                            partner_name: m.partner_name || '',
+                            team_id: m.team_id || '',
+                            team_name: m.team_name || '',
+                            name: m.name || '',
+                            legal_name: m.legal_name || '',
+                            email: m.email || '',
+                            phone: m.phone || '',
+                            merchant_category: m.merchant_category || '',
+                            merchant_category_code: m.merchant_category_code || '',
+                            ownership_type: m.ownership_type || '',
+                            website_link: m.business_website || '',
+                            organization_name: m.organization_name || '',
+                            address_line_1: m.address_line_1 || '',
+                            address_line_2: m.address_line_2 || '',
+                            business_country: m.business_country || 'India',
+                            business_state: m.business_state || '',
+                            business_city: m.business_city || '',
+                            business_postal_code: m.business_postal_code || '',
+                            merchant_pan_number: m.merchant_pan_number || '',
+                            name_on_pan_card: m.name_on_pan_card || '',
+                            gst_identification_no: m.gst_identification_no || '',
+                            gstin_state: m.gstin_state || '',
+                            tan_no: m.tan_no || '',
+                            contact_name: m.contact_name || '',
+                            contact_mobile: m.contact_mobile || '',
+                            contact_landline: m.contact_landline || '',
+                            contact_email: m.contact_email || '',
+                            is_dummy_account: !!m.is_dummy_account,
+                            bank_account_holder_name: m.bank_account_holder_name || '',
+                            bank_account_number: m.bank_account_number || '',
+                            bank_name: m.bank_name || '',
+                            account_type: m.account_type || 'Savings Account',
+                            bank_branch: m.bank_branch || '',
+                            bank_ifsc_code: m.bank_ifsc_code || '',
+                            create_user_login: false,
+                            login_name: '',
+                            password: '',
+                            retype_password: '',
+                            merchant_type: (m.merchant_type === 'vendor_merchant') ? 'vendor_merchant' : 'merchant',
+                            settlement_cycle_domestic: m.settlement_cycle_domestic != null ? m.settlement_cycle_domestic : 1,
+                            settlement_cycle_international: m.settlement_cycle_international != null ? m.settlement_cycle_international : 7
+                        };
+                        var modal = new bootstrap.Modal(document.getElementById('newMerchantModal'));
+                        modal.show();
+                    }, function() {
+                        alert('Failed to load merchant');
+                    });
                 };
 
                 vm.loadPartnerTeams = function() {
@@ -274,13 +348,12 @@
                 };
 
                 vm.submitMerchant = function() {
-                    // Validate form
                     if (!vm.merchantForm.name || !vm.merchantForm.legal_name || !vm.merchantForm.email || !vm.merchantForm.phone) {
                         alert('Please fill in all required fields');
                         return;
                     }
 
-                    if (vm.merchantForm.create_user_login) {
+                    if (!vm.editingMerchantId && vm.merchantForm.create_user_login) {
                         if (!vm.merchantForm.login_name || !vm.merchantForm.password || !vm.merchantForm.retype_password) {
                             alert('Please fill in all user login fields');
                             return;
@@ -289,7 +362,6 @@
                             alert('Passwords do not match');
                             return;
                         }
-                        // Validate password strength
                         var passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
                         if (!passwordRegex.test(vm.merchantForm.password)) {
                             alert('Password must have minimum 12 characters and should include at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character.');
@@ -297,25 +369,26 @@
                         }
                     }
 
-                    // Ensure merchant_type is valid
                     if (!vm.merchantForm.merchant_type || !['merchant', 'vendor_merchant'].includes(vm.merchantForm.merchant_type)) {
                         vm.merchantForm.merchant_type = 'merchant';
                     }
 
                     vm.submitting = true;
-                    $http.post('/admin/merchant-accounts', vm.merchantForm, {
-                        headers: {
-                            'X-CSRF-TOKEN': csrf
-                        }
+                    var isEdit = !!vm.editingMerchantId;
+                    var url = isEdit ? ('/admin/merchant-accounts/' + vm.editingMerchantId) : '/admin/merchant-accounts';
+                    var method = isEdit ? 'put' : 'post';
+                    $http[method](url, vm.merchantForm, {
+                        headers: { 'X-CSRF-TOKEN': csrf }
                     }).then(function(response) {
                         vm.submitting = false;
                         if (response.data.success) {
                             var modal = bootstrap.Modal.getInstance(document.getElementById('newMerchantModal'));
                             modal.hide();
-                            alert('Merchant account created successfully');
+                            vm.editingMerchantId = null;
+                            alert(isEdit ? 'Merchant updated successfully' : 'Merchant account created successfully');
                             vm.loadMerchants();
                         } else {
-                            var errorMsg = response.data.message || 'Failed to create merchant account';
+                            var errorMsg = response.data.message || (isEdit ? 'Failed to update merchant' : 'Failed to create merchant account');
                             if (response.data.errors) {
                                 var errors = Object.values(response.data.errors).flat();
                                 errorMsg = errors.join(', ');
@@ -324,13 +397,10 @@
                         }
                     }, function(error) {
                         vm.submitting = false;
-                        var errorMsg = 'Failed to create merchant account';
-                        // Prefer detailed validation errors over generic message
+                        var errorMsg = isEdit ? 'Failed to update merchant' : 'Failed to create merchant account';
                         if (error.data && error.data.errors) {
                             var errors = Object.values(error.data.errors).flat();
-                            if (errors.length > 0) {
-                                errorMsg = errors.join(', ');
-                            }
+                            if (errors.length > 0) errorMsg = errors.join(', ');
                         } else if (error.data && error.data.message) {
                             errorMsg = error.data.message;
                         }

@@ -165,16 +165,12 @@
                                 <option ng-value="false">No</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label">Email Ids:</label>
                             <input type="text" class="form-control" ng-model="aac.accountForm.email_ids" placeholder="Comma-separated emails">
                         </div>
                         <div class="col-md-12">
-                            <label class="form-label">Merchants:</label>
-                            <select class="form-select" ng-model="aac.accountForm.merchant_ids" multiple size="5">
-                                <option ng-repeat="merchant in aac.merchants track by merchant.id" ng-value="merchant.id" ng-bind="merchant.name + ' (' + merchant.email + ')'"></option>
-                            </select>
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple merchants</small>
+                            <small class="text-muted">Merchants are assigned from the Merchants module (each merchant has one acquirer).</small>
                         </div>
                     </div>
 

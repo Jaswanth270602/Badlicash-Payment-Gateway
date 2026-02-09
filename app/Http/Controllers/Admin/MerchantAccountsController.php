@@ -7,6 +7,7 @@ use App\Traits\LogsConditionally;
 use App\Models\Merchant;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\AcquirerAccount;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -93,7 +94,7 @@ class MerchantAccountsController extends Controller
                 $query->latest();
             }
 
-            $merchants = $query->paginate($perPage);
+            $merchants = $query->with('acquirerAccount')->paginate($perPage);
 
             $this->logDebug('Admin merchant accounts retrieved', [
                 'count' => $merchants->count(),
@@ -123,6 +124,41 @@ class MerchantAccountsController extends Controller
         }
     }
 
+    public function getAcquirersForSelect(): JsonResponse
+    {
+        try {
+            $acquirers = AcquirerAccount::where('is_active', true)
+                ->orderBy('acquirer_name')
+                ->get(['id', 'acquirer_name', 'account_id']);
+            return response()->json([
+                'success' => true,
+                'data' => $acquirers,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load acquirers',
+                'data' => [],
+            ], 500);
+        }
+    }
+
+    public function show($id): JsonResponse
+    {
+        try {
+            $merchant = Merchant::with('acquirerAccount')->findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'data' => $merchant,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Merchant not found',
+            ], 404);
+        }
+    }
+
     public function store(Request $request): JsonResponse
     {
         try {
@@ -149,6 +185,7 @@ class MerchantAccountsController extends Controller
                 'account_type' => 'required|string',
                 'bank_branch' => 'required|string',
                 'bank_ifsc_code' => 'required|string',
+                'acquirer_account_id' => 'nullable|exists:acquirer_accounts,id',
                 'login_name' => 'nullable|email|unique:users,email',
                 'password' => 'nullable|string|min:12|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
                 'retype_password' => 'nullable|same:password',
@@ -219,7 +256,10 @@ class MerchantAccountsController extends Controller
                 'test_mode' => true,
                 'settlement_cycle_domestic' => $request->get('settlement_cycle_domestic', 1),
                 'settlement_cycle_international' => $request->get('settlement_cycle_international', 7),
+                'acquirer_account_id' => $request->filled('acquirer_account_id') ? (int) $request->acquirer_account_id : null,
             ]);
+
+            $merchant->acquirerAccounts()->sync($request->filled('acquirer_account_id') ? [(int) $request->acquirer_account_id] : []);
 
             // Always create user login for merchant
             $merchantRole = Role::where('name', 'merchant')->first();
@@ -294,6 +334,116 @@ class MerchantAccountsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create merchant account: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        try {
+            $merchant = Merchant::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'legal_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:merchants,email,' . (int) $id,
+                'phone' => 'required|string|max:20',
+                'merchant_category' => 'required|string',
+                'team_id' => 'required_if:is_partner_merchant,true',
+                'address_line_1' => 'required|string',
+                'business_country' => 'required|string',
+                'business_state' => 'required|string',
+                'business_city' => 'required|string',
+                'business_postal_code' => 'required|string',
+                'merchant_pan_number' => 'required|string|max:10',
+                'name_on_pan_card' => 'required|string',
+                'contact_name' => 'required|string',
+                'contact_mobile' => 'required|string',
+                'contact_email' => 'required|email',
+                'bank_account_holder_name' => 'required|string',
+                'bank_account_number' => 'required|string',
+                'bank_name' => 'required|string',
+                'account_type' => 'required|string',
+                'bank_branch' => 'required|string',
+                'bank_ifsc_code' => 'required|string',
+                'acquirer_account_id' => 'nullable|exists:acquirer_accounts,id',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $merchant->name = $request->name;
+            $merchant->legal_name = $request->legal_name;
+            $merchant->email = $request->email;
+            $merchant->phone = $request->phone;
+            $merchant->company_name = $request->organization_name;
+            $merchant->organization_name = $request->organization_name;
+            $merchant->merchant_category = $request->merchant_category;
+            $merchant->merchant_category_code = $request->merchant_category_code;
+            $merchant->ownership_type = $request->ownership_type;
+            $merchant->business_website = $request->website_link;
+            $merchant->address_line_1 = $request->address_line_1;
+            $merchant->address_line_2 = $request->address_line_2;
+            $merchant->business_address = $request->address_line_1 . ($request->address_line_2 ? ', ' . $request->address_line_2 : '');
+            $merchant->business_country = $request->business_country;
+            $merchant->business_state = $request->business_state;
+            $merchant->business_city = $request->business_city;
+            $merchant->business_postal_code = $request->business_postal_code;
+            $merchant->merchant_pan_number = $request->merchant_pan_number;
+            $merchant->name_on_pan_card = $request->name_on_pan_card;
+            $merchant->gst_identification_no = $request->gst_identification_no;
+            $merchant->gstin_state = $request->gstin_state;
+            $merchant->tan_no = $request->tan_no;
+            $merchant->contact_name = $request->contact_name;
+            $merchant->contact_mobile = $request->contact_mobile;
+            $merchant->contact_landline = $request->contact_landline;
+            $merchant->contact_email = $request->contact_email;
+            $merchant->is_partner_merchant = $request->boolean('is_partner_merchant');
+            $merchant->partner_id = $request->partner_id;
+            $merchant->partner_name = $request->partner_name;
+            $merchant->team_id = $request->team_id;
+            $merchant->team_name = $request->team_name;
+            $merchant->bank_account_holder_name = $request->bank_account_holder_name;
+            $merchant->bank_account_number = $request->bank_account_number;
+            $merchant->bank_name = $request->bank_name;
+            $merchant->account_type = $request->account_type;
+            $merchant->bank_branch = $request->bank_branch;
+            $merchant->bank_ifsc_code = $request->bank_ifsc_code;
+            $merchant->is_dummy_account = $request->boolean('is_dummy_account');
+            $merchant->merchant_type = in_array($request->get('merchant_type'), ['merchant', 'vendor_merchant']) ? $request->get('merchant_type') : 'merchant';
+            $merchant->settlement_cycle_domestic = $request->get('settlement_cycle_domestic', 1);
+            $merchant->settlement_cycle_international = $request->get('settlement_cycle_international', 7);
+            $merchant->acquirer_account_id = $request->filled('acquirer_account_id') ? (int) $request->acquirer_account_id : null;
+            $merchant->save();
+
+            $merchant->acquirerAccounts()->sync($request->filled('acquirer_account_id') ? [(int) $request->acquirer_account_id] : []);
+
+            $this->logInfo('Merchant account updated', ['merchant_id' => $merchant->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Merchant updated successfully',
+                'data' => $merchant->fresh(['acquirerAccount']),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            $this->logError('Error updating merchant account', [
+                'merchant_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update merchant: ' . $e->getMessage(),
             ], 500);
         }
     }

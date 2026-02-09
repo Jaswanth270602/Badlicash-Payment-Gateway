@@ -23,12 +23,22 @@ class DashboardController extends Controller
         if ($user->isMerchant()) {
             $merchant = $user->merchant;
 
-            // Get statistics
+            // Scope all stats to the merchant's current mode (TEST vs LIVE)
+            // so that the dashboard numbers differ between Test and Live.
+            $transactionsQuery = $merchant->transactions()
+                ->where('test_mode', $merchant->test_mode);
+
+            $refundsQuery = $merchant->refunds()
+                ->whereHas('transaction', function ($q) use ($merchant) {
+                    $q->where('test_mode', $merchant->test_mode);
+                });
+
+            // Get statistics for the current mode only
             $stats = [
-                'total_transactions' => $merchant->transactions()->count(),
-                'successful_transactions' => $merchant->transactions()->where('status', 'success')->count(),
-                'total_volume' => $merchant->transactions()->where('status', 'success')->sum('amount'),
-                'pending_refunds' => $merchant->refunds()->where('status', 'pending')->count(),
+                'total_transactions' => $transactionsQuery->count(),
+                'successful_transactions' => (clone $transactionsQuery)->where('status', 'success')->count(),
+                'total_volume' => (clone $transactionsQuery)->where('status', 'success')->sum('amount'),
+                'pending_refunds' => $refundsQuery->where('status', 'pending')->count(),
             ];
 
             return view('merchant.dashboard', [

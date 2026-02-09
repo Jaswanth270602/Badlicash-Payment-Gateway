@@ -3,7 +3,7 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="newMerchantModalLabel">Create new entry</h5>
+                <h5 class="modal-title" id="newMerchantModalLabel">@{{ amac.editingMerchantId ? 'Edit Merchant' : 'Create new entry' }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -47,6 +47,13 @@
                         <div class="col-md-6">
                             <label class="form-label">* Merchant Phone</label>
                             <input type="text" class="form-control" ng-model="amac.merchantForm.phone" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Acquirer</label>
+                            <select class="form-select" ng-model="amac.merchantForm.acquirer_account_id">
+                                <option value="">— No acquirer —</option>
+                                <option ng-repeat="acq in amac.acquirers" value="@{{ acq.id }}">@{{ acq.acquirer_name }} @{{ acq.account_id ? '(' + acq.account_id + ')' : '' }}</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">* Merchant Category</label>
@@ -242,11 +249,11 @@
                         </div>
                     </div>
 
-                    <h6 class="text-primary mb-3 mt-4">USER LOGIN CREDENTIALS</h6>
-                    <div class="alert alert-info">
+                    <h6 class="text-primary mb-3 mt-4" ng-show="!amac.editingMerchantId">USER LOGIN CREDENTIALS</h6>
+                    <div class="alert alert-info" ng-show="!amac.editingMerchantId">
                         <i class="bi bi-info-circle"></i> A user account will be automatically created for this merchant. The merchant will appear in the Users tab and can only login after admin verifies their email.
                     </div>
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3 mb-3" ng-show="!amac.editingMerchantId">
                         <div class="col-md-6">
                             <label class="form-label">Login Email <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" ng-model="amac.merchantForm.login_name" placeholder="Leave empty to use merchant email" ng-required="false">
@@ -267,9 +274,9 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" ng-click="amac.submitMerchant()" ng-disabled="amac.submitting">
-                    <span ng-if="!amac.submitting">Create</span>
+                    <span ng-if="!amac.submitting">@{{ amac.editingMerchantId ? 'Update' : 'Create' }}</span>
                     <span ng-if="amac.submitting">
-                        <span class="spinner-border spinner-border-sm me-2"></span>Creating...
+                        <span class="spinner-border spinner-border-sm me-2"></span>@{{ amac.editingMerchantId ? 'Updating...' : 'Creating...' }}
                     </span>
                 </button>
             </div>
