@@ -14,8 +14,8 @@ class CashFreeAcquirerAccountSeeder extends Seeder
     public function run(): void
     {
         // CashFree App ID and Secret Key
-        $appId = 'TEST10951662c183ab5792bbaa968fb426615901';
-        $secretKey = 'cfsk_ma_test_744db095d4df16922bc92b09a4f53c2c_a089d765';
+       // $appId = '';
+       // $secretKey = '';
 
         // Check if CashFree account already exists
         $cashfreeAccount = AcquirerAccount::where('acquirer_name', 'cashfree')
