@@ -142,18 +142,17 @@ class PaymentLinksController extends Controller
                 ], 404);
             }
 
-            // Check if merchant is in LIVE mode without proper credentials
-            if (!$merchant->test_mode && !$merchant->hasLiveCredentials()) {
-                $this->logWarning('Attempted to create payment link in LIVE mode without credentials', [
+            // Live (merchant) mode: allow when merchant has an active acquirer (aggregator) or full live credentials
+            if (!$merchant->test_mode && !$merchant->canUseLiveMode()) {
+                $this->logWarning('Attempted to create payment link in LIVE mode without acquirer or credentials', [
                     'merchant_id' => $merchant->id,
                     'test_mode' => $merchant->test_mode
                 ]);
-                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Live mode is not configured. Please configure your live API credentials and bank details before creating payment links in LIVE mode.',
+                    'message' => 'Live mode requires an active acquirer (e.g. Razorpay, Cashfree) or full live credentials. Please assign an acquirer in Settings or configure live API credentials and bank details.',
                     'error_code' => 'LIVE_MODE_NOT_CONFIGURED',
-                    'action_required' => 'Please contact support or configure your live credentials in Settings to activate LIVE mode.',
+                    'action_required' => 'Assign an acquirer (Razorpay Test/Live, Cashfree, etc.) in Settings, or configure live credentials.',
                 ], 403);
             }
 

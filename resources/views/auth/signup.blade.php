@@ -8,6 +8,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
+        :root {
+            --bc-primary: #6366f1;
+            --bc-primary-dark: #4f46e5;
+            --bc-bg: #020617;
+        }
+
         body {
             background: radial-gradient(circle at top left, #1d213b 0, #020617 40%, #020617 100%);
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -21,52 +27,70 @@
             padding: 24px 12px;
         }
         .auth-card {
-            max-width: 1080px;
+            max-width: 80%;
             width: 100%;
             background: rgba(15, 23, 42, 0.98);
-            border-radius: 22px;
+            border-radius: 24px;
             border: 1px solid rgba(148, 163, 184, 0.4);
             box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
             overflow: hidden;
         }
         .auth-left {
-            padding: 26px 26px 18px;
+            padding: 48px 40px;
             border-right: 1px solid rgba(55, 65, 81, 0.9);
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-left::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            pointer-events: none;
         }
         .auth-right {
-            padding: 22px 24px 20px;
+            padding: 48px 56px;
         }
         .step-pill {
             border-radius: 999px;
-            padding: 4px 10px;
+            padding: 6px 12px;
             background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(75, 85, 99, 0.9);
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.12em;
             color: #9ca3af;
+            display: inline-block;
+            margin-bottom: 16px;
         }
         .nav-tabs {
             border-bottom: 1px solid rgba(55, 65, 81, 0.9);
+            margin-bottom: 24px;
         }
         .nav-tabs .nav-link {
             border: none;
             color: #9ca3af;
-            font-size: 13px;
-            padding: 10px 10px;
+            font-size: 14px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: all 0.2s ease;
         }
         .nav-tabs .nav-link .step-index {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.8);
+            border: 1.5px solid rgba(148, 163, 184, 0.8);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: 600;
         }
         .nav-tabs .nav-link.active {
             color: #e5e7eb;
@@ -78,47 +102,88 @@
             color: #f9fafb;
         }
         label.form-label {
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: 600;
             color: #d1d5db;
+            margin-bottom: 10px;
         }
         .form-control, .form-select {
             background: #020617;
-            border-radius: 10px;
-            border: 1px solid rgba(55, 65, 81, 0.9);
+            border-radius: 12px;
+            border: 1.5px solid rgba(55, 65, 81, 0.9);
             color: #e5e7eb;
-            font-size: 13px;
+            font-size: 16px;
+            padding: 16px 18px;
+            transition: all 0.2s ease;
         }
         .form-control:focus, .form-select:focus {
             border-color: #6366f1;
-            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
             background: #020617;
             color: #e5e7eb;
         }
+        .form-control::placeholder {
+            color: #6b7280;
+        }
         .btn-primary-pill {
-            border-radius: 999px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             border: none;
-            padding: 10px 22px;
-            font-size: 14px;
+            padding: 14px 28px;
+            font-size: 15px;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+            transition: all 0.2s ease;
+        }
+        .btn-primary-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);
         }
         .btn-outline-light-pill {
-            border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.7);
-            padding: 9px 18px;
-            font-size: 13px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(148, 163, 184, 0.7);
+            padding: 14px 24px;
+            font-size: 14px;
             color: #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-light-pill:hover {
+            background: rgba(15, 23, 42, 0.85);
+            border-color: rgba(148, 163, 184, 0.9);
         }
         .small-muted {
-            font-size: 12px;
+            font-size: 13px;
             color: #9ca3af;
         }
         .error-text {
-            font-size: 12px;
+            font-size: 13px;
             color: #fecaca;
+            margin-top: 6px;
+        }
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 12px;
+            color: #fecaca;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+        }
+        h2.h4 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #f9fafb;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 992px) {
+            .auth-card {
+                max-width: 95%;
+            }
+            .auth-left, .auth-right {
+                padding: 32px 24px;
+            }
         }
     </style>
 </head>
@@ -126,35 +191,78 @@
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="row g-0">
-            <div class="col-lg-4 auth-left d-flex flex-column">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle bg-primary bg-opacity-20 d-flex align-items-center justify-content-center" style="width:0px;height:0px;">
-                        <!-- <i class="bi bi-wallet2 text-primary"></i> -->
-                    </div>
-                    <div class="ms-2">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
-                            <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height: 42px; width: auto;">
-                            <div class="fw-semibold text-white">{{ config('app.name') }}</div>
-                        </div>
-                        <div class="small-muted">Merchant onboarding</div>
+            <div class="col-lg-4 auth-left d-flex flex-column" style="position: relative; z-index: 1;">
+                <div class="d-flex align-items-center mb-4" style="position: relative; z-index: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="{{ asset(logo_path()) }}" alt="{{ config('app.name') }}" style="height: 48px; width: auto;">
+                        <div class="fw-bold text-white" style="font-size: 24px;">{{ config('app.name') }}</div>
                     </div>
                 </div>
-                <div class="step-pill mb-2">
+                <div class="step-pill" style="position: relative; z-index: 1;">
                     Guided · 4 short steps · Production-ready account
                 </div>
-                <h2 class="h4 text-white mt-2 mb-2">Create your merchant account</h2>
+                <h2 class="h4 text-white mt-3 mb-3" style="position: relative; z-index: 1;">Create your merchant account</h2>
                 <p class="small-muted mb-3">
                     Tell us about your business, bank account and login details. We’ll spin up a secure BadliCash
                     account with full sandbox and live-mode readiness so you can start integrating immediately.
                 </p>
-                <ul class="list-unstyled mb-3 small-muted">
-                    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> No paperwork for sandbox access</li>
-                    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Test webhooks that mirror production</li>
-                    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Upgrade to live mode after review</li>
+                <ul class="list-unstyled mb-4 small-muted" style="font-size: 14px; position: relative; z-index: 1;">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> No paperwork for sandbox access</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Test webhooks that mirror production</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Upgrade to live mode after review</li>
                 </ul>
-                <div class="mt-auto pt-3 small-muted">
+                
+                <!-- SVG Illustration -->
+                <div style="margin-top: auto; margin-bottom: 20px; position: relative; z-index: 1;">
+                    <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 280px; height: auto; opacity: 0.9;">
+                        <defs>
+                            <linearGradient id="signupGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.3" />
+                                <stop offset="100%" style="stop-color:#a855f7;stop-opacity:0.2" />
+                            </linearGradient>
+                            <linearGradient id="signupGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.2" />
+                                <stop offset="100%" style="stop-color:#16a34a;stop-opacity:0.15" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <!-- Background circles -->
+                        <circle cx="150" cy="100" r="80" fill="url(#signupGradient1)"/>
+                        <circle cx="150" cy="100" r="55" fill="url(#signupGradient2)"/>
+                        
+                        <!-- Document/Form Icon -->
+                        <g transform="translate(100, 60)">
+                            <rect x="0" y="0" width="100" height="80" rx="8" fill="rgba(99, 102, 241, 0.2)" stroke="rgba(99, 102, 241, 0.6)" stroke-width="2"/>
+                            <rect x="15" y="15" width="70" height="8" rx="2" fill="rgba(99, 102, 241, 0.4)"/>
+                            <rect x="15" y="30" width="50" height="8" rx="2" fill="rgba(99, 102, 241, 0.3)"/>
+                            <rect x="15" y="45" width="60" height="8" rx="2" fill="rgba(99, 102, 241, 0.3)"/>
+                            <circle cx="85" cy="20" r="8" fill="rgba(34, 197, 94, 0.6)"/>
+                            <path d="M 80 20 L 83 23 L 90 16" stroke="#22c55e" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        </g>
+                        
+                        <!-- User/Profile Icon -->
+                        <g transform="translate(80, 130)">
+                            <circle cx="20" cy="15" r="12" fill="rgba(168, 85, 247, 0.3)" stroke="rgba(168, 85, 247, 0.6)" stroke-width="2"/>
+                            <path d="M 8 35 Q 8 28, 15 28 L 25 28 Q 32 28, 32 35 L 32 40 L 8 40 Z" fill="rgba(168, 85, 247, 0.3)" stroke="rgba(168, 85, 247, 0.6)" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Arrow/Progress -->
+                        <g transform="translate(180, 130)">
+                            <path d="M 0 20 L 30 20" stroke="rgba(34, 197, 94, 0.6)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                            <path d="M 25 15 L 30 20 L 25 25" stroke="rgba(34, 197, 94, 0.6)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        
+                        <!-- Checkmark -->
+                        <g transform="translate(220, 130)">
+                            <circle cx="15" cy="20" r="18" fill="rgba(34, 197, 94, 0.2)" stroke="rgba(34, 197, 94, 0.6)" stroke-width="2"/>
+                            <path d="M 8 20 L 13 25 L 22 12" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                    </svg>
+                </div>
+                
+                <div class="mt-auto pt-3 small-muted" style="font-size: 14px; position: relative; z-index: 1;">
                     Already have an account?
-                    <a href="{{ route('login') }}" class="link-light text-decoration-none">Sign in</a>
+                    <a href="{{ route('login') }}" class="link-light text-decoration-none" style="color: #818cf8; font-weight: 600;">Sign in</a>
                 </div>
             </div>
 

@@ -3,7 +3,7 @@
         'name' => 'badlicash/payment-gateway',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'e2889d6d127d3de933ef6ec11c4ea296f2440286',
+        'reference' => '1d9da5955a303b2747f5ae6db52c4c0066b4ff60',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'badlicash/payment-gateway' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'e2889d6d127d3de933ef6ec11c4ea296f2440286',
+            'reference' => '1d9da5955a303b2747f5ae6db52c4c0066b4ff60',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -821,11 +821,29 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'razorpay/razorpay' => array(
+            'pretty_version' => '2.9.2',
+            'version' => '2.9.2.0',
+            'reference' => 'c5cf59941eb2d888e80371328d932e6e8266d352',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../razorpay/razorpay',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'rhumsaa/uuid' => array(
             'dev_requirement' => false,
             'replaced' => array(
                 0 => '4.9.1',
             ),
+        ),
+        'rmccue/requests' => array(
+            'pretty_version' => 'v2.0.17',
+            'version' => '2.0.17.0',
+            'reference' => '74d1648cc34e16a42ea25d548fc73ec107a90421',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../rmccue/requests',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'sebastian/cli-parser' => array(
             'pretty_version' => '2.0.1',

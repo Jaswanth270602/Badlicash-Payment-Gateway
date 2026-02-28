@@ -714,6 +714,7 @@
                     </div>
                 </div>
 
+
                 <!-- PAY BUTTON -->
                 <button class="pay-button" id="payButton" disabled>
                     <span id="payButtonText">Enter details to continue</span>
@@ -753,15 +754,25 @@
                     return;
                 }
 
-                // Initialize CashFree SDK
-                const cashfree = Cashfree({
-                    mode: "{{ $paymentLink->test_mode ? 'sandbox' : 'production' }}",
-                });
+                // Cashfree SDK mode MUST match where the order was created (backend uses acquirer test/live)
+                const cashfreeMode = (result.cashfree_mode === 'production' || result.cashfree_mode === 'sandbox')
+                    ? result.cashfree_mode
+                    : (paymentLink.test_mode ? 'sandbox' : 'production');
+                const cashfree = Cashfree({ mode: cashfreeMode });
+
+                const sessionId = result.payment_session_id;
+                if (!sessionId || typeof sessionId !== 'string' || sessionId.trim() === '') {
+                    console.error('CashFree: payment_session_id missing or invalid', result);
+                    errorMessage.textContent = 'Payment session not created. Please try again.';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButton.dataset.processing = '';
+                    return;
+                }
 
                 // Prepare checkout options as per CashFree PG v3 documentation
-                // Use "_modal" to open in overlay modal (stays within BadliCash page)
                 const checkoutOptions = {
-                    paymentSessionId: result.payment_session_id,
+                    paymentSessionId: sessionId.trim(),
                     redirectTarget: "_modal", // Modal overlay - NO page redirect
                 };
 
@@ -771,14 +782,53 @@
                 // Open CashFree checkout in modal
                 cashfree.checkout(checkoutOptions).then(function(checkoutResult) {
                     console.log('CashFree checkout completed:', checkoutResult);
+                    console.log('Checkout result keys:', Object.keys(checkoutResult || {}));
+                    console.log('Checkout result full object:', JSON.stringify(checkoutResult, null, 2));
+                    console.log('Payment initiation result:', result);
                     
-                    // Modal closed - user completed payment
-                    // Verify payment status immediately
-                    payButtonText.innerHTML = '<span class="spinner"></span> Verifying payment...';
+                    // Modal closed - user completed payment flow
+                    // CashFree checkout callback fires when modal closes (payment may or may not be complete)
+                    // Show success message immediately, then verify in background
+                    // Webhooks will handle final status confirmation
+                    
+                    const orderIdToVerify = result.gateway_order_id;
+                    
+                    if (!orderIdToVerify) {
+                        console.error('No gateway_order_id available for verification!', {
+                            'result': result,
+                            'checkoutResult': checkoutResult
+                        });
+                        errorMessage.textContent = 'Payment completed but order ID not found. Please contact support.';
+                        errorAlert.style.display = 'flex';
+                        payButton.disabled = false;
+                        payButton.dataset.processing = '';
+                        return;
+                    }
+                    
+                    console.log('Using gateway_order_id for verification:', orderIdToVerify);
+                    console.log('Available IDs:', {
+                        'result.gateway_order_id': result.gateway_order_id,
+                        'checkoutResult.orderId': checkoutResult?.orderId,
+                        'checkoutResult.order_id': checkoutResult?.order_id,
+                        'checkoutResult.cf_order_id': checkoutResult?.cf_order_id,
+                        'using': orderIdToVerify
+                    });
+                    
+                    // Show immediate success message (user completed payment flow)
+                    // Verification will happen in background, webhooks will confirm final status
+                    successMessage.textContent = 'Payment completed! Verifying payment status...';
+                    successAlert.style.display = 'flex';
+                    payButtonText.innerHTML = '<span class="spinner"></span> Verifying...';
                     payButton.disabled = true;
                     
-                    // Verify payment status from backend
-                    verifyCashFreePayment(result.gateway_order_id, result.transaction_id);
+                    // Reset retry counter for this verification attempt
+                    verifyCashFreePayment.attempts = 0;
+                    
+                    // Wait 5 seconds before first verification (CashFree needs more time to process the payment)
+                    // Increased from 2 seconds to 5 seconds to allow CashFree's system to fully process
+                    setTimeout(() => {
+                        verifyCashFreePayment(orderIdToVerify, result.transaction_id);
+                    }, 5000);
                     
                 }).catch(function(error) {
                     console.error('CashFree checkout error:', error);
@@ -826,22 +876,102 @@
                     }),
                 });
 
+                // Handle non-200 responses
+                if (!verifyResponse.ok) {
+                    const errorData = await verifyResponse.json().catch(() => ({}));
+                    console.warn('CashFree verification returned non-200:', verifyResponse.status, errorData);
+                    
+                    // Check if it's a permanent error (should not retry)
+                    // Note: "Order Reference Id does not exist" might be temporary if CashFree is still processing
+                    const isPermanentError = errorData.status === 'failed' || 
+                                           (errorData.message && (
+                                               errorData.message.toLowerCase().includes('invalid') ||
+                                               errorData.message.toLowerCase().includes('acquirer account not found') ||
+                                               errorData.message.toLowerCase().includes('authentication failed')
+                                           ));
+                    
+                    // If 400/404, treat as potentially temporary and retry (order might not be ready yet)
+                    // CashFree might need time to process the order after checkout completes
+                    if (verifyResponse.status === 400 || verifyResponse.status === 404) {
+                        let attempts = verifyCashFreePayment.attempts || 0;
+                        verifyCashFreePayment.attempts = attempts + 1;
+                        
+                        // Retry up to 8 times with increasing delays
+                        // First few attempts: 3 seconds, then 5 seconds, then 10 seconds
+                        const delays = [3000, 3000, 5000, 5000, 10000, 10000, 15000, 15000];
+                        const delay = delays[Math.min(attempts - 1, delays.length - 1)] || 15000;
+                        
+                        if (attempts < 8 && !isPermanentError) {
+                            console.log(`Verification returned ${verifyResponse.status} (${errorData.message || 'unknown error'}), retrying in ${delay/1000} seconds... (attempt ${attempts + 1}/8)`);
+                            setTimeout(() => {
+                                verifyCashFreePayment(gatewayOrderId, transactionId);
+                            }, delay);
+                            return;
+                        } else {
+                            // Max attempts reached - CashFree might have propagation delays
+                            // Show pending message and rely on webhooks for final status
+                            console.warn('CashFree verification: Max retries reached. Order may still be processing. Webhooks will update final status.');
+                            successMessage.textContent = 'Payment completed! Your payment is being processed. You will receive a confirmation shortly. If payment was successful, your order will be updated automatically.';
+                            successAlert.style.display = 'flex';
+                            payButton.disabled = false;
+                            payButton.dataset.processing = '';
+                            payButtonText.textContent = 'Payment Processing...';
+                            payButton.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                            
+                            // Hide error alert if it was shown
+                            errorAlert.style.display = 'none';
+                            return;
+                        }
+                    }
+                    
+                    // Other permanent errors - don't retry
+                    if (isPermanentError) {
+                        errorMessage.textContent = errorData.message || 'Payment verification failed. Please contact support.';
+                        errorAlert.style.display = 'flex';
+                        payButton.disabled = false;
+                        payButton.dataset.processing = '';
+                        @if($paymentLink->allow_partial_payment)
+                        const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                        @else
+                        payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                        @endif
+                        return;
+                    }
+                    
+                    // Other errors - show error message
+                    errorMessage.textContent = errorData.message || 'Failed to verify payment status';
+                    errorAlert.style.display = 'flex';
+                    payButton.disabled = false;
+                    payButton.dataset.processing = '';
+                    @if($paymentLink->allow_partial_payment)
+                    const remainingBalance = parseFloat({{ $paymentLink->getRemainingBalance() }});
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${remainingBalance.toFixed(2)}`;
+                    @else
+                    payButtonText.textContent = `Pay ${paymentLink.currency} ${parseFloat(paymentLink.amount).toFixed(2)}`;
+                    @endif
+                    return;
+                }
+
                 const verifyResult = await verifyResponse.json();
                 console.log('CashFree payment verification result:', verifyResult);
 
                 if (verifyResult.success) {
                     if (verifyResult.status === 'success') {
                         // Payment successful
-                        successMessage.textContent = `Payment successful! Transaction ID: ${verifyResult.transaction_id || transactionId}`;
+                        const finalTxnId = verifyResult.transaction_id || transactionId;
+                        successMessage.textContent = `Payment successful! Transaction ID: ${finalTxnId}`;
                         successAlert.style.display = 'flex';
                         payButtonText.textContent = 'Payment Successful!';
                         payButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                         payButton.disabled = false;
                         payButton.dataset.processing = '';
                         
-                        // Redirect to success page after 2 seconds
+                        // Redirect to the existing branded success page (public/success-simple.html)
+                        // which is the one already designed for merchants.
                         setTimeout(() => {
-                            window.location.href = '/payment/success/{{ $paymentLink->link_token }}';
+                            const baseUrl = window.location.origin || '';
+                            window.location.href = `${baseUrl}/success-simple.html?transaction_id=${encodeURIComponent(finalTxnId || '')}`;
                         }, 2000);
                     } else if (verifyResult.status === 'failed') {
                         // Payment failed
@@ -916,7 +1046,8 @@
                 const method = btn.dataset.method;
                 selectedMethod = method;
                 document.querySelectorAll('.payment-form').forEach(f => f.classList.remove('active'));
-                document.getElementById(method + 'Form').classList.add('active');
+                const formEl = document.getElementById(method + 'Form');
+                if (formEl) formEl.classList.add('active');
                 
                 validateForm();
             });

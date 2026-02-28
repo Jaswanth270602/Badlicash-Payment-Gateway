@@ -44,10 +44,18 @@ class CashFreeWebhookController extends Controller
             }
 
             // Get merchant's CashFree acquirer account
-            $acquirerAccount = $paymentLink->merchant->acquirerAccounts()
-                ->where('acquirer_name', 'cashfree')
-                ->where('is_active', true)
-                ->first();
+            // Get CashFree adapter - use assigned acquirer or fallback to pivot lookup
+            $merchant = $paymentLink->merchant;
+            $acquirerAccount = $merchant->getActiveAcquirerAccount();
+            
+            // If getActiveAcquirerAccount returns null (merchant not approved), 
+            // still try to find CashFree acquirer for verification (payment already happened)
+            if (!$acquirerAccount || stripos($acquirerAccount->acquirer_name ?? '', 'cashfree') === false) {
+                $acquirerAccount = $merchant->acquirerAccounts()
+                    ->whereRaw('LOWER(acquirer_name) LIKE ?', ['%cashfree%'])
+                    ->where('is_active', true)
+                    ->first();
+            }
 
             if (!$acquirerAccount) {
                 Log::warning('CashFree webhook: Acquirer account not found', [
@@ -208,11 +216,18 @@ class CashFreeWebhookController extends Controller
                 ], 404);
             }
 
-            // Get CashFree adapter
-            $acquirerAccount = $paymentLink->merchant->acquirerAccounts()
-                ->where('acquirer_name', 'cashfree')
-                ->where('is_active', true)
-                ->first();
+            // Get CashFree adapter - use assigned acquirer or fallback to pivot lookup
+            $merchant = $paymentLink->merchant;
+            $acquirerAccount = $merchant->getActiveAcquirerAccount();
+            
+            // If getActiveAcquirerAccount returns null (merchant not approved), 
+            // still try to find CashFree acquirer for verification (payment already happened)
+            if (!$acquirerAccount || stripos($acquirerAccount->acquirer_name ?? '', 'cashfree') === false) {
+                $acquirerAccount = $merchant->acquirerAccounts()
+                    ->whereRaw('LOWER(acquirer_name) LIKE ?', ['%cashfree%'])
+                    ->where('is_active', true)
+                    ->first();
+            }
 
             if (!$acquirerAccount) {
                 return response()->json([
@@ -223,20 +238,120 @@ class CashFreeWebhookController extends Controller
 
             $adapter = $this->acquirerResolver->resolve($acquirerAccount);
 
-            // Get payment status from CashFree
-            $statusResult = $adapter->getPaymentStatus($gatewayOrderId);
-
-            if (!$statusResult['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $statusResult['message'] ?? 'Failed to get payment status',
-                ], 400);
-            }
-
-            // Find and update transaction
+            // Try to find order first to get the correct gateway_order_id
             $order = Order::where('gateway_order_id', $gatewayOrderId)
                 ->where('merchant_id', $paymentLink->merchant_id)
                 ->first();
+            
+            // If not found, try by order_id (in case gateway_order_id wasn't saved properly)
+            if (!$order && is_numeric($gatewayOrderId)) {
+                $order = Order::where('order_id', $gatewayOrderId)
+                    ->where('merchant_id', $paymentLink->merchant_id)
+                    ->first();
+            }
+            
+            // If still not found, try to find the most recent order for this payment link
+            // This handles cases where the order ID format might be different
+            if (!$order) {
+                $order = Order::where('payment_link_id', $paymentLink->id)
+                    ->where('merchant_id', $paymentLink->merchant_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($order) {
+                    Log::info('CashFree verification: Found order by payment_link_id (fallback)', [
+                        'order_id' => $order->order_id,
+                        'gateway_order_id' => $order->gateway_order_id,
+                        'provided_gateway_order_id' => $gatewayOrderId,
+                    ]);
+                }
+            }
+            
+            // Use the order's gateway_order_id if we found it and it's different from what was provided
+            $orderIdToCheck = $gatewayOrderId;
+            if ($order && $order->gateway_order_id && $order->gateway_order_id !== $gatewayOrderId) {
+                $orderIdToCheck = $order->gateway_order_id;
+                Log::info('CashFree verification: Using order gateway_order_id instead', [
+                    'provided' => $gatewayOrderId,
+                    'using' => $orderIdToCheck,
+                    'order_id' => $order->order_id,
+                ]);
+            } elseif ($order && !$order->gateway_order_id) {
+                // If order found but gateway_order_id is null, log warning
+                Log::warning('CashFree verification: Order found but gateway_order_id is null', [
+                    'order_id' => $order->order_id,
+                    'provided_gateway_order_id' => $gatewayOrderId,
+                ]);
+            }
+
+            // Get payment status from CashFree
+            Log::info('CashFree verification: Calling getPaymentStatus', [
+                'gateway_order_id' => $gatewayOrderId,
+                'order_id_to_check' => $orderIdToCheck,
+                'merchant_id' => $paymentLink->merchant_id,
+                'acquirer_account_id' => $acquirerAccount->id,
+                'acquirer_name' => $acquirerAccount->acquirer_name,
+                'order_found' => $order !== null,
+            ]);
+            
+            $statusResult = $adapter->getPaymentStatus($orderIdToCheck);
+
+            if (!$statusResult['success']) {
+                $errorMessage = $statusResult['message'] ?? 'Failed to get payment status';
+                $errorCode = $statusResult['error_code'] ?? null;
+                
+                Log::warning('CashFree verification: getPaymentStatus failed', [
+                    'gateway_order_id' => $gatewayOrderId,
+                    'merchant_id' => $paymentLink->merchant_id,
+                    'message' => $errorMessage,
+                    'error_code' => $errorCode,
+                    'acquirer_account_id' => $acquirerAccount->id,
+                    'status_result' => $statusResult,
+                ]);
+                
+                // If it's a permanent error (like invalid order ID format), don't retry
+                // Otherwise, return pending status for retry
+                $isPermanentError = $errorCode === 'INVALID_ORDER_ID' || 
+                                   stripos($errorMessage, 'not found') !== false ||
+                                   stripos($errorMessage, 'invalid') !== false;
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'status' => $isPermanentError ? 'failed' : 'pending',
+                    'error_code' => $errorCode,
+                ], 400);
+            }
+
+            // Find order - use the one we found earlier, or search again
+            if (!$order) {
+                $order = Order::where('gateway_order_id', $orderIdToCheck)
+                    ->where('merchant_id', $paymentLink->merchant_id)
+                    ->first();
+                
+                // If still not found, try by order_id
+                if (!$order && is_numeric($orderIdToCheck)) {
+                    $order = Order::where('order_id', $orderIdToCheck)
+                        ->where('merchant_id', $paymentLink->merchant_id)
+                        ->first();
+                }
+                
+                // If still not found, try to find the most recent order for this payment link
+                if (!$order) {
+                    $order = Order::where('payment_link_id', $paymentLink->id)
+                        ->where('merchant_id', $paymentLink->merchant_id)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                    
+                    if ($order) {
+                        Log::info('CashFree verification: Found order by payment_link_id', [
+                            'order_id' => $order->order_id,
+                            'gateway_order_id' => $order->gateway_order_id,
+                            'provided_gateway_order_id' => $gatewayOrderId,
+                        ]);
+                    }
+                }
+            }
 
             if ($order) {
                 $transaction = $order->transactions()->first();
@@ -257,11 +372,31 @@ class CashFreeWebhookController extends Controller
                         }
                     }
                 }
+            } else {
+                Log::warning('CashFree verification: Order not found in database', [
+                    'gateway_order_id' => $gatewayOrderId,
+                    'payment_link_id' => $paymentLink->id,
+                    'merchant_id' => $paymentLink->merchant_id,
+                ]);
+            }
+
+            // Normalize status to ensure it's 'success', 'failed', or 'pending'
+            $normalizedStatus = $statusResult['status'] ?? 'pending';
+            if (!in_array($normalizedStatus, ['success', 'failed', 'pending'])) {
+                // If status is something unexpected, try to normalize it
+                $normalizedStatus = strtolower($normalizedStatus);
+                if (in_array($normalizedStatus, ['paid', 'completed', 'captured'])) {
+                    $normalizedStatus = 'success';
+                } elseif (in_array($normalizedStatus, ['expired', 'cancelled', 'canceled', 'rejected'])) {
+                    $normalizedStatus = 'failed';
+                } else {
+                    $normalizedStatus = 'pending';
+                }
             }
 
             return response()->json([
                 'success' => true,
-                'status' => $statusResult['status'],
+                'status' => $normalizedStatus,
                 'payment_id' => $statusResult['payment_id'] ?? null,
                 'order_id' => $order->order_id ?? null,
                 'transaction_id' => $transaction->txn_id ?? null,

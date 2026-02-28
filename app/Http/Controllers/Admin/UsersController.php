@@ -13,6 +13,7 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Schema;
 
 class UsersController extends Controller
 {
@@ -278,14 +279,17 @@ class UsersController extends Controller
         try {
             $user = User::findOrFail($id);
 
-            $validator = Validator::make($request->all(), [
+            $rules = [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,
-                'password' => 'nullable|string|min:12|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
                 'timezone' => 'nullable|string|max:50',
                 'currency_code' => 'nullable|string|max:3',
                 'team_name' => 'nullable|string|max:255',
-            ], [
+            ];
+            if ($request->filled('password')) {
+                $rules['password'] = 'string|min:12|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/';
+            }
+            $validator = Validator::make($request->all(), $rules, [
                 'password.regex' => 'Password must have minimum 12 characters and should include at least 1 uppercase, 1 lowercase, 1 numeric and 1 special character.',
             ]);
 
@@ -409,23 +413,9 @@ class UsersController extends Controller
     public function getTeams(): JsonResponse
     {
         try {
-            // Get unique team names from merchants - simplified approach
-            $teams = DB::table('merchants')
-                ->select('team_name')
-                ->whereNotNull('team_name')
-                ->where('team_name', '!=', '')
-                ->distinct()
-                ->orderBy('team_name')
-                ->get()
-                ->pluck('team_name')
-                ->filter()
-                ->unique()
-                ->values()
-                ->all();
-            
             return response()->json([
                 'success' => true,
-                'data' => array_values($teams),
+                'data' => [],
             ]);
         } catch (\Exception $e) {
             // Log error safely

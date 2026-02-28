@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Traits\LogsConditionally;
 use App\Services\PaymentService;
 use App\Services\PaymentSimulationService;
+use App\Services\GatewayModeService;
 use App\Services\PaymentGateways\GatewayFactory;
 use App\Contracts\PaymentGatewayInterface;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class PaymentCheckoutController extends Controller
 {
@@ -69,7 +71,8 @@ class PaymentCheckoutController extends Controller
 
             // Don't use embedded iframe - use our own payment forms with Razorpay Checkout.js
             // This keeps our UI visible and processes payments through Razorpay API
-            return view('checkout.payment', compact('paymentLink'));
+            $yapilySandboxEnabled = config('yapily.enabled', false);
+            return view('checkout.payment', compact('paymentLink', 'yapilySandboxEnabled'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             $this->logError('Payment link not found', [
                 'token' => $token
@@ -108,12 +111,51 @@ class PaymentCheckoutController extends Controller
             $merchant = $paymentLink->merchant;
             $acquirerAccount = $merchant->getActiveAcquirerAccount();
             $hasAcquirerAccount = $acquirerAccount !== null;
-            
+
+            if ($acquirerAccount) {
+                $this->logInfo('Active acquirer selected for checkout', [
+                    'merchant_id' => $merchant->id,
+                    'acquirer_account_id' => $acquirerAccount->id,
+                    'acquirer_name' => $acquirerAccount->acquirer_name,
+                    'acquirer_mode' => $acquirerAccount->mode,
+                ]);
+            }
+
+            // Detect Yapily acquirer configured at merchant level
+            $acquirerName = $acquirerAccount ? strtolower(trim($acquirerAccount->acquirer_name ?? '')) : '';
+            // Treat any acquirer whose name contains "yapily" (e.g. Yapily, YapilyTest, YapilyLive) as Yapily
+            $isYapilyAcquirer = $acquirerName !== '' && str_contains($acquirerName, 'yapily');
+
+            // Legacy Yapily sandbox payment-method toggle (now deprecated in favour of acquirer-based Yapily)
+            $useYapilySandbox = $request->payment_method === 'yapily' && config('yapily.enabled', false);
+
+            // When customer chooses Yapily Sandbox method OR merchant uses Yapily acquirer,
+            // do NOT go through Razorpay/Cashfree gateway path. Instead, fall back to the
+            // internal simulation flow, which keeps existing codepaths safe.
+            // Acquirers (Razorpay, Cashfree) only when BOTH gateway and merchant are LIVE.
+            // Gateway TEST = internal only. Merchant TEST = internal only (no Razorpay even if gateway is live).
+            $gatewayModeIsLive = GatewayModeService::isLive();
+            $merchantIsLive = !$merchant->test_mode;
+            $useAcquirerGateway = $hasAcquirerAccount && !$useYapilySandbox && !$isYapilyAcquirer && $gatewayModeIsLive && $merchantIsLive;
+
+            if ($hasAcquirerAccount && $gatewayModeIsLive && !$merchantIsLive) {
+                $this->logInfo('Merchant is in Test mode – using internal simulation only (acquirer not called). Switch merchant to Live to use Razorpay/Cashfree.', [
+                    'merchant_id' => $merchant->id,
+                    'acquirer_name' => $acquirerAccount->acquirer_name,
+                ]);
+            }
+            if ($hasAcquirerAccount && !$gatewayModeIsLive) {
+                $this->logInfo('Gateway mode is TEST – using internal simulation only (acquirer not called). Set APP_PAYMENT_MODE=live to use Razorpay/Cashfree.', [
+                    'merchant_id' => $merchant->id,
+                    'acquirer_name' => $acquirerAccount->acquirer_name,
+                ]);
+            }
+
             // Determine if payment details are required based on gateway
             $paymentDetailsRequired = false;
             $gateway = null;
-            
-            if ($hasAcquirerAccount && $request->payment_method === 'card') {
+
+            if ($useAcquirerGateway && $request->payment_method === 'card') {
                 try {
                     $gateway = GatewayFactory::make($merchant, $acquirerAccount);
                     $gatewayName = $gateway->getGatewayName();
@@ -143,14 +185,20 @@ class PaymentCheckoutController extends Controller
                 }
             }
 
+            $isRazorpayCard = $gateway !== null && $gateway->getGatewayName() === 'razorpay';
+
             // Sanitize customer phone number before validation
             $customerDetails = $request->customer_details ?? [];
             if (isset($customerDetails['phone'])) {
                 $customerDetails['phone'] = preg_replace('/[^0-9]/', '', $customerDetails['phone']);
             }
             
+            $allowedMethods = ['card', 'upi', 'netbanking', 'wallet'];
+            if (config('yapily.enabled', false)) {
+                $allowedMethods[] = 'yapily';
+            }
             $validator = Validator::make(array_merge($request->all(), ['customer_details' => $customerDetails]), [
-                'payment_method' => 'required|in:card,upi,netbanking,wallet',
+                'payment_method' => ['required', 'in:' . implode(',', $allowedMethods)],
                 'customer_details' => 'required|array',
                 'customer_details.name' => 'required|string|max:255',
                 'customer_details.email' => 'required|email',
@@ -292,12 +340,21 @@ class PaymentCheckoutController extends Controller
             }
 
             // Prepare payment data
+            // IMPORTANT: Do not introduce new DB enum values for payment_method.
+            // Map Yapily sandbox method to an existing DB-safe method (netbanking)
+            // while preserving the original method in payment_details for auditing.
+            $storagePaymentMethod = $paymentMethod;
+            if ($paymentMethod === 'yapily') {
+                $storagePaymentMethod = 'netbanking';
+                $paymentDetails['original_payment_method'] = 'yapily';
+            }
+
             $paymentData = [
                 'merchant_id' => $paymentLink->merchant_id,
                 'payment_link_id' => $paymentLink->id,
                 'amount' => $paymentAmount,
                 'currency' => $paymentLink->currency,
-                'payment_method' => $paymentMethod,
+                'payment_method' => $storagePaymentMethod,
                 'payment_details' => $paymentDetails,
                 'customer_details' => $request->customer_details,
                 'test_mode' => $paymentLink->test_mode,
@@ -306,7 +363,7 @@ class PaymentCheckoutController extends Controller
 
             // Process payment through GatewayFactory (clean routing architecture)
             try {
-                if ($hasAcquirerAccount) {
+                if ($useAcquirerGateway) {
                     // Get or create gateway instance
                     if (!$gateway) {
                         $gateway = GatewayFactory::make($merchant, $acquirerAccount);
@@ -350,8 +407,16 @@ class PaymentCheckoutController extends Controller
                         }
                         
                         // Save gateway order ID
-                        $order->gateway_order_id = $cashfreeOrderResult['gateway_order_id'] ?? null;
+                        $gatewayOrderId = $cashfreeOrderResult['gateway_order_id'] ?? null;
+                        $order->gateway_order_id = $gatewayOrderId;
                         $order->save();
+                        
+                        $this->logInfo('CashFree order: gateway_order_id saved', [
+                            'order_id' => $order->order_id,
+                            'gateway_order_id' => $gatewayOrderId,
+                            'gateway_order_id_type' => gettype($gatewayOrderId),
+                            'cashfree_order_result' => $cashfreeOrderResult,
+                        ]);
                         
                         // Step 2: Create transaction record (status: pending)
                         $transaction = $this->paymentService->processPayment($order, [
@@ -364,14 +429,16 @@ class PaymentCheckoutController extends Controller
                         $transaction->save();
                         
                         // Step 3: Return payment_session_id for frontend checkout
-                        // CashFree order creation returns payment_session_id directly
-                        // NO server-side payment initiation needed
+                        // CashFree SDK mode must match where the order was created (acquirer test vs live)
+                        $acquirerMode = strtoupper($acquirerAccount->mode ?? 'TEST');
+                        $cashfreeSdkMode = ($acquirerMode === 'LIVE') ? 'production' : 'sandbox';
                         return response()->json([
                             'success' => true,
                             'gateway' => 'cashfree',
                             'order_id' => $order->order_id,
                             'gateway_order_id' => $order->gateway_order_id,
                             'payment_session_id' => $cashfreeOrderResult['payment_session_id'] ?? null,
+                            'cashfree_mode' => $cashfreeSdkMode,
                             'transaction_id' => $transaction->txn_id,
                             'status' => 'pending', // ACTIVE = pending (awaiting checkout)
                             'amount' => $paymentAmount,
@@ -430,10 +497,18 @@ class PaymentCheckoutController extends Controller
                         throw new \RuntimeException("Unsupported gateway: {$gatewayName}");
                     }
                 } else {
-                    // Fallback to simulation service if no acquirer account
-                    $this->logInfo('No acquirer account found, using simulation service', [
-                        'merchant_id' => $merchant->id,
-                    ]);
+                    // Fallback to simulation service if no acquirer account OR when using Yapily acquirer
+                    if ($hasAcquirerAccount && $isYapilyAcquirer) {
+                        $this->logInfo('Yapily acquirer configured – using internal simulation service (sandbox flow)', [
+                            'merchant_id' => $merchant->id,
+                            'acquirer_name' => $acquirerAccount->acquirer_name,
+                        ]);
+                    } else {
+                        $this->logInfo('No acquirer account found, using simulation service', [
+                            'merchant_id' => $merchant->id,
+                        ]);
+                    }
+
                     $result = $this->simulationService->processPayment($paymentData);
                 }
                 
@@ -630,7 +705,16 @@ class PaymentCheckoutController extends Controller
 
                 if (!$transaction) {
                     // Store gateway_order_id in gateway_response JSON
-                    $gatewayResponse = array_merge($verifyResult['raw_response'] ?? [], [
+                    // NOTE: Razorpay SDK returns Razorpay\Api\Payment (Entity), not a plain array.
+                    // Normalize raw_response into an array before merging to avoid type errors.
+                    $rawResponse = $verifyResult['raw_response'] ?? [];
+                    if ($rawResponse instanceof \Razorpay\Api\Entity) {
+                        $rawResponse = $rawResponse->toArray();
+                    } elseif (!is_array($rawResponse)) {
+                        $rawResponse = [];
+                    }
+
+                    $gatewayResponse = array_merge($rawResponse, [
                         'gateway_order_id' => $request->razorpay_order_id,
                         'order_id' => $request->razorpay_order_id,
                     ]);
