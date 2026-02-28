@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RiskRule;
 use App\Models\RiskEvent;
 use App\Models\FraudAlert;
+use App\Models\FraudTransaction;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -87,6 +88,39 @@ class RiskManagementController extends Controller
         return response()->json(['success' => true, 'data' => $event]);
     }
 
+    // FDS Fraud Transactions (Fraud Decisions)
+    public function getFraudTransactions(Request $request)
+    {
+        $query = FraudTransaction::query();
+
+        if ($request->merchant_id) {
+            $query->where('merchant_id', $request->merchant_id);
+        }
+
+        if ($request->decision) {
+            $query->where('decision', $request->decision);
+        }
+
+        if ($request->transaction_id) {
+            $query->where('transaction_id', 'like', '%' . $request->transaction_id . '%');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $query->orderByDesc('created_at')->paginate(15),
+        ]);
+    }
+
+    public function getFraudTransactionDetails(int $id)
+    {
+        $fraudTxn = FraudTransaction::with('fraudEvents')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $fraudTxn,
+        ]);
+    }
+
     // Fraud Alerts
     public function getAlerts(Request $request)
     {
@@ -131,13 +165,40 @@ class RiskManagementController extends Controller
     // Dashboard Stats
     public function getStats()
     {
+        // Respect admin view mode (test vs live) so stats match the selected environment.
+        // In test mode we count only test transactions; in live mode we count only live ones.
+        $adminMode = session('admin_view_mode', 'test'); // 'test' | 'live'
+        $isTestMode = $adminMode === 'test';
+
+        // Base queries
+        $riskEventsQuery = RiskEvent::query()->where('resolved', false);
+        $criticalAlertsQuery = FraudAlert::query()
+            ->where('severity', 'critical')
+            ->where('status', 'open');
+        $highAlertsQuery = FraudAlert::query()
+            ->where('severity', 'high')
+            ->where('status', 'open');
+
+        // Filter by transaction test_mode when available so that stats reflect LIVE / TEST correctly
+        $riskEventsQuery->whereHas('transaction', function ($q) use ($isTestMode) {
+            $q->where('test_mode', $isTestMode);
+        });
+
+        $criticalAlertsQuery->whereHas('transaction', function ($q) use ($isTestMode) {
+            $q->where('test_mode', $isTestMode);
+        });
+
+        $highAlertsQuery->whereHas('transaction', function ($q) use ($isTestMode) {
+            $q->where('test_mode', $isTestMode);
+        });
+
         return response()->json([
             'success' => true,
             'data' => [
                 'total_rules' => RiskRule::where('status', 'active')->count(),
-                'total_events' => RiskEvent::where('resolved', false)->count(),
-                'critical_alerts' => FraudAlert::where('severity', 'critical')->where('status', 'open')->count(),
-                'high_alerts' => FraudAlert::where('severity', 'high')->where('status', 'open')->count(),
+                'total_events' => $riskEventsQuery->count(),
+                'critical_alerts' => $criticalAlertsQuery->count(),
+                'high_alerts' => $highAlertsQuery->count(),
             ],
         ]);
     }

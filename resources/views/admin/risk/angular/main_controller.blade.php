@@ -13,10 +13,12 @@
                 vm.rules = { data: [] };
                 vm.events = { data: [] };
                 vm.alerts = { data: [] };
+                vm.fraudTxns = { data: [] };
                 vm.ruleSearch = '';
                 vm.ruleFilters = { status: '', type: '' };
                 vm.eventFilters = { merchant_id: '', severity: '', resolved: '' };
                 vm.alertFilters = { merchant_id: '', status: '', severity: '' };
+                vm.fraudFilters = { merchant_id: '', decision: '', transaction_id: '' };
                 vm.ruleForm = { name: '', type: 'velocity', rule_config_json: '{}', action: 'alert', status: 'active', priority: 0 };
                 vm.alertForm = { merchant_id: '', transaction_id: '', alert_type: 'suspicious_pattern', severity: 'medium', description: '', risk_score: 50 };
 
@@ -112,6 +114,30 @@
 
                 vm.viewAlert = function(a) {
                     alert('Description: ' + (a.description || 'N/A') + '\nRisk Score: ' + a.risk_score);
+                };
+
+                vm.loadFraudTransactions = function(page) {
+                    var params = {
+                        merchant_id: vm.fraudFilters.merchant_id || '',
+                        decision: vm.fraudFilters.decision || '',
+                        transaction_id: vm.fraudFilters.transaction_id || ''
+                    };
+                    if (page) params.page = page;
+                    $http.get('/admin/risk/fraud/transactions', { params: params }).then(function(resp) {
+                        vm.fraudTxns = resp.data.data;
+                    });
+                };
+
+                vm.viewFraudTransaction = function(t) {
+                    $http.get('/admin/risk/fraud/transactions/' + t.id).then(function(resp) {
+                        var data = resp.data.data || {};
+                        vm.selectedFraudTxn = data;
+                        vm.selectedFraudEvents = data.fraud_events || [];
+                        new bootstrap.Modal(document.getElementById('fraudTxnModal')).show();
+                    }, function(err) {
+                        alert('Failed to load fraud decision details');
+                        console.error(err);
+                    });
                 };
 
                 vm.openRuleModal = function() {

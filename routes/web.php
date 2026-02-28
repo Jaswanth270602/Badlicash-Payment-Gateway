@@ -622,6 +622,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/risk/alerts/{id}', [RiskManagementController::class, 'updateAlert'])
             ->name('admin.risk.alerts.update');
 
+        // FDS Fraud Decisions
+        Route::get('/risk/fraud/transactions', [RiskManagementController::class, 'getFraudTransactions'])
+            ->name('admin.risk.fraud.transactions');
+        Route::get('/risk/fraud/transactions/{id}', [RiskManagementController::class, 'getFraudTransactionDetails'])
+            ->name('admin.risk.fraud.transactions.show');
+
         // S2S Callback Logs (Technical Diagnostics)
         Route::get('/s2s-callback-logs', [S2SCallbackLogController::class, 'index'])
             ->name('admin.s2s-callback-logs.index');
